@@ -1,3 +1,4 @@
+CREATE DATABASE placement_portal;
 USE placement_portal;
 
 CREATE TABLE students(
@@ -12,6 +13,35 @@ CREATE TABLE students(
     selected_tier INT DEFAULT NULL
 );
 
+CREATE TABLE faculty(
+    faculty_id INT PRIMARY KEY,
+    name VARCHAR(50),
+    email VARCHAR(100),
+    password VARCHAR(50)
+    );
+    
+
+CREATE TABLE recruiters(
+	recruiter_id INT PRIMARY KEY,
+    company_name VARCHAR(50),
+    email VARCHAR(100),
+    password VARCHAR(50)
+    );
+    
+CREATE TABLE jobs(
+    job_id INT PRIMARY KEY,
+    company_name VARCHAR(50),
+    role VARCHAR(50) NOT NULL,
+    package_lpa DECIMAL(7,2),
+    tier ENUM('Tier 1','Tier 2','Tier 3'),
+    eligible_branches TEXT,
+    min_cgpa DECIMAL(3,2),
+    max_backlogs INT DEFAULT 0,
+    required_skills TEXT,
+    job_description TEXT,
+    deadline DATE
+    );
+    
 CREATE TABLE applications(
 	application_id INT PRIMARY KEY,
     student_id INT PRIMARY KEY,
