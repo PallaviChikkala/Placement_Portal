@@ -1,0 +1,159 @@
+<html>
+    <head>
+        <title>Dashboard</title>
+         <link href = "https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+            <style>
+    body {
+        margin: 0;
+    }
+
+    .sidebar {
+        width: 230px;
+        height: 100vh;
+        background-color: #e8e38a;
+        color: rgb(16, 2, 2);
+        padding: 20px;
+    }
+
+    .sidebar a:hover {
+    background-color: #fcf56e;
+    padding: 8px;
+    cursor: pointer;
+    border-radius: 8px;
+    transition: 0.3s;
+    }
+    .main-content {
+        flex: 1;
+        background-color: #f4f6f9;
+        min-height: 100vh;
+        padding: 25px;
+    }
+    .sidebar a {
+    display: block;
+    color: black;
+    text-decoration: none;
+    margin-bottom: 18px;
+    cursor: pointer;
+    padding: 8px;
+    }
+    .card {
+        border: none;
+        border-radius: 15px;
+    }
+
+    .card:hover {
+        transform: translateY(-5px);
+        transition: 0.3s;
+    }
+    .table tbody tr:hover {
+    background-color: #fff9d6;
+    }
+    </style>
+    </head>
+    <body>
+    <div class="d-flex">
+    <div class="sidebar">
+        <img src="../../static/StudentLogin.png" class="rounded mx-auto d-block mb-3" style="width: 70px;" alt="NIT AP Logo">
+        <h4 style="text-align: center;">NIT AP</h4><hr/>
+        <a><i class="bi bi-speedometer2"></i> Dashboard</a>
+        <a><i class="bi bi-person"></i> Profile</a>
+        <a><i class="bi bi-building"></i> Eligible Companies</a>
+        <a><i class="bi bi-file-earmark-text"></i> My Applications</a>
+        <a><i class="bi bi-box-arrow-right"></i> Logout</a>
+    </div>
+
+    <div class="main-content">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Welcome back, Student 
+        <img src="../../static/DashboardHello.png" style="width: 40px;height: 40px;">
+    </h2>
+    <button class="btn btn-outline-dark">
+        <i class="bi bi-bell"></i>
+    </button>
+    </div>
+
+    <div class="row mt-4 g-4">
+        <div class="col-md-3">
+            <div class="card shadow p-3">
+                <h6>Eligible Companies</h6>
+                <h3>12</h3>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card shadow p-3">
+                <h6>Applied Companies</h6>
+                <h3>4</h3>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card shadow p-3">
+                <h6>Interview Calls</h6>
+                <h3>2</h3>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card shadow p-3">
+                <h6>Resume Score</h6>
+                <h3>82%</h3>
+            </div>
+        </div>
+        </div>
+        <div class="card shadow mt-4 p-3">
+
+    <h5>Upcoming Placement Drives</h5>
+
+    <table class="table table-hover mt-3">
+        <thead>
+            <tr>
+                <th>Company</th>
+                <th>Role</th>
+                <th>Package</th>
+                <th>Drive Date</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            <tr>
+                <td>TCS</td>
+                <td>Software Developer</td>
+                <td>7 LPA</td>
+                <td>12 June 2026</td>
+                <td><span class="badge bg-success">Eligible</span></td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<div class="card shadow mt-4 p-3">
+    <h5>Recent Applications</h5>
+
+    <table class="table table-hover mt-3">
+        <thead>
+            <tr>
+                <th>Company</th>
+                <th>Role</th>
+                <th>Applied Date</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            <tr>
+                <td>Infosys</td>
+                <td>System Engineer</td>
+                <td>10 June 2026</td>
+                <td><span class="badge bg-warning text-dark">Pending</span></td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+</div>
+</div>
+</body>
+</html>
