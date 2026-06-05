@@ -70,14 +70,11 @@
                     <img src="../../static/StudentLogin.png" class="rounded mx-auto d-block mb-3" style="width: 100px;" alt="NIT AP Logo">
                     <h4 class="mb-3 text-center">Login</h4>
 
-                    <form>
-                    <input type="text" class="form-control mb-3" placeholder="Enter Student ID">
+                    <form action="/student_login_check" method="POST">
+                    <input type="text" name = "email" class="form-control mb-3" placeholder="Enter Student Email">
                    <div class="input-group mb-3">
-                    <input type="password" id="password" class="form-control" placeholder="Enter Password">
+                    <input type="password" name = "password" id="password" class="form-control" placeholder="Enter Password">
 
-                    <span class="input-group-text" onclick="togglePassword()" style="cursor:pointer;">
-                    <i id="eyeIcon" class="bi bi-eye"></i>
-                    </span>
                    </div>
                     <div class="text-end mb-3">
                         <a href="#" class="text-decoration-none">Forgot Password?</a>
@@ -89,21 +86,6 @@
             </div>
         </div>
     </div>
-        <script>
-        function togglePassword() {
-        let password = document.getElementById("password");
-        let eyeIcon = document.getElementById("eyeIcon");
-
-        if (password.type === "password") {
-            password.type = "text";
-            eyeIcon.classList.remove("bi-eye");
-            eyeIcon.classList.add("bi-eye-slash");
-        } else {
-            password.type = "password";
-            eyeIcon.classList.remove("bi-eye-slash");
-            eyeIcon.classList.add("bi-eye");
-        }
-    }
-    </script>
+    
 </body>
 </html>

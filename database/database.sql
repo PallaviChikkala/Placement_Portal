@@ -1,4 +1,4 @@
-CREATE DATABASE placement_portal;
+CREATE DATABASE IF NOT EXISTS placement_portal;
 USE placement_portal;
 
 CREATE TABLE students(
@@ -12,6 +12,15 @@ CREATE TABLE students(
     skills TEXT,
     selected_tier INT DEFAULT NULL
 );
+
+ALTER TABLE students 
+ADD batch INT;
+
+SELECT * FROM students;
+
+INSERT INTO students(student_id, name, email, password, branch, cgpa, backlogs, skills, selected_tier, batch)
+VALUES
+(1,"Pallavi", "pallavi123@gmail.com", "pallavi123", "AI", 9.2, 0, "Java, DSA, Full Stack Development", 1, 2028);
 
 CREATE TABLE faculty(
     faculty_id INT PRIMARY KEY,

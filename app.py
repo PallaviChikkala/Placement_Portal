@@ -1,8 +1,21 @@
-from flask import Flask, request
+from flask import Flask, request, render_template, redirect, session
 import pdfplumber
 import docx
+import mysql.connector
 
 app = Flask(__name__)
+app.secret_key = "placement_portal_secret"
+
+#MYSQL Connection
+db = mysql.connector.connect(
+    host = "localhost",
+    user = "root",
+    password = "Pallavi@2007",
+    database = "placement_portal"
+ )
+
+cursor = db.cursor(dictionary = True)
+
 
 @app.route("/")
 def home():
@@ -177,6 +190,37 @@ def upload():
         Genome Score : {genome_score}%<br>
         Suggestion : {suggestion}<br>
     """
+
+@app.route("/student_login")
+def student_login_page():
+    return render_template("student/login.html")
+
+@app.route("/student_login_check", methods = ["POST"])
+def student_login_check():
+    email = request.form["email"]
+    password = request.form["password"]
+
+    query = "SELECT * FROM students WHERE email = %s AND password = %s"
+    cursor.execute(query, (email,password))
+    student = cursor.fetchone()
+
+    if student: 
+        session["student_id"] = student["student_id"]
+        session["student_name"] = student["name"]
+        return redirect("/student_dashboard")
+    else :
+        return "Invalid email or password"
+    
+@app.route("/student_dashboard")
+def student_dashboard():
+    if "student_id" not in session:
+        return redirect("/student_login")
+    return render_template(
+    "student/dashboard.html",
+    name=session["student_name"]
+)
+
+    return render_template("student/dashboard.html")
 
 if __name__ == "__main__":
     app.run(debug = True)
