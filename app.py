@@ -211,6 +211,7 @@ def student_login_check():
     else :
         return "Invalid email or password"
     
+    
 @app.route("/student_dashboard")
 def student_dashboard():
     if "student_id" not in session:
@@ -232,5 +233,12 @@ def student_profile():
     student = cursor.fetchone()
 
     return render_template("student/profile.html", student=student)
+
+@app.route("/student_logout")
+def student_logout():
+    session.clear()
+    return redirect("/student_login")
+
+
 if __name__ == "__main__":
     app.run(debug = True)

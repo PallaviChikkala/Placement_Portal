@@ -22,6 +22,10 @@ INSERT INTO students(student_id, name, email, password, branch, cgpa, backlogs, 
 VALUES
 (1,"Pallavi", "pallavi123@gmail.com", "pallavi123", "AI", 9.2, 0, "Java, DSA, Full Stack Development", 1, 2028);
 
+INSERT INTO students(student_id, name, email, password, branch, cgpa, backlogs, skills, selected_tier, batch)
+VALUES
+(2,"linda", "linda123@gmail.com", "linda123", "CSE", 9.1, 0, "C, CPP, HTML, CSS, MySQL",2, 2029);
+
 CREATE TABLE faculty(
     faculty_id INT PRIMARY KEY,
     name VARCHAR(50),
