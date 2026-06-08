@@ -75,7 +75,7 @@
             <div class="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom">
                 <div>
                     <h2 class="mb-1 text-primary fw-extrabold" style="font-family: var(--font-heading);">
-                        <span id="greeting-text">Welcome</span>, {{ name }}
+                        <span id="greeting-text">Welcome</span> {{ name }}
                         <img src="/static/DashboardHello.png" style="width: 38px; height: 38px; vertical-align: middle; margin-left: 5px;" alt="Hello">
                     </h2>
                     <p class="text-muted mb-0 small">Class of {{ student.batch or '2028' }} | {{ student.branch or 'Computer Science' }} Department</p>
@@ -342,11 +342,11 @@ window.onload = function() {
         const hr = new Date().getHours();
         let greeting = "Welcome";
         if (hr < 12) {
-            greeting = "Good Morning";
-        } else if (hr < 17) {
-            greeting = "Good Afternoon";
+            greeting = "Good Morning,";
+        } else if (hr < 16) {
+            greeting = "Good Afternoon,";
         } else {
-            greeting = "Good Evening";
+            greeting = "Good Evening,";
         }
         document.getElementById("greeting-text").innerText = greeting;
 
