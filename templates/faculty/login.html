@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NIT Andhra Pradesh — Placement Portal</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 20px;
+  font-family: 'DM Sans', sans-serif;
+  background: linear-gradient(145deg, #fffdf5 0%, #fff8e1 40%, #fef3c0 75%, #fffdf5 100%);
+  position: relative;
+  overflow-x: hidden;
+}
+
+.blob { position: fixed; border-radius: 50%; pointer-events: none; filter: blur(55px); z-index: 0; }
+.blob-1 { width: 280px; height: 280px; background: rgba(230,180,40,0.22); top: -70px; left: -50px; }
+.blob-2 { width: 220px; height: 220px; background: rgba(255,220,80,0.18); bottom: -50px; right: -30px; }
+.blob-3 { width: 160px; height: 160px; background: rgba(255,200,50,0.15); top: 40%; left: 55%; }
+
+/* Global Logo Header */
+.global-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(253, 230, 138, 0.6);
+  padding: 10px 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.02);
+}
+
+.logo-area {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.logo-icon {
+  width: 44px;
+  height: 44px;
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 24px;
+  font-weight: 800;
+  font-family: 'Syne', sans-serif;
+}
+.logo-text h2 {
+  font-family: 'Syne', sans-serif;
+  font-size: 16px;
+  font-weight: 800;
+  color: #78350f;
+  line-height: 1.2;
+}
+.logo-text p {
+  font-size: 9px;
+  letter-spacing: 0.5px;
+  color: #b97f10;
+  text-transform: uppercase;
+}
+.header-right {
+  font-size: 11px;
+  background: rgba(253,230,138,0.3);
+  padding: 6px 14px;
+  border-radius: 30px;
+  color: #b45309;
+}
+
+.main-wrapper {
+  width: 100%;
+  margin-top: 80px;
+  display: flex;
+  justify-content: center;
+}
+
+/* Layouts */
+.layout {
+  position: relative; z-index: 2;
+  display: flex; gap: 18px; align-items: stretch;
+  width: 100%; max-width: 580px;
+}
+.side-cards { display: flex; flex-direction: column; gap: 12px; width: 180px; flex-shrink: 0; }
+.stat-card { border-radius: 14px; padding: 16px 14px; border: 1px solid rgba(255,255,255,0.9); }
+.stat-card.c1 { background: linear-gradient(135deg, #fef9e7, #fde68a); }
+.stat-card .icon-wrap { width: 34px; height: 34px; border-radius: 10px; background: rgba(255,255,255,0.7); display: flex; align-items: center; justify-content: center; margin-bottom: 10px; }
+.stat-num { font-family: 'Syne', sans-serif; font-size: 26px; font-weight: 800; color: #78350f; }
+.trend { position: absolute; top: 12px; right: 12px; font-size: 10px; background: rgba(255,255,255,0.65); padding: 2px 8px; border-radius: 20px; }
+.info-card { background: rgba(255,255,255,0.7); border-radius: 14px; padding: 16px 14px; }
+.info-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; }
+.info-icon { width: 30px; height: 30px; border-radius: 8px; background: rgba(253,230,138,0.5); display: flex; align-items: center; justify-content: center; }
+.login-panel { flex: 1; background: rgba(255,255,255,0.82); border-radius: 16px; padding: 26px 22px; backdrop-filter: blur(16px); }
+.panel-title { font-family: 'Syne', sans-serif; font-size: 24px; font-weight: 800; color: #78350f; }
+.field-row { display: flex; align-items: center; gap: 8px; background: rgba(255,255,255,0.85); border: 1px solid rgba(253,230,138,0.6); border-radius: 9px; padding: 9px 12px; margin-bottom: 12px; }
+.field-row input { background: transparent; border: none; outline: none; width: 100%; }
+.signin-btn { width: 100%; padding: 11px; background: linear-gradient(135deg, #f59e0b, #d97706); color: white; border: none; border-radius: 9px; cursor: pointer; font-weight: 700; }
+.msg { font-size: 12px; text-align: center; margin-top: 10px; }
+
+/* Dashboard */
+.dashboard-container { max-width: 1400px; margin: 0 auto; animation: fadeIn 0.4s; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+.welcome-section { display: flex; justify-content: space-between; flex-wrap: wrap; margin-bottom: 32px; gap: 16px; }
+.welcome-text h1 { font-family: 'Syne', sans-serif; font-size: 28px; font-weight: 800; color: #78350f; }
+.stats-row { display: flex; flex-wrap: wrap; gap: 20px; margin-bottom: 40px; }
+.stat-card-horiz { flex: 1; min-width: 150px; background: rgba(255,255,255,0.75); backdrop-filter: blur(12px); border-radius: 24px; padding: 18px 20px; display: flex; align-items: center; gap: 16px; }
+.stat-icon { width: 52px; height: 52px; background: linear-gradient(135deg, #fef3c7, #ffedd5); border-radius: 28px; display: flex; align-items: center; justify-content: center; font-size: 26px; color: #d97706; }
+.stat-content .stat-number { font-family: 'Syne', sans-serif; font-size: 28px; font-weight: 800; color: #78350f; }
+.action-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 28px; margin-bottom: 48px; }
+.option-card { background: rgba(255,255,255,0.78); backdrop-filter: blur(12px); border-radius: 28px; padding: 28px 24px; cursor: pointer; transition: 0.25s; text-align: center; }
+.option-card:hover { transform: translateY(-6px); background: rgba(255,255,255,0.92); }
+.card-icon { font-size: 42px; color: #d97706; margin-bottom: 20px; display: inline-block; }
+.option-card h3 { font-family: 'Syne', sans-serif; font-size: 26px; font-weight: 800; color: #78350f; }
+.card-meta { margin-top: 16px; padding-top: 12px; border-top: 1px solid rgba(253,230,138,0.5); }
+.logout-btn { background: rgba(255,255,240,0.6); border: 1px solid #fde68a; padding: 6px 14px; border-radius: 40px; cursor: pointer; }
+.edit-action-btn { background: #f59e0b; color: white; border: none; padding: 10px 24px; border-radius: 40px; cursor: pointer; font-weight: 600; display: inline-flex; align-items: center; gap: 8px; margin-bottom: 20px; }
+.edit-action-btn:hover { background: #d97706; }
+
+/* Branch Page */
+.branch-page-container { max-width: 1300px; margin: 0 auto; }
+.page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 32px; flex-wrap: wrap; }
+.page-header h1 { font-family: 'Syne', sans-serif; font-size: 32px; font-weight: 800; color: #78350f; }
+.back-home-btn { background: rgba(255,255,255,0.7); border: 1px solid #fde68a; padding: 8px 20px; border-radius: 40px; cursor: pointer; }
+.branch-grid-page { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 28px; margin: 30px 0; }
+.branch-card-page { background: rgba(255,255,255,0.85); backdrop-filter: blur(12px); border-radius: 32px; padding: 28px 24px; cursor: pointer; transition: 0.3s; }
+.branch-card-page:hover { transform: translateY(-8px); background: rgba(255,255,255,0.96); }
+.branch-icon-page { font-size: 48px; background: linear-gradient(135deg, #fef3c7, #ffedd5); padding: 14px; border-radius: 28px; display: inline-block; margin-bottom: 16px; }
+.branch-card-page h2 { font-family: 'Syne', sans-serif; font-size: 26px; font-weight: 800; color: #78350f; }
+.branch-detail-stats { display: flex; gap: 20px; margin-top: 20px; padding-top: 16px; border-top: 1px solid rgba(253,230,138,0.6); }
+.stat-number-branch { font-family: 'Syne', sans-serif; font-size: 28px; font-weight: 800; color: #d97706; }
+.prev-years-stats { background: rgba(255,255,255,0.7); border-radius: 24px; padding: 20px; margin: 20px 0; }
+.years-grid { display: flex; gap: 20px; flex-wrap: wrap; }
+.year-card { background: rgba(255,255,255,0.8); border-radius: 16px; padding: 12px 18px; text-align: center; }
+.year-card .rate { font-size: 20px; font-weight: 700; color: #78350f; }
+.student-table-panel { background: rgba(255,255,255,0.75); border-radius: 32px; overflow: hidden; margin-top: 28px; }
+.table-header { display: flex; justify-content: space-between; align-items: center; padding: 20px 28px; background: rgba(255,253,240,0.7); border-bottom: 1px solid #fde68a; flex-wrap: wrap; }
+.table-wrapper { overflow-x: auto; padding: 20px 24px; }
+table { width: 100%; border-collapse: collapse; }
+th { text-align: left; padding: 14px 8px; color: #b45309; border-bottom: 1px solid #fde68a; }
+td { padding: 12px 8px; color: #5c3b1a; border-bottom: 1px solid rgba(253,230,138,0.4); }
+.status-badge { background: #eef2e6; padding: 4px 12px; border-radius: 40px; font-size: 11px; display: inline-block; }
+.status-badge.placed { background: #e0f2e9; color: #2b6e4e; }
+
+/* PDF Upload Section */
+.pdf-upload-section { background: rgba(255,255,255,0.7); border-radius: 24px; padding: 20px; margin-bottom: 30px; border: 1px solid rgba(253,230,138,0.6); }
+.pdf-upload-section h3 { font-family: 'Syne', sans-serif; font-size: 18px; color: #78350f; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+.upload-area { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+.upload-area input[type="file"] { padding: 8px; background: white; border-radius: 12px; border: 1px solid #fde68a; }
+.send-pdf-btn { background: #f59e0b; color: white; border: none; padding: 8px 20px; border-radius: 30px; cursor: pointer; font-weight: 600; }
+.pdf-list { margin-top: 16px; }
+.pdf-item { background: rgba(253,230,138,0.3); border-radius: 12px; padding: 10px 16px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+.pdf-name { font-size: 13px; font-weight: 500; color: #78350f; }
+.download-link { color: #d97706; text-decoration: none; font-size: 12px; }
+</style>
+</head>
+<body>
+
+<div class="global-header">
+  <div class="logo-area">
+    <div class="logo-icon">N</div>
+    <div class="logo-text">
+      <h2>National Institute of Technology<br>Andhra Pradesh</h2>
+      <p>Placement & Career Cell</p>
+    </div>
+  </div>
+  <div class="header-right">
+    <i class="ti ti-building"></i> NIT AP · Est. 2015
+  </div>
+</div>
+
+<div class="main-wrapper">
+  <div id="appRoot"></div>
+</div>
+
+<script>
+  // ======================== DATA ========================
+  let studentsData = [
+    { id: "CS101", name: "Arjun Mehta", branch: "CSE", cgpa: "8.9", placementStatus: "Placed", offer: "Amazon 22 LPA" },
+    { id: "CS102", name: "Divya Kaur", branch: "CSE", cgpa: "9.2", placementStatus: "Placed", offer: "Microsoft 28 LPA" },
+    { id: "CS103", name: "Sneha Reddy", branch: "CSE", cgpa: "9.0", placementStatus: "Placed", offer: "Google 32 LPA" },
+    { id: "CS104", name: "Ishita Nair", branch: "CSE", cgpa: "9.4", placementStatus: "Placed", offer: "Adobe 26 LPA" },
+    { id: "CS105", name: "Rahul Sharma", branch: "CSE", cgpa: "8.5", placementStatus: "In Process", offer: "Interviewing" },
+    { id: "EC201", name: "Rohan Sharma", branch: "ECE", cgpa: "8.4", placementStatus: "In Process", offer: "Waiting" },
+    { id: "EC202", name: "Manoj Tiwari", branch: "ECE", cgpa: "8.2", placementStatus: "Pre-placement", offer: "Qualcomm" },
+    { id: "EC203", name: "Priya Singh", branch: "ECE", cgpa: "8.7", placementStatus: "Placed", offer: "Texas Instruments 18 LPA" },
+    { id: "EC204", name: "Ankit Verma", branch: "ECE", cgpa: "8.0", placementStatus: "In Process", offer: "Waiting" },
+    { id: "ME301", name: "Kunal Verma", branch: "Mechanical", cgpa: "7.8", placementStatus: "Internship", offer: "Tata Motors" },
+    { id: "ME302", name: "Saurabh Patil", branch: "Mechanical", cgpa: "8.1", placementStatus: "Placed", offer: "Mahindra 12 LPA" },
+    { id: "ME303", name: "Neha Gupta", branch: "Mechanical", cgpa: "8.3", placementStatus: "Placed", offer: "L&T 14 LPA" },
+    { id: "CH401", name: "Aditya Desai", branch: "Chemical", cgpa: "8.0", placementStatus: "Placed", offer: "Reliance 15 LPA" },
+    { id: "CH402", name: "Meera Joshi", branch: "Chemical", cgpa: "8.6", placementStatus: "In Process", offer: "UPL Ltd" },
+    { id: "CH403", name: "Rajat Sinha", branch: "Chemical", cgpa: "7.9", placementStatus: "Pre-placement", offer: "P&G" },
+    { id: "BT501", name: "Tanvi Bhatia", branch: "Bio-Technology", cgpa: "8.8", placementStatus: "Placed", offer: "Biocon 12 LPA" },
+    { id: "BT502", name: "Ritwik Das", branch: "Bio-Technology", cgpa: "8.2", placementStatus: "In Process", offer: "Syngene" },
+    { id: "BT503", name: "Kritika Menon", branch: "Bio-Technology", cgpa: "9.1", placementStatus: "Placed", offer: "Novozymes 14 LPA" }
+  ];
+
+  let companiesData = [
+    { name: "Amazon", jobDescription: "SDE Intern & FTE roles. Strong DSA and problem-solving. CTC: 22-30 LPA" },
+    { name: "Microsoft", jobDescription: "Software Engineer, AI/ML. Coding & system design. CTC: 28-35 LPA" },
+    { name: "Google", jobDescription: "SWE, Product Manager. Analytical skills. CTC: 32-40 LPA" },
+    { name: "Adobe", jobDescription: "Frontend & Fullstack. Creative mindset. CTC: 26-32 LPA" },
+    { name: "Qualcomm", jobDescription: "Embedded systems & VLSI. Hardware knowledge. CTC: 18-24 LPA" }
+  ];
+
+  // PDF Storage (simulated as Base64)
+  let pdfFiles = []; // { name, dataURL, uploadedAt }
+
+  const previousYearsStats = {
+    "CSE": { "2023": 94, "2024": 96, "2025": 92 },
+    "ECE": { "2023": 86, "2024": 88, "2025": 85 },
+    "Mechanical": { "2023": 78, "2024": 82, "2025": 80 },
+    "Chemical": { "2023": 72, "2024": 75, "2025": 78 },
+    "Bio-Technology": { "2023": 70, "2024": 74, "2025": 76 }
+  };
+
+  const branches = ["CSE", "ECE", "Mechanical", "Chemical", "Bio-Technology"];
+  const totalStudents = studentsData.length;
+  const placedCount = studentsData.filter(s => s.placementStatus === "Placed").length;
+  const placementRate = Math.round((placedCount / totalStudents) * 100);
+  const avgPackage = "18.2 LPA";
+  const activeRecruiters = companiesData.length;
+  
+  const savedEmail = "hasini@gmail.com";
+  const savedPassword = "hasini123";
+
+  let currentView = 'login';
+
+  function getBranchStats() {
+    return branches.map(branch => ({
+      name: branch,
+      total: studentsData.filter(s => s.branch === branch).length,
+      placed: studentsData.filter(s => s.branch === branch && s.placementStatus === "Placed").length
+    }));
+  }
+
+  function showToast(msg) {
+    const toast = document.createElement("div");
+    toast.textContent = msg;
+    toast.style.position = "fixed";
+    toast.style.bottom = "20px";
+    toast.style.left = "50%";
+    toast.style.transform = "translateX(-50%)";
+    toast.style.background = "#78350f";
+    toast.style.color = "white";
+    toast.style.padding = "10px 24px";
+    toast.style.borderRadius = "40px";
+    toast.style.zIndex = "1000";
+    toast.style.fontSize = "13px";
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 2500);
+  }
+
+  // PDF Functions
+  function handlePDFUpload(event) {
+    const file = event.target.files[0];
+    if (file && file.type === 'application/pdf') {
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        pdfFiles.push({
+          name: file.name,
+          dataURL: e.target.result,
+          uploadedAt: new Date().toLocaleString()
+        });
+        showToast(`PDF "${file.name}" uploaded successfully!`);
+        if (currentView === 'editPage') renderEditPage();
+        else if (currentView === 'dashboard') renderDashboard();
+      };
+      reader.readAsDataURL(file);
+    } else {
+      alert("Please upload a valid PDF file.");
+    }
+    event.target.value = '';
+  }
+
+  function sendPDFToStudents(pdfIndex) {
+    const pdf = pdfFiles[pdfIndex];
+    if (pdf) {
+      // Simulate sending to all students (in real app, would be backend)
+      showToast(`📧 "${pdf.name}" has been sent to all ${totalStudents} students!`);
+    }
+  }
+
+  // Edit Page (separate page for editing companies)
+  function renderEditPage() {
+    currentView = 'editPage';
+    let companiesHtml = '';
+    companiesData.forEach((company, idx) => {
+      companiesHtml += `
+        <div class="company-item" style="background:rgba(253,230,138,0.3); border-radius:12px; padding:12px 16px; margin-bottom:10px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+            <strong style="color:#78350f; min-width:120px;">${company.name}</strong>
+            <input type="text" id="editDesc_${idx}" value="${company.jobDescription.replace(/"/g, '&quot;')}" style="flex:2; padding:8px 12px; border:1px solid #fde68a; border-radius:8px;">
+            <button class="save-edit-btn" onclick="saveCompanyEdit(${idx})" style="background:#d97706; color:white; border:none; padding:6px 16px; border-radius:20px; cursor:pointer;">Save</button>
+          </div>
+        </div>
+      `;
+    });
+    
+    let pdfListHtml = '';
+    pdfFiles.forEach((pdf, idx) => {
+      pdfListHtml += `
+        <div class="pdf-item">
+          <span class="pdf-name"><i class="ti ti-file-pdf"></i> ${pdf.name}</span>
+          <div>
+            <a href="${pdf.dataURL}" download="${pdf.name}" class="download-link" style="margin-right:12px;">Download</a>
+            <button onclick="sendPDFToStudents(${idx})" style="background:#f59e0b; border:none; padding:4px 12px; border-radius:20px; color:white; cursor:pointer;">Send to Students</button>
+          </div>
+        </div>
+      `;
+    });
+    
+    document.getElementById("appRoot").innerHTML = `
+      <div class="branch-page-container">
+        <div class="page-header">
+          <h1><i class="ti ti-edit"></i> Edit Job Descriptions & Send PDFs</h1>
+          <button class="back-home-btn" id="backToDashboard"><i class="ti ti-home"></i> Back to Dashboard</button>
+        </div>
+        
+        <div class="edit-panel" style="background:rgba(255,255,255,0.9); border-radius:28px; padding:24px; margin-bottom:30px;">
+          <h3 style="font-family:'Syne',sans-serif; margin-bottom:16px;"><i class="ti ti-building"></i> Companies & Job Descriptions</h3>
+          ${companiesHtml}
+          <div class="add-company" style="display:flex; gap:10px; margin-top:20px; flex-wrap:wrap;">
+            <input type="text" id="newCompanyName" placeholder="New company name" style="flex:1; padding:10px; border-radius:12px; border:1px solid #fde68a;">
+            <input type="text" id="newCompanyDesc" placeholder="Job description" style="flex:2; padding:10px; border-radius:12px; border:1px solid #fde68a;">
+            <button onclick="addNewCompany()" style="background:#f59e0b; border:none; padding:10px 20px; border-radius:30px; cursor:pointer; color:white; font-weight:600;">+ Add Company</button>
+          </div>
+        </div>
+        
+        <div class="pdf-upload-section">
+          <h3><i class="ti ti-upload"></i> Upload PDF to Send to Students</h3>
+          <div class="upload-area">
+            <input type="file" accept=".pdf" id="pdfUploadInput">
+            <button class="send-pdf-btn" onclick="document.getElementById('pdfUploadInput').click()">Choose PDF</button>
+          </div>
+          <div class="pdf-list">
+            <h4 style="margin:16px 0 8px; font-size:14px; color:#78350f;">Uploaded PDFs:</h4>
+            ${pdfListHtml || '<p style="color:#b97f10;">No PDFs uploaded yet.</p>'}
+          </div>
+        </div>
+      </div>
+    `;
+    
+    document.getElementById("pdfUploadInput")?.addEventListener("change", handlePDFUpload);
+    document.getElementById("backToDashboard")?.addEventListener("click", () => renderDashboard());
+  }
+
+  window.saveCompanyEdit = function(idx) {
+    const newDesc = document.getElementById(`editDesc_${idx}`).value;
+    if (companiesData[idx]) {
+      companiesData[idx].jobDescription = newDesc;
+      showToast("Job description updated!");
+      renderEditPage();
+    }
+  };
+
+  window.addNewCompany = function() {
+    const name = document.getElementById("newCompanyName").value.trim();
+    const desc = document.getElementById("newCompanyDesc").value.trim();
+    if (name && desc) {
+      companiesData.push({ name: name, jobDescription: desc });
+      showToast(`Company "${name}" added!`);
+      renderEditPage();
+    } else {
+      alert("Please enter both fields");
+    }
+  };
+
+  function renderLogin() {
+    currentView = 'login';
+    document.getElementById("appRoot").innerHTML = `
+      <div class="layout">
+        <div class="side-cards">
+          <div class="stat-card c1"><div class="trend">+12%</div><div class="icon-wrap"><i class="ti ti-users"></i></div><div class="stat-num">847</div><div class="stat-label">Registered students</div></div>
+          <div class="stat-card c1"><div class="trend">↑ 5</div><div class="icon-wrap"><i class="ti ti-building"></i></div><div class="stat-num">19</div><div class="stat-label">Recruiters onboard</div></div>
+          <div class="info-card"><div class="info-card-title">Quick stats</div><div class="info-row"><div class="info-icon m1"><i class="ti ti-certificate"></i></div><div class="info-text"><div class="i-val">92%</div><div class="i-lbl">Placement rate</div></div></div></div>
+        </div>
+        <div class="login-panel"><div class="portal-tag"><div class="dot-live"></div>Placement Portal</div><div class="panel-title">Faculty Dashboard</div><div class="panel-sub">Sign in to manage your students</div>
+        <label class="field-label">Email</label><div class="field-row"><i class="ti ti-mail"></i><input type="email" id="email" placeholder="faculty@university.edu"></div>
+        <label class="field-label">Password</label><div class="field-row"><i class="ti ti-lock"></i><input type="password" id="password" placeholder="••••••••"></div>
+        <button class="signin-btn" onclick="attemptLogin()">Sign in →</button><div class="msg" id="msg"></div>
+        <hr class="divider"><div class="footer-row"><span>Placement Cell © 2025</span><a href="#">Forgot password?</a></div></div>
+      </div>
+    `;
+    document.getElementById("email")?.addEventListener("keypress", (e) => e.key === "Enter" && attemptLogin());
+    document.getElementById("password")?.addEventListener("keypress", (e) => e.key === "Enter" && attemptLogin());
+  }
+
+  window.attemptLogin = function() {
+    const email = document.getElementById("email")?.value || "";
+    const password = document.getElementById("password")?.value || "";
+    if (email === savedEmail && password === savedPassword) {
+      document.getElementById("msg").style.color = "#16a34a";
+      document.getElementById("msg").textContent = "Login successful! Redirecting…";
+      localStorage.setItem("facultyName", "Hasini");
+      setTimeout(() => renderDashboard(), 600);
+    } else {
+      document.getElementById("msg").style.color = "#dc2626";
+      document.getElementById("msg").textContent = "Invalid email or password.";
+    }
+  };
+
+  function renderDashboard() {
+    currentView = 'dashboard';
+    const facultyDisplay = localStorage.getItem("facultyName") || "Faculty";
+    document.getElementById("appRoot").innerHTML = `
+      <div class="dashboard-container">
+        <div class="welcome-section">
+          <div class="welcome-text"><h1>Hello, ${facultyDisplay} ✨</h1><p>Placement dashboard · manage students & placements</p></div>
+          <div style="display: flex; gap: 12px;"><div class="badge-date"><i class="ti ti-calendar-time"></i> Spring 2025</div><button class="logout-btn" id="logoutBtn"><i class="ti ti-logout"></i> Logout</button></div>
+        </div>
+        <div class="stats-row">
+          <div class="stat-card-horiz"><div class="stat-icon"><i class="ti ti-users"></i></div><div class="stat-content"><div class="stat-number">${totalStudents}</div><div class="stat-label">Total Students</div></div></div>
+          <div class="stat-card-horiz"><div class="stat-icon"><i class="ti ti-medal"></i></div><div class="stat-content"><div class="stat-number">${placementRate}%</div><div class="stat-label">Placement Rate</div></div></div>
+          <div class="stat-card-horiz"><div class="stat-icon"><i class="ti ti-building"></i></div><div class="stat-content"><div class="stat-number">${activeRecruiters}</div><div class="stat-label">Recruiters</div></div></div>
+          <div class="stat-card-horiz"><div class="stat-icon"><i class="ti ti-coin"></i></div><div class="stat-content"><div class="stat-number">${avgPackage}</div><div class="stat-label">Avg Package</div></div></div>
+        </div>
+        
+        <div style="text-align: center; margin-bottom: 28px;">
+          <button class="edit-action-btn" id="openEditPageBtn"><i class="ti ti-edit"></i> Edit Job Descriptions & Upload PDFs</button>
+        </div>
+        
+        <div class="action-grid">
+          <div class="option-card" id="cardStudents"><div class="card-icon"><i class="ti ti-school"></i></div><h3>Students</h3><p>View branch-wise student profiles & placement stats</p><div class="card-meta"><span class="badge-count">${totalStudents} enrolled</span><i class="ti ti-arrow-right"></i></div></div>
+          <div class="option-card" id="cardRecruiters"><div class="card-icon"><i class="ti ti-building-community"></i></div><h3>Recruiters</h3><p>Access recruiter directory & hiring drives</p><div class="card-meta"><span class="badge-count">${activeRecruiters} partners</span><i class="ti ti-arrow-right"></i></div></div>
+        </div>
+      </div>
+    `;
+    document.getElementById("cardStudents")?.addEventListener("click", () => renderStudentBranchPage());
+    document.getElementById("cardRecruiters")?.addEventListener("click", () => renderRecruitersPage());
+    document.getElementById("logoutBtn")?.addEventListener("click", () => { localStorage.removeItem("facultyName"); renderLogin(); });
+    document.getElementById("openEditPageBtn")?.addEventListener("click", () => renderEditPage());
+  }
+
+  function renderStudentBranchPage() {
+    currentView = 'branchPage';
+    const branchStats = getBranchStats();
+    let branchesHtml = `<div class="branch-grid-page">`;
+    branchStats.forEach(b => {
+      branchesHtml += `<div class="branch-card-page" data-branch="${b.name}"><div class="branch-icon-page"><i class="ti ti-building-community"></i></div><h2>${b.name}</h2><div class="branch-detail-stats"><div><div class="stat-number-branch">${b.total}</div><div class="stat-label-branch">Students</div></div><div><div class="stat-number-branch">${b.placed}</div><div class="stat-label-branch">Placed</div></div><div><div class="stat-number-branch">${Math.round((b.placed/b.total)*100)}%</div><div class="stat-label-branch">Rate</div></div></div></div>`;
+    });
+    branchesHtml += `</div>`;
+    document.getElementById("appRoot").innerHTML = `
+      <div class="branch-page-container"><div class="page-header"><h1><i class="ti ti-school"></i> Student Branches</h1><button class="back-home-btn" id="backHomeBtn"><i class="ti ti-home"></i> Dashboard</button></div>${branchesHtml}</div>
+    `;
+    document.querySelectorAll('.branch-card-page').forEach(card => {
+      card.addEventListener('click', () => renderBranchStudentsDetail(card.getAttribute('data-branch')));
+    });
+    document.getElementById("backHomeBtn")?.addEventListener("click", () => renderDashboard());
+  }
+
+  function renderBranchStudentsDetail(branchName) {
+    const branchStudents = studentsData.filter(s => s.branch === branchName);
+    let rows = '';
+    branchStudents.forEach(s => {
+      const statusClass = s.placementStatus === 'Placed' ? 'status-badge placed' : 'status-badge';
+      rows += `<tr><td>${s.id}</td><td>${s.name}</td><td>${s.cgpa}</td><td><span class="${statusClass}">${s.placementStatus}</span></td><td>${s.offer}</td></tr>`;
+    });
+    const total = branchStudents.length;
+    const placed = branchStudents.filter(s => s.placementStatus === "Placed").length;
+    const placedPercent = total ? Math.round((placed/total)*100) : 0;
+    const prevStats = previousYearsStats[branchName] || { "2023": 0, "2024": 0, "2025": 0 };
+    document.getElementById("appRoot").innerHTML = `
+      <div class="branch-page-container"><div class="page-header"><h1><i class="ti ti-users-group"></i> ${branchName} · Details</h1><div><button class="back-home-btn" id="backToBranchList"><i class="ti ti-arrow-back-up"></i> Branches</button><button class="back-home-btn" id="backHomeFromDetail"><i class="ti ti-home"></i> Dashboard</button></div></div>
+      <div class="prev-years-stats"><h3>📊 Previous Years Placement - ${branchName}</h3><div class="years-grid"><div class="year-card"><div class="year">2023</div><div class="rate">${prevStats["2023"]}%</div></div><div class="year-card"><div class="year">2024</div><div class="rate">${prevStats["2024"]}%</div></div><div class="year-card"><div class="year">2025</div><div class="rate">${prevStats["2025"]}%</div></div><div class="year-card"><div class="year">Current</div><div class="rate">${placedPercent}%</div></div></div></div>
+      <div class="student-table-panel"><div class="table-header"><h3>${branchName} students (${total})</h3><div>🏆 Placed: ${placedPercent}% (${placed}/${total})</div></div><div class="table-wrapper"><table><thead><tr><th>ID</th><th>Name</th><th>CGPA</th><th>Status</th><th>Offer</th></tr></thead><tbody>${rows}</tbody></table></div></div></div>
+    `;
+    document.getElementById("backToBranchList")?.addEventListener("click", () => renderStudentBranchPage());
+    document.getElementById("backHomeFromDetail")?.addEventListener("click", () => renderDashboard());
+  }
+
+  function renderRecruitersPage() {
+    currentView = 'recruitersPage';
+    let rows = '';
+    companiesData.forEach(r => { rows += `<tr><td><strong>${r.name}</strong></td><td>${r.jobDescription}</td><td><i class="ti ti-briefcase"></i> Active</td></tr>`; });
+    document.getElementById("appRoot").innerHTML = `
+      <div class="branch-page-container"><div class="page-header"><h1><i class="ti ti-building"></i> Recruiters</h1><button class="back-home-btn" id="backHomeRecruiter"><i class="ti ti-home"></i> Dashboard</button></div>
+      <div class="student-table-panel"><div class="table-wrapper"><table><thead><tr><th>Company</th><th>Job Description</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table></div></div></div>
+    `;
+    document.getElementById("backHomeRecruiter")?.addEventListener("click", () => renderDashboard());
+  }
+
+  function init() {
+    const isLogged = localStorage.getItem("facultyName");
+    if (isLogged) renderDashboard();
+    else renderLogin();
+  }
+  init();
+</script>
+</body>
+</html>
