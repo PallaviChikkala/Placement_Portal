@@ -16,8 +16,12 @@ CREATE TABLE students(
 ALTER TABLE students 
 ADD batch INT;
 
-SELECT * FROM students;
+UPDATE students
+SET selected_tier = NULL
+WHERE email = 'pallavi123@gmail.com';
 
+SELECT * FROM students;
+SELECT student_id, name, email FROM students;
 INSERT INTO students(student_id, name, email, password, branch, cgpa, backlogs, skills, selected_tier, batch)
 VALUES
 (1,"Pallavi", "pallavi123@gmail.com", "pallavi123", "AI", 9.2, 0, "Java, DSA, Full Stack Development", 1, 2028);

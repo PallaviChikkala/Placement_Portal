@@ -33,6 +33,7 @@
             border-top: 1px solid var(--border-color);
             padding-top: 15px;
         }
+    
     </style>
 </head>
 <body>
@@ -80,7 +81,8 @@
                     <p class="text-muted mb-0 small">Explore job openings, evaluate eligibility criteria, and submit applications.</p>
                 </div>
             </div>
-
+            
+            
             <!-- Filters Toolbar -->
             <div class="card glass-card p-3 mb-4 animated-fade-in-up">
                 <div class="row g-3 justify-content-between">
@@ -312,6 +314,12 @@
     <!-- Bootstrap Bundle JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+window.onload = function() {
+    if (localStorage.getItem("theme") === "dark") {
+        document.body.classList.add("dark-mode");
+    }
+}
+
         // Init bootstrap tooltips
         const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
         tooltipTriggerList.map(function (tooltipTriggerEl) {

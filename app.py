@@ -272,11 +272,14 @@ def upload():
     
     if "award" in text.lower() or "achievement" in text.lower():
         genome_score += 5
+
+
+    final_score = int((score + genome_score) / 2)
     
     # Update student's skills and save score if logged in
     if "student_id" in session:
         student_id = session["student_id"]
-        session["resume_score"] = score
+        session["resume_score"] = final_score
         
         # Combine found skills
         found_skills = list(set(found_required + found_optional))
@@ -374,21 +377,14 @@ def upload():
                 </div>
             </div>
 
-            <div class="row mb-4">
-                <div class="col-6">
-                    <div class="score-circle">
-                        <span class="fs-3 fw-bold text-warning">{score}%</span>
-                        <small style="font-size: 0.65rem;" class="text-uppercase text-muted">ATS Score</small>
-                    </div>
-                </div>
-                <div class="col-6">
-                    <div class="score-circle" style="border-color: #06b6d4;">
-                        <span class="fs-3 fw-bold text-info">{genome_score}%</span>
-                        <small style="font-size: 0.65rem;" class="text-uppercase text-muted">Genome</small>
-                    </div>
-                </div>
-            </div>
-
+           <div class="row mb-4">
+    <div class="col-12">
+        <div class="score-circle">
+            <span class="fs-3 fw-bold text-warning">{final_score}%</span>
+            <small style="font-size: 0.65rem;" class="text-uppercase text-muted">Overall Score</small>
+        </div>
+    </div>
+</div>
             <div class="p-3 rounded mb-4" style="background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.2);">
                 <span class="text-warning"><strong>Recommendation:</strong></span>
                 <span class="text-white-50">{suggestion}</span>
@@ -810,4 +806,4 @@ def student_logout():
 
 
 if __name__ == "__main__":
-    app.run(debug = True)
+    app.run(debug = True)
