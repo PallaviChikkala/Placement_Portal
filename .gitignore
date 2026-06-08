@@ -1,6 +1,0 @@
-venv/
-.vscode/
-uploads/
-__pycache__/
-*.pyc
-.env
