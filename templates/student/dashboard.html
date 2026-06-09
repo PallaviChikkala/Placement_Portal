@@ -1,160 +1,738 @@
-<html>
-    <head>
-        <title>Dashboard</title>
-         <link href = "https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
-        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
-            <style>
-    body {
-        margin: 0;
-    }
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Dashboard - NIT AP Placement Portal</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8f9fa;
+        }
 
-    .sidebar {
-        width: 230px;
-        height: 100vh;
-        background-color: #e8e38a;
-        color: rgb(16, 2, 2);
-        padding: 20px;
-    }
+        .sidebar {
+            width: 250px;
+            height: 100vh;
+            background-color: #e8e38a;
+            color: rgb(16, 2, 2);
+            padding: 24px 20px;
+            position: fixed;
+            left: 0;
+            top: 0;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.05);
+            z-index: 100;
+        }
 
-    .sidebar a:hover {
-    background-color: #fcf56e;
-    padding: 8px;
-    cursor: pointer;
-    border-radius: 8px;
-    transition: 0.3s;
-    }
-    .main-content {
-        flex: 1;
-        background-color: #f4f6f9;
-        min-height: 100vh;
-        padding: 25px;
-    }
-    .sidebar a {
-    display: block;
-    color: black;
-    text-decoration: none;
-    margin-bottom: 18px;
-    cursor: pointer;
-    padding: 8px;
-    }
-    .card {
-        border: none;
-        border-radius: 15px;
-    }
+        .sidebar a {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: #2b2a05;
+            text-decoration: none;
+            margin-bottom: 14px;
+            cursor: pointer;
+            padding: 10px 14px;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.25s ease;
+        }
 
-    .card:hover {
-        transform: translateY(-5px);
-        transition: 0.3s;
-    }
-    .table tbody tr:hover {
-    background-color: #fff9d6;
-    }
+        .sidebar a:hover {
+            background-color: rgba(255, 255, 255, 0.45);
+            color: #000;
+            transform: translateX(4px);
+        }
+
+        .sidebar a.active-menu {
+            background-color: #fffbbf;
+            color: #5a5508;
+            box-shadow: 0 4px 12px rgba(90, 85, 8, 0.1);
+        }
+
+        .main-content {
+            margin-left: 250px;
+            min-height: 100vh;
+            padding: 40px;
+            background-color: #fcfcf9;
+        }
+
+        .card {
+            border: none;
+            border-radius: 16px;
+            background: white;
+            box-shadow: 0 4px 20px rgba(90, 85, 8, 0.03);
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 30px rgba(90, 85, 8, 0.06);
+        }
+
+        .table-responsive {
+            border-radius: 16px;
+            overflow: hidden;
+            background: white;
+        }
+
+        .table th {
+            background-color: #fffdf2;
+            color: #5a5508;
+            font-weight: 700;
+            border-bottom: 2px solid #fff5c0;
+            padding: 14px 16px;
+        }
+
+        .table td {
+            padding: 14px 16px;
+            vertical-align: middle;
+            color: #444;
+        }
+
+        .table tbody tr:hover {
+            background-color: #fffdf5;
+        }
+
+        /* Custom Modal Overlay */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.45);
+            backdrop-filter: blur(6px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.25s ease;
+        }
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+        .modal-content-custom {
+            background: white;
+            border-radius: 24px;
+            width: 95%;
+            max-width: 520px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.15);
+            padding: 32px;
+            transform: scale(0.95);
+            transition: transform 0.25s ease;
+            border: 1px solid rgba(232, 227, 138, 0.4);
+        }
+        .modal-overlay.active .modal-content-custom {
+            transform: scale(1);
+        }
+        .modal-header-custom {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 14px;
+        }
+        .modal-header-custom h4 {
+            color: #5a5508;
+            font-weight: 800;
+            margin: 0;
+        }
+        .modal-close-btn {
+            background: none;
+            border: none;
+            font-size: 28px;
+            color: #888;
+            cursor: pointer;
+            line-height: 1;
+        }
+        .modal-close-btn:hover {
+            color: #dc3545;
+        }
+        .form-group-custom {
+            margin-bottom: 20px;
+        }
+        .form-group-custom label {
+            font-size: 13px;
+            font-weight: 700;
+            color: #5a5508;
+            margin-bottom: 8px;
+            display: block;
+        }
+        .form-group-custom input {
+            width: 100%;
+            padding: 12px 16px;
+            border-radius: 10px;
+            border: 1px solid #ced4da;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .form-group-custom input:focus {
+            border-color: #dcd560;
+            box-shadow: 0 0 0 3px rgba(232, 227, 138, 0.3);
+        }
+
+        /* Dynamic Badges and Buttons */
+        .apply-btn {
+            background-color: #e8e38a;
+            color: #2b2a05;
+            border: 1px solid #dcd560;
+            border-radius: 30px;
+            padding: 6px 18px;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .apply-btn:hover {
+            background-color: #fcf56e;
+            transform: translateY(-1px);
+        }
+        .applied-badge {
+            background-color: #e0f2e9;
+            color: #2b6e4e;
+            border: 1px solid #a3e2c1;
+            border-radius: 30px;
+            padding: 6px 18px;
+            font-size: 12px;
+            font-weight: 700;
+            display: inline-block;
+        }
+        .ineligible-badge {
+            background-color: #fee2e2;
+            color: #b91c1c;
+            border: 1px solid #fecaca;
+            border-radius: 30px;
+            padding: 6px 18px;
+            font-size: 12px;
+            font-weight: 700;
+            display: inline-block;
+            cursor: help;
+        }
     </style>
-    </head>
-    <body>
-    <div class="d-flex">
+</head>
+<body>
+
+<div class="d-flex">
+    <!-- Sidebar -->
     <div class="sidebar">
-        <img src="../../static/StudentLogin.png" class="rounded mx-auto d-block mb-3" style="width: 70px;" alt="NIT AP Logo">
-        <h4 style="text-align: center;">NIT AP</h4><hr/>
-        <a><i class="bi bi-speedometer2"></i> Dashboard</a>
+        <div class="text-center mb-4">
+            <div style="width: 60px; height: 60px; background: linear-gradient(135deg, #f59e0b, #d97706); border-radius: 16px; display: inline-flex; align-items: center; justify-content: center; color: white; font-weight: 800; font-size: 28px; margin-bottom: 10px;">N</div>
+            <h5 class="m-0 font-weight-bold" style="color: #5a5508;">Placement Cell</h5>
+            <small style="color: #8b7f1e; letter-spacing: 0.5px; text-transform: uppercase; font-size: 9px; font-weight: 700;">Student Portal</small>
+        </div>
+        <hr style="border-color: rgba(90, 85, 8, 0.15);"/>
+        <a id="menuDashboard" class="active-menu" onclick="switchView('dashboard')"><i class="bi bi-speedometer2"></i> Dashboard</a>
         <a href="/student_profile"><i class="bi bi-person"></i> Profile</a>
-        <a><i class="bi bi-building"></i> Eligible Companies</a>
-        <a><i class="bi bi-file-earmark-text"></i> My Applications</a>
-        <a  href="/student_logout"><i class="bi bi-box-arrow-right"></i> Logout</a>
+        <a id="menuEligible" onclick="switchView('eligible')"><i class="bi bi-building"></i> Eligible Companies</a>
+        <a id="menuApplications" onclick="switchView('applications')"><i class="bi bi-file-earmark-text"></i> My Applications</a>
+        <a href="/student_logout" class="mt-auto"><i class="bi bi-box-arrow-right"></i> Logout</a>
     </div>
-    
 
+    <!-- Main Content Area -->
     <div class="main-content">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-    <h2>Welcome {{ name }}
-        <img src="../../static/DashboardHello.png" style="width: 40px;height: 40px;">
-    </h2>
-    <button class="btn btn-outline-dark">
-        <i class="bi bi-bell"></i>
-    </button>
+        <!-- View 1: Dashboard Home -->
+        <div id="dashboardView">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>Welcome {{ name }} <img src="../../static/DashboardHello.png" style="width: 40px; height: 40px;" alt="Hello"></h2>
+                <button class="btn btn-outline-dark rounded-circle" style="width: 40px; height: 40px; padding: 0;">
+                    <i class="bi bi-bell"></i>
+                </button>
+            </div>
+
+            <!-- Stats Grid -->
+            <div class="row g-4 mt-2">
+                <div class="col-md-3">
+                    <div class="card p-3 shadow-sm">
+                        <small class="text-muted font-weight-bold">Eligible Openings</small>
+                        <h2 class="mt-2 mb-0 font-weight-bold text-dark" id="statEligible">0</h2>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card p-3 shadow-sm">
+                        <small class="text-muted font-weight-bold">Applied Openings</small>
+                        <h2 class="mt-2 mb-0 font-weight-bold text-dark" id="statApplied">0</h2>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card p-3 shadow-sm">
+                        <small class="text-muted font-weight-bold">Active Backlogs</small>
+                        <h2 class="mt-2 mb-0 font-weight-bold text-danger">{{ student.backlogs }}</h2>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card p-3 shadow-sm">
+                        <small class="text-muted font-weight-bold">CGPA Score</small>
+                        <h2 class="mt-2 mb-0 font-weight-bold text-success">{{ student.cgpa }}</h2>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Previews -->
+            <div class="card mt-4 p-4">
+                <h5 class="mb-3 font-weight-bold" style="color:#5a5508;"><i class="bi bi-calendar-event"></i> Active Placement Drives</h5>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle m-0">
+                        <thead>
+                            <tr>
+                                <th>Company</th>
+                                <th>Brief Role Description</th>
+                                <th>CTC Package</th>
+                                <th>Location</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dashboardDrivesBody">
+                            <!-- Dynamic Rows -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card mt-4 p-4">
+                <h5 class="mb-3 font-weight-bold" style="color:#5a5508;"><i class="bi bi-file-earmark-check"></i> Recent Applications</h5>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle m-0">
+                        <thead>
+                            <tr>
+                                <th>Company</th>
+                                <th>Application Type</th>
+                                <th>Submitted Date</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dashboardAppsBody">
+                            <!-- Dynamic Rows -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- View 2: Eligible Companies -->
+        <div id="eligibleView" style="display:none;">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>Eligible Companies Manager</h2>
+                <button class="btn btn-sm btn-outline-secondary" onclick="switchView('dashboard')"><i class="bi bi-arrow-left"></i> Dashboard</button>
+            </div>
+            
+            <div class="card p-4">
+                <h5 class="mb-3 font-weight-bold" style="color:#5a5508;"><i class="bi bi-building"></i> Available Placement Opportunities</h5>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle m-0">
+                        <thead>
+                            <tr>
+                                <th>Company</th>
+                                <th>CTC Package</th>
+                                <th>Criteria Cutoff</th>
+                                <th>Document Requirements</th>
+                                <th>Location</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="eligibleCompaniesBody">
+                            <!-- Dynamic Rows -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- View 3: My Applications Details -->
+        <div id="applicationsView" style="display:none;">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>My Applications Track</h2>
+                <button class="btn btn-sm btn-outline-secondary" onclick="switchView('dashboard')"><i class="bi bi-arrow-left"></i> Dashboard</button>
+            </div>
+            
+            <div class="card p-4">
+                <h5 class="mb-3 font-weight-bold" style="color:#5a5508;"><i class="bi bi-file-earmark-check"></i> Active Applications</h5>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle m-0">
+                        <thead>
+                            <tr>
+                                <th>Company Name</th>
+                                <th>Job ID</th>
+                                <th>Applied Date</th>
+                                <th>Submitted Documents Details</th>
+                                <th>Workflow Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="myApplicationsBody">
+                            <!-- Dynamic Rows -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
     </div>
-
-    <div class="row mt-4 g-4">
-        <div class="col-md-3">
-            <div class="card shadow p-3">
-                <h6>Eligible Companies</h6>
-                <h3>12</h3>
-            </div>
-        </div>
-
-        <div class="col-md-3">
-            <div class="card shadow p-3">
-                <h6>Applied Companies</h6>
-                <h3>4</h3>
-            </div>
-        </div>
-
-        <div class="col-md-3">
-            <div class="card shadow p-3">
-                <h6>Interview Calls</h6>
-                <h3>2</h3>
-            </div>
-        </div>
-
-        <div class="col-md-3">
-            <div class="card shadow p-3">
-                <h6>Resume Score</h6>
-                <h3>82%</h3>
-            </div>
-        </div>
-        </div>
-        <div class="card shadow mt-4 p-3">
-
-    <h5>Upcoming Placement Drives</h5>
-
-    <table class="table table-hover mt-3">
-        <thead>
-            <tr>
-                <th>Company</th>
-                <th>Role</th>
-                <th>Package</th>
-                <th>Drive Date</th>
-                <th>Status</th>
-            </tr>
-        </thead>
-
-        <tbody>
-            <tr>
-                <td>TCS</td>
-                <td>Software Developer</td>
-                <td>7 LPA</td>
-                <td>10 June 2026</td>
-                <td><span class="badge bg-success">Eligible</span></td>
-            </tr>
-        </tbody>
-    </table>
 </div>
 
-<div class="card shadow mt-4 p-3">
-    <h5>Recent Applications</h5>
+<!-- Modal Overlay -->
+<div id="applyModal" class="modal-overlay">
+    <div class="modal-content-custom">
+        <div class="modal-header-custom">
+            <h4 id="applyModalTitle">Apply for Company</h4>
+            <button class="modal-close-btn" onclick="closeApplyModal()">&times;</button>
+        </div>
+        <form id="applyForm" onsubmit="submitApplication(event)">
+            <input type="hidden" id="applyJobId">
+            <div id="extraRequirementsContainer">
+                <!-- Dynamic Inputs -->
+            </div>
+            <div style="display:flex; justify-content:flex-end; gap:12px; border-top:1px solid #dee2e6; padding-top:18px; margin-top:20px;">
+                <button type="button" class="btn btn-outline-secondary btn-sm" onclick="closeApplyModal()">Cancel</button>
+                <button type="submit" class="btn btn-dark btn-sm" style="background:#5a5508; border-color:#5a5508;">Submit Application</button>
+            </div>
+        </form>
+    </div>
+</div>
 
-    <table class="table table-hover mt-3">
-        <thead>
-            <tr>
-                <th>Company</th>
-                <th>Role</th>
-                <th>Applied Date</th>
-                <th>Status</th>
-            </tr>
-        </thead>
+<!-- Toast Notifications Container -->
+<div id="toastContainer" style="position:fixed; bottom:24px; right:24px; display:flex; flex-direction:column; gap:10px; z-index:9999;"></div>
 
-        <tbody>
-            <tr>
-                <td>Infosys</td>
-                <td>System Engineer</td>
-                <td>25 May 2026</td>
-                <td><span class="badge bg-warning text-dark">Pending</span></td>
-            </tr>
-        </tbody>
-    </table>
-</div>
-</div>
-</div>
+<script>
+    // Fetch variables passed from Python Flask
+    const currentStudent = {
+        id: "{{ student.student_id }}",
+        name: "{{ student.name }}",
+        branch: "{{ student.branch }}",
+        cgpa: parseFloat("{{ student.cgpa }}") || 0.0,
+        backlogs: parseInt("{{ student.backlogs }}") || 0
+    };
+
+    // Shared local storage lists
+    let jobsData = [];
+    let studentApplications = [];
+
+    // Custom Dynamic Toast Notification
+    function showToast(msg, type = "success") {
+        const toast = document.createElement("div");
+        let bg = "linear-gradient(135deg, #198754, #157347)";
+        if (type === "error") bg = "linear-gradient(135deg, #dc3545, #bb2d3b)";
+        else if (type === "warning") bg = "linear-gradient(135deg, #ffc107, #ffca2c)";
+        
+        toast.style.background = bg;
+        toast.style.color = "white";
+        toast.style.padding = "12px 24px";
+        toast.style.borderRadius = "12px";
+        toast.style.boxShadow = "0 8px 24px rgba(0,0,0,0.12)";
+        toast.style.fontFamily = "sans-serif";
+        toast.style.fontSize = "14px";
+        toast.style.fontWeight = "600";
+        toast.style.opacity = "0";
+        toast.style.transform = "translateY(20px)";
+        toast.style.transition = "all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)";
+        toast.innerHTML = msg;
+        
+        const container = document.getElementById("toastContainer");
+        container.appendChild(toast);
+        
+        setTimeout(() => {
+            toast.style.opacity = "1";
+            toast.style.transform = "translateY(0)";
+        }, 10);
+        
+        setTimeout(() => {
+            toast.style.opacity = "0";
+            toast.style.transform = "translateY(-20px)";
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
+    }
+
+    // Dynamic Navigation Swap
+    function switchView(viewName) {
+        document.getElementById("dashboardView").style.display = viewName === 'dashboard' ? 'block' : 'none';
+        document.getElementById("eligibleView").style.display = viewName === 'eligible' ? 'block' : 'none';
+        document.getElementById("applicationsView").style.display = viewName === 'applications' ? 'block' : 'none';
+        
+        document.getElementById("menuDashboard").classList.toggle("active-menu", viewName === 'dashboard');
+        document.getElementById("menuEligible").classList.toggle("active-menu", viewName === 'eligible');
+        document.getElementById("menuApplications").classList.toggle("active-menu", viewName === 'applications');
+    }
+
+    // Client Eligibility Check
+    function isStudentEligible(job) {
+        // 1. CGPA Cutoff check
+        const jobCgpa = parseFloat(job.cgpaCutoff) || 0.0;
+        if (currentStudent.cgpa < jobCgpa) {
+            return { eligible: false, reason: `CGPA criteria is ${job.cgpaCutoff} (Your CGPA is ${currentStudent.cgpa})` };
+        }
+        
+        // 2. Active Backlogs cutoff check
+        const maxBacklogs = parseInt(job.activeBacklogs) || 0;
+        if (currentStudent.backlogs > maxBacklogs) {
+            return { eligible: false, reason: `Max backlogs allowed is ${job.activeBacklogs} (You have ${currentStudent.backlogs})` };
+        }
+        
+        // 3. Branch criteria check
+        if (job.branches && job.branches.length > 0) {
+            const isBranchOk = job.branches.some(b => b.toLowerCase() === currentStudent.branch.toLowerCase());
+            if (!isBranchOk) {
+                return { eligible: false, reason: `Eligible branches: ${job.branches.join(", ")} (Your branch is ${currentStudent.branch})` };
+            }
+        }
+        
+        return { eligible: true };
+    }
+
+    // Retrieve data and render UI
+    function renderAll() {
+        // Refresh local storage state
+        jobsData = JSON.parse(localStorage.getItem("jobsData")) || [];
+        studentApplications = JSON.parse(localStorage.getItem("studentApplications")) || [];
+        
+        const myApps = studentApplications.filter(app => app.studentId === currentStudent.id);
+        
+        // Calculate dynamic stats
+        let eligibleCount = 0;
+        jobsData.forEach(job => {
+            const eligibility = isStudentEligible(job);
+            const alreadyApplied = myApps.some(app => app.jobId === job.jobId);
+            if (eligibility.eligible && !alreadyApplied) {
+                eligibleCount++;
+            }
+        });
+        
+        document.getElementById("statEligible").textContent = eligibleCount;
+        document.getElementById("statApplied").textContent = myApps.length;
+        
+        // 1. Render Dashboard: Placement Drives Table
+        let dashboardDrivesHtml = '';
+        if (jobsData.length === 0) {
+            dashboardDrivesHtml = '<tr><td colspan="5" class="text-center text-muted py-4">No jobs registered by faculty yet.</td></tr>';
+        } else {
+            jobsData.forEach(job => {
+                const eligibility = isStudentEligible(job);
+                const alreadyApplied = myApps.some(app => app.jobId === job.jobId);
+                
+                let statusText = '';
+                if (alreadyApplied) {
+                    statusText = '<span class="applied-badge">Applied</span>';
+                } else if (eligibility.eligible) {
+                    statusText = '<span class="badge bg-success">Eligible</span>';
+                } else {
+                    statusText = `<span class="ineligible-badge" title="${eligibility.reason.replace(/"/g, '&quot;')}">Ineligible</span>`;
+                }
+                
+                dashboardDrivesHtml += `
+                    <tr>
+                        <td><strong>${job.company}</strong></td>
+                        <td>${job.description ? (job.description.length > 50 ? job.description.substring(0, 47) + '...' : job.description) : 'Graduate role'}</td>
+                        <td>${job.ctc}</td>
+                        <td>${job.location}</td>
+                        <td>${statusText}</td>
+                    </tr>
+                `;
+            });
+        }
+        document.getElementById("dashboardDrivesBody").innerHTML = dashboardDrivesHtml;
+        
+        // 2. Render Dashboard: Recent Applications Table
+        let dashboardAppsHtml = '';
+        const recentAppsList = myApps.slice(0, 5);
+        if (recentAppsList.length === 0) {
+            dashboardAppsHtml = '<tr><td colspan="4" class="text-center text-muted py-4">No active applications.</td></tr>';
+        } else {
+            recentAppsList.forEach(app => {
+                dashboardAppsHtml += `
+                    <tr>
+                        <td><strong>${app.company}</strong></td>
+                        <td>Online Submission</td>
+                        <td>${app.date}</td>
+                        <td><span class="badge bg-warning text-dark">${app.status}</span></td>
+                    </tr>
+                `;
+            });
+        }
+        document.getElementById("dashboardAppsBody").innerHTML = dashboardAppsHtml;
+        
+        // 3. Render Eligible Companies Tab
+        let eligibleCompaniesHtml = '';
+        if (jobsData.length === 0) {
+            eligibleCompaniesHtml = '<tr><td colspan="6" class="text-center text-muted py-4">No job opportunities registered.</td></tr>';
+        } else {
+            jobsData.forEach(job => {
+                const eligibility = isStudentEligible(job);
+                const alreadyApplied = myApps.some(app => app.jobId === job.jobId);
+                
+                let actionBtnHtml = '';
+                if (alreadyApplied) {
+                    actionBtnHtml = '<span class="applied-badge">Applied</span>';
+                } else if (eligibility.eligible) {
+                    actionBtnHtml = `<button class="apply-btn" onclick="openApplyModal('${job.jobId}')">Apply Now</button>`;
+                } else {
+                    actionBtnHtml = `<span class="ineligible-badge" title="${eligibility.reason.replace(/"/g, '&quot;')}">Ineligible</span>`;
+                }
+                
+                let docsText = [];
+                if (job.extraRequirements?.aadhar) docsText.push("Aadhar");
+                if (job.extraRequirements?.pan) docsText.push("PAN");
+                if (job.extraRequirements?.other) docsText.push(job.extraRequirements.other);
+                const docsDisplay = docsText.length > 0 ? docsText.map(d => `<span class="badge bg-light text-dark border me-1">${d}</span>`).join('') : '<span class="text-muted">Standard only</span>';
+                
+                eligibleCompaniesHtml += `
+                    <tr>
+                        <td><strong>${job.company}</strong></td>
+                        <td>${job.ctc}</td>
+                        <td>${job.cgpaCutoff} CGPA</td>
+                        <td>${docsDisplay}</td>
+                        <td>${job.location}</td>
+                        <td>${actionBtnHtml}</td>
+                    </tr>
+                `;
+            });
+        }
+        document.getElementById("eligibleCompaniesBody").innerHTML = eligibleCompaniesHtml;
+        
+        // 4. Render My Applications Tab
+        let myApplicationsHtml = '';
+        if (myApps.length === 0) {
+            myApplicationsHtml = '<tr><td colspan="5" class="text-center text-muted py-4">You have not submitted any applications yet.</td></tr>';
+        } else {
+            myApps.forEach(app => {
+                let submittedDetailsList = [];
+                if (app.extraDetails) {
+                    if (app.extraDetails.aadhar) submittedDetailsList.push(`Aadhar: ${app.extraDetails.aadhar}`);
+                    if (app.extraDetails.pan) submittedDetailsList.push(`PAN: ${app.extraDetails.pan}`);
+                    if (app.extraDetails.other) submittedDetailsList.push(`${app.extraDetails.otherKey}: ${app.extraDetails.other}`);
+                }
+                const detailsDisplay = submittedDetailsList.length > 0 ? submittedDetailsList.map(d => `<div class="small text-muted">${d}</div>`).join('') : '<span class="text-muted">Standard resume</span>';
+                
+                myApplicationsHtml += `
+                    <tr>
+                        <td><strong>${app.company}</strong></td>
+                        <td>${app.jobId}</td>
+                        <td>${app.date}</td>
+                        <td>${detailsDisplay}</td>
+                        <td><span class="badge bg-warning text-dark">${app.status}</span></td>
+                    </tr>
+                `;
+            });
+        }
+        document.getElementById("myApplicationsBody").innerHTML = myApplicationsHtml;
+    }
+
+    // Modal Control: Open Apply Form
+    window.openApplyModal = function(jobId) {
+        const job = jobsData.find(j => j.jobId === jobId);
+        if (!job) return;
+        
+        document.getElementById("applyJobId").value = jobId;
+        document.getElementById("applyModalTitle").textContent = `Apply for ${job.company}`;
+        
+        const container = document.getElementById("extraRequirementsContainer");
+        container.innerHTML = '';
+        
+        let needsExtra = false;
+        let htmlContent = '';
+        
+        if (job.extraRequirements) {
+            if (job.extraRequirements.aadhar) {
+                needsExtra = true;
+                htmlContent += `
+                    <div class="form-group-custom">
+                        <label for="studentAadhar">Aadhar Card Number (12 digits) *</label>
+                        <input type="text" id="studentAadhar" required placeholder="e.g. 123456789012" maxlength="12" pattern="[0-9]{12}" title="Please enter exactly 12 numeric digits">
+                    </div>
+                `;
+            }
+            if (job.extraRequirements.pan) {
+                needsExtra = true;
+                htmlContent += `
+                    <div class="form-group-custom">
+                        <label for="studentPan">PAN Card Number (10 alphanumeric characters) *</label>
+                        <input type="text" id="studentPan" required placeholder="e.g. ABCDE1234F" maxlength="10" pattern="[a-zA-Z0-9]{10}" title="Please enter exactly 10 alphanumeric characters">
+                    </div>
+                `;
+            }
+            if (job.extraRequirements.other) {
+                needsExtra = true;
+                htmlContent += `
+                    <div class="form-group-custom">
+                        <label for="studentOther">${job.extraRequirements.other} *</label>
+                        <input type="text" id="studentOther" required placeholder="Provide your ${job.extraRequirements.other}">
+                    </div>
+                `;
+            }
+        }
+        
+        if (needsExtra) {
+            container.innerHTML = `<p class="small text-muted mb-3"><i class="bi bi-info-circle text-warning"></i> This company requires additional candidate credentials for submission:</p>` + htmlContent;
+        } else {
+            container.innerHTML = `<p class="text-center py-3 m-0 font-weight-bold" style="color: #5a5508;"><i class="bi bi-question-circle"></i> Are you sure you want to submit your application for ${job.company}?</p>`;
+        }
+        
+        document.getElementById("applyModal").classList.add("active");
+    };
+
+    window.closeApplyModal = function() {
+        document.getElementById("applyModal").classList.remove("active");
+    };
+
+    // Form submission saving to local storage applications tracking list
+    window.submitApplication = function(event) {
+        event.preventDefault();
+        const jobId = document.getElementById("applyJobId").value;
+        const job = jobsData.find(j => j.jobId === jobId);
+        if (!job) return;
+        
+        const extraDetails = {};
+        if (job.extraRequirements) {
+            if (job.extraRequirements.aadhar) {
+                const val = document.getElementById("studentAadhar").value.trim();
+                if (val.length !== 12 || isNaN(val)) {
+                    alert("Please enter a valid 12-digit Aadhar number.");
+                    return;
+                }
+                extraDetails.aadhar = val;
+            }
+            if (job.extraRequirements.pan) {
+                const val = document.getElementById("studentPan").value.trim().toUpperCase();
+                if (val.length !== 10) {
+                    alert("Please enter a valid 10-character PAN number.");
+                    return;
+                }
+                extraDetails.pan = val;
+            }
+            if (job.extraRequirements.other) {
+                const val = document.getElementById("studentOther").value.trim();
+                if (!val) {
+                    alert(`Please fill out: ${job.extraRequirements.other}`);
+                    return;
+                }
+                extraDetails.other = val;
+                extraDetails.otherKey = job.extraRequirements.other;
+            }
+        }
+        
+        const newApp = {
+            applicationId: "APP_" + Date.now(),
+            studentId: currentStudent.id,
+            studentName: currentStudent.name,
+            studentBranch: currentStudent.branch,
+            jobId: job.jobId,
+            company: job.company,
+            date: new Date().toLocaleDateString(),
+            status: "Pending",
+            extraDetails: extraDetails
+        };
+        
+        studentApplications.push(newApp);
+        localStorage.setItem("studentApplications", JSON.stringify(studentApplications));
+        
+        showToast(`Your application for <strong>${job.company}</strong> has been submitted successfully!`, "success");
+        closeApplyModal();
+        renderAll();
+    };
+
+    // Render initially
+    renderAll();
+</script>
 </body>
 </html>

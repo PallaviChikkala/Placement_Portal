@@ -216,10 +216,17 @@ def student_login_check():
 def student_dashboard():
     if "student_id" not in session:
         return redirect("/student_login")
+    
+    # Fetch full student record
+    query = "SELECT * FROM students WHERE student_id = %s"
+    cursor.execute(query, (session["student_id"],))
+    student = cursor.fetchone()
+    
     return render_template(
-    "student/dashboard.html",
-    name=session["student_name"]
-)
+        "student/dashboard.html",
+        name=session["student_name"],
+        student=student
+    )
 @app.route("/student_profile")
 def student_profile():
     if "student_id" not in session:

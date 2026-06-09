@@ -513,6 +513,12 @@ td { padding: 12px 8px; color: #5c3b1a; border-bottom: 1px solid rgba(253,230,13
     jobsData = defaultJobs;
     localStorage.setItem("jobsData", JSON.stringify(jobsData));
   }
+  // Ensure all jobs have extraRequirements initialized
+  jobsData.forEach(job => {
+    if (!job.extraRequirements) {
+      job.extraRequirements = { aadhar: false, pan: false, other: "" };
+    }
+  });
 
   // Alias for compatibility
   let companiesData = jobsData;
@@ -531,11 +537,23 @@ td { padding: 12px 8px; color: #5c3b1a; border-bottom: 1px solid rgba(253,230,13
     branches: true,
     activeBacklogs: true,
     backlogHistory: true,
+    extraRequirements: true,
     tier: true,
     description: true,
     pdfFile: true
   };
   let columnVisibility = JSON.parse(localStorage.getItem("columnVisibility")) || defaultColumnVisibility;
+  if (columnVisibility.extraRequirements === undefined) {
+    columnVisibility.extraRequirements = true;
+  }
+
+  let customColumns = JSON.parse(localStorage.getItem("customColumns")) || [];
+  // Ensure all custom columns have visibility initialized
+  customColumns.forEach(col => {
+    if (columnVisibility[col.id] === undefined) {
+      columnVisibility[col.id] = true;
+    }
+  });
 
   // PDF Storage (simulated as Base64) - retained for backwards compatibility if needed
   let pdfFiles = [];
@@ -683,8 +701,23 @@ td { padding: 12px 8px; color: #5c3b1a; border-bottom: 1px solid rgba(253,230,13
     const isEdit = idx !== null;
     const job = isEdit ? jobsData[idx] : {
       jobId: "", company: "", ctc: "", location: "", bond: "", cgpaCutoff: "",
-      branches: [], activeBacklogs: "0", backlogHistory: "0", tier: "Tier 1", description: ""
+      branches: [], activeBacklogs: "0", backlogHistory: "0", tier: "Tier 1", description: "",
+      extraRequirements: { aadhar: false, pan: false, other: "" }
     };
+    if (job && !job.extraRequirements) {
+      job.extraRequirements = { aadhar: false, pan: false, other: "" };
+    }
+    
+    let customFieldsHtml = '';
+    customColumns.forEach(col => {
+      const val = job[col.id] !== undefined ? job[col.id] : col.defaultValue;
+      customFieldsHtml += `
+        <div class="form-group">
+          <label for="form_${col.id}">${col.label}</label>
+          <input type="text" id="form_${col.id}" value="${val}" placeholder="e.g. ${col.defaultValue}">
+        </div>
+      `;
+    });
     
     const branchesList = ["CSE", "ECE", "Mechanical", "Chemical", "Bio-Technology"];
     let branchCheckboxesHtml = '';
@@ -737,6 +770,7 @@ td { padding: 12px 8px; color: #5c3b1a; border-bottom: 1px solid rgba(253,230,13
               <label for="formBacklogHistory">Max Backlog History Allowed *</label>
               <input type="number" min="0" id="formBacklogHistory" value="${job.backlogHistory}" required placeholder="0">
             </div>
+            ${customFieldsHtml}
             <div class="form-group full-width">
               <label>Select Eligible Branches *</label>
               <div class="branches-checkbox-grid">
@@ -751,6 +785,21 @@ td { padding: 12px 8px; color: #5c3b1a; border-bottom: 1px solid rgba(253,230,13
                 <button type="button" class="tier-btn ${job.tier === 'Tier 3' ? 'active' : ''}" onclick="selectFormTier('Tier 3')">Tier 3</button>
               </div>
               <input type="hidden" id="formTier" value="${job.tier}">
+            </div>
+            <div class="form-group full-width">
+              <label>Candidate Extra Requirements (Optional for Companies)</label>
+              <div style="display: flex; gap: 20px; align-items: center; background: #fffdf9; border: 1px solid rgba(253, 230, 138, 0.8); border-radius: 12px; padding: 14px; flex-wrap: wrap;">
+                <label class="branch-check-label">
+                  <input type="checkbox" id="formReqAadhar" ${job.extraRequirements?.aadhar ? 'checked' : ''}> Require Aadhar Card
+                </label>
+                <label class="branch-check-label">
+                  <input type="checkbox" id="formReqPan" ${job.extraRequirements?.pan ? 'checked' : ''}> Require PAN Card
+                </label>
+              </div>
+            </div>
+            <div class="form-group full-width">
+              <label for="formReqOther">Other Document/Requirement Name</label>
+              <input type="text" id="formReqOther" value="${job.extraRequirements?.other || ''}" placeholder="e.g. Passport, Portfolio URL, NOC">
             </div>
             <div class="form-group full-width">
               <label for="formDescription">Job Description *</label>
@@ -852,11 +901,25 @@ td { padding: 12px 8px; color: #5c3b1a; border-bottom: 1px solid rgba(253,230,13
       }
     }
     
+    const aadhar = document.getElementById("formReqAadhar").checked;
+    const pan = document.getElementById("formReqPan").checked;
+    const other = document.getElementById("formReqOther").value.trim();
+
     const jobData = {
       jobId, company, ctc, location, bond, cgpaCutoff, branches,
       activeBacklogs, backlogHistory, tier, description,
-      pdfFile: tempJobPDF
+      pdfFile: tempJobPDF,
+      extraRequirements: { aadhar, pan, other }
     };
+    
+    customColumns.forEach(col => {
+      const inputEl = document.getElementById(`form_${col.id}`);
+      if (inputEl) {
+        jobData[col.id] = inputEl.value.trim();
+      } else {
+        jobData[col.id] = col.defaultValue;
+      }
+    });
     
     if (editingJobIdx === null) {
       jobsData.push(jobData);
@@ -911,9 +974,202 @@ td { padding: 12px 8px; color: #5c3b1a; border-bottom: 1px solid rgba(253,230,13
     if (modal) modal.classList.remove("active");
   };
 
+  // View Applicants Modal Functions
+  window.viewApplicants = function(idx) {
+    const job = jobsData[idx];
+    let modal = document.getElementById("applicantsModal");
+    if (!modal) {
+      modal = document.createElement("div");
+      modal.id = "applicantsModal";
+      modal.className = "modal-overlay";
+      document.body.appendChild(modal);
+    }
+    
+    // Load applications from localStorage
+    const apps = JSON.parse(localStorage.getItem("studentApplications")) || [];
+    const jobApps = apps.filter(app => app.jobId === job.jobId);
+    
+    let rows = '';
+    if (jobApps.length === 0) {
+      rows = `<tr><td colspan="5" style="text-align:center; padding: 24px; color:#b97f10; font-weight: 500;">No applications received yet.</td></tr>`;
+    } else {
+      jobApps.forEach(app => {
+        let extraDetailsText = [];
+        if (app.extraDetails) {
+          if (app.extraDetails.aadhar) extraDetailsText.push(`<strong>Aadhar:</strong> ${app.extraDetails.aadhar}`);
+          if (app.extraDetails.pan) extraDetailsText.push(`<strong>PAN:</strong> ${app.extraDetails.pan}`);
+          if (app.extraDetails.other) extraDetailsText.push(`<strong>${job.extraRequirements?.other || 'Other'}:</strong> ${app.extraDetails.other}`);
+        }
+        const detailsDisplay = extraDetailsText.length > 0 ? extraDetailsText.join('<br>') : '<span style="color:#a1a1aa;">None required</span>';
+        
+        rows += `
+          <tr>
+            <td><strong>${app.studentId}</strong></td>
+            <td>${app.studentName}</td>
+            <td>${app.studentBranch}</td>
+            <td>${detailsDisplay}</td>
+            <td><span class="status-badge placed" style="background:#eef2e6; color:#2b6e4e;">Submitted</span></td>
+          </tr>
+        `;
+      });
+    }
+    
+    modal.innerHTML = `
+      <div class="modal-content" style="max-width: 700px;">
+        <div class="modal-header">
+          <h2><i class="ti ti-users"></i> Applicants for ${job.company} (${job.jobId})</h2>
+          <button class="modal-close-btn" onclick="closeApplicantsModal()">&times;</button>
+        </div>
+        <div class="table-wrapper" style="max-height: 400px; overflow-y: auto;">
+          <table>
+            <thead>
+              <tr>
+                <th>Student ID</th>
+                <th>Name</th>
+                <th>Branch</th>
+                <th>Submitted Details</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rows}
+            </tbody>
+          </table>
+        </div>
+        <div style="display:flex; justify-content:flex-end; border-top:1px solid #fde68a; padding-top:18px; margin-top:20px;">
+          <button class="edit-action-btn" onclick="closeApplicantsModal()" style="margin-bottom:0;">Close</button>
+        </div>
+      </div>
+    `;
+    setTimeout(() => modal.classList.add("active"), 10);
+  };
+  
+  window.closeApplicantsModal = function() {
+    const modal = document.getElementById("applicantsModal");
+    if (modal) modal.classList.remove("active");
+  };
+
+  // Custom Columns Helpers
+  window.openAddColumnModal = function() {
+    let modal = document.getElementById("columnModal");
+    if (!modal) {
+      modal = document.createElement("div");
+      modal.id = "columnModal";
+      modal.className = "modal-overlay";
+      document.body.appendChild(modal);
+    }
+    
+    modal.innerHTML = `
+      <div class="modal-content" style="max-width: 450px;">
+        <div class="modal-header">
+          <h2><i class="ti ti-column-insert-right"></i> Add Criteria Column</h2>
+          <button class="modal-close-btn" onclick="closeAddColumnModal()">&times;</button>
+        </div>
+        <form id="columnForm" onsubmit="saveCustomColumn(event)">
+          <div class="form-group" style="margin-bottom: 16px;">
+            <label for="colLabel">Criteria / Column Name *</label>
+            <input type="text" id="colLabel" required placeholder="e.g. 12th Percentage, Work Exp">
+          </div>
+          <div class="form-group" style="margin-bottom: 24px;">
+            <label for="colDefaultValue">Default Value for Existing Jobs</label>
+            <input type="text" id="colDefaultValue" placeholder="e.g. 60%, None, 0 years">
+          </div>
+          <div style="display:flex; justify-content:flex-end; gap:12px; border-top:1px solid #fde68a; padding-top:18px;">
+            <button type="button" class="back-home-btn" onclick="closeAddColumnModal()">Cancel</button>
+            <button type="submit" class="edit-action-btn" style="margin-bottom:0;">Add Column</button>
+          </div>
+        </form>
+      </div>
+    `;
+    setTimeout(() => modal.classList.add("active"), 10);
+  };
+  
+  window.closeAddColumnModal = function() {
+    const modal = document.getElementById("columnModal");
+    if (modal) modal.classList.remove("active");
+  };
+  
+  window.saveCustomColumn = function(event) {
+    event.preventDefault();
+    const label = document.getElementById("colLabel").value.trim();
+    const defaultValue = document.getElementById("colDefaultValue").value.trim() || "None";
+    
+    if (!label) return;
+    
+    // Generate a unique ID from label
+    const id = "custom_" + label.toLowerCase().replace(/[^a-z0-9_]/g, "_").replace(/_+/g, "_");
+    
+    // Check if it already exists
+    const isNative = ["jobid", "company", "ctc", "location", "bond", "cgpacutoff", "branches", "activebacklogs", "backloghistory", "tier", "description", "pdffile"].includes(label.toLowerCase().replace(/[^a-z0-9_]/g, ""));
+    const isCustomExists = customColumns.some(col => col.id === id || col.label.toLowerCase() === label.toLowerCase());
+    
+    if (isNative || isCustomExists) {
+      alert(`A column/criteria with name "${label}" already exists.`);
+      return;
+    }
+    
+    // Add to customColumns list
+    const newCol = { id, label, defaultValue };
+    customColumns.push(newCol);
+    localStorage.setItem("customColumns", JSON.stringify(customColumns));
+    
+    // Add to columnVisibility
+    columnVisibility[id] = true;
+    localStorage.setItem("columnVisibility", JSON.stringify(columnVisibility));
+    
+    // Add value to existing jobs
+    jobsData.forEach(job => {
+      if (job[id] === undefined) {
+        job[id] = defaultValue;
+      }
+    });
+    localStorage.setItem("jobsData", JSON.stringify(jobsData));
+    
+    showToast(`Criteria column "${label}" added successfully!`, "success");
+    closeAddColumnModal();
+    renderJobsPage();
+  };
+  
+  window.deleteCustomColumn = function(id) {
+    const colToDelete = customColumns.find(col => col.id === id);
+    if (!colToDelete) return;
+    
+    if (confirm(`Are you sure you want to delete the criteria column "${colToDelete.label}"? This will also remove the data associated with it from all jobs.`)) {
+      // Remove from customColumns list
+      customColumns = customColumns.filter(col => col.id !== id);
+      localStorage.setItem("customColumns", JSON.stringify(customColumns));
+      
+      // Remove from columnVisibility
+      delete columnVisibility[id];
+      localStorage.setItem("columnVisibility", JSON.stringify(columnVisibility));
+      
+      // Remove from all jobs
+      jobsData.forEach(job => {
+        delete job[id];
+      });
+      localStorage.setItem("jobsData", JSON.stringify(jobsData));
+      
+      showToast(`Criteria column "${colToDelete.label}" deleted successfully!`, "warning");
+      renderJobsPage();
+    }
+  };
+
   // JOBS PAGE: Renders the jobs table and controls
   window.renderJobsPage = function() {
     currentView = 'jobsPage';
+    
+    // Construct Custom Dropdown Items
+    let customDropdownItemsHtml = '';
+    customColumns.forEach(col => {
+      customDropdownItemsHtml += `
+        <div class="dropdown-item" style="display: flex; justify-content: space-between; align-items: center; width: 100%; padding: 6px 14px; gap: 8px;">
+          <label style="display: flex; align-items: center; gap: 12px; cursor: pointer; flex: 1; margin: 0; font-size: 13px; color: #5c3b1a; font-weight: 500;">
+            <input type="checkbox" ${columnVisibility[col.id] ? 'checked' : ''} onchange="toggleColumnVisibility('${col.id}')" style="accent-color: #d97706; width: 17px; height: 17px; cursor: pointer;"> ${col.label}
+          </label>
+          <button onclick="event.stopPropagation(); deleteCustomColumn('${col.id}')" style="background:none; border:none; color:#ef4444; cursor:pointer; padding:4px; display: flex; align-items: center; justify-content: center; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.15)'" onmouseout="this.style.transform='scale(1)'" title="Delete Criteria Column"><i class="ti ti-trash" style="font-size: 14px;"></i></button>
+        </div>
+      `;
+    });
     
     // Construct Table Header
     let headerHtml = '<tr>';
@@ -926,6 +1182,10 @@ td { padding: 12px 8px; color: #5c3b1a; border-bottom: 1px solid rgba(253,230,13
     if (columnVisibility.branches) headerHtml += '<th>Branch Eligible</th>';
     if (columnVisibility.activeBacklogs) headerHtml += '<th>Active Backlogs</th>';
     if (columnVisibility.backlogHistory) headerHtml += '<th>Backlog History</th>';
+    customColumns.forEach(col => {
+      if (columnVisibility[col.id]) headerHtml += `<th>${col.label}</th>`;
+    });
+    if (columnVisibility.extraRequirements) headerHtml += '<th>Extra Requirements</th>';
     if (columnVisibility.tier) headerHtml += '<th>Tier</th>';
     if (columnVisibility.description) headerHtml += '<th>Job Description</th>';
     if (columnVisibility.pdfFile) headerHtml += '<th>Attachment</th>';
@@ -948,6 +1208,20 @@ td { padding: 12px 8px; color: #5c3b1a; border-bottom: 1px solid rgba(253,230,13
         if (columnVisibility.branches) rowsHtml += `<td>${job.branches.join(', ')}</td>`;
         if (columnVisibility.activeBacklogs) rowsHtml += `<td>${job.activeBacklogs}</td>`;
         if (columnVisibility.backlogHistory) rowsHtml += `<td>${job.backlogHistory}</td>`;
+        
+        customColumns.forEach(col => {
+          if (columnVisibility[col.id]) {
+            rowsHtml += `<td>${job[col.id] !== undefined ? job[col.id] : col.defaultValue}</td>`;
+          }
+        });
+        
+        if (columnVisibility.extraRequirements) {
+          let reqs = [];
+          if (job.extraRequirements?.aadhar) reqs.push("Aadhar");
+          if (job.extraRequirements?.pan) reqs.push("PAN");
+          if (job.extraRequirements?.other) reqs.push(job.extraRequirements.other);
+          rowsHtml += `<td>${reqs.length > 0 ? reqs.join(', ') : '<span style="color:#a1a1aa; font-size:12px; font-weight:500;">None</span>'}</td>`;
+        }
         
         if (columnVisibility.tier) {
           const tierClass = job.tier.toLowerCase().replace(' ', '-');
@@ -976,6 +1250,7 @@ td { padding: 12px 8px; color: #5c3b1a; border-bottom: 1px solid rgba(253,230,13
         
         rowsHtml += `<td>
           <div style="display:flex; gap:12px; align-items:center; justify-content: center;">
+            <button onclick="viewApplicants(${idx})" style="background:none; border:none; color:#3b82f6; cursor:pointer; font-size:20px; padding:4px;" title="View Applicants"><i class="ti ti-users"></i></button>
             <button onclick="openAddJobModal(${idx})" style="background:none; border:none; color:#d97706; cursor:pointer; font-size:20px; padding:4px;" title="Edit Job Details"><i class="ti ti-edit"></i></button>
             <button onclick="deleteJob(${idx})" style="background:none; border:none; color:#ef4444; cursor:pointer; font-size:20px; padding:4px;" title="Delete Job Opening"><i class="ti ti-trash"></i></button>
           </div>
@@ -992,7 +1267,10 @@ td { padding: 12px 8px; color: #5c3b1a; border-bottom: 1px solid rgba(253,230,13
         </div>
         
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 16px;">
-          <button class="edit-action-btn" onclick="openAddJobModal()" style="margin-bottom:0;"><i class="ti ti-plus"></i> Add Job Opening</button>
+          <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+            <button class="edit-action-btn" onclick="openAddJobModal()" style="margin-bottom:0;"><i class="ti ti-plus"></i> Add Job Opening</button>
+            <button class="back-home-btn" onclick="openAddColumnModal()" style="display: flex; align-items: center; gap: 8px; font-weight: 700; border-color: #d97706; color: #d97706; background: rgba(253, 230, 138, 0.1);"><i class="ti ti-column-insert-right"></i> Add Criteria Column</button>
+          </div>
           
           <div class="dropdown-container">
             <button class="back-home-btn" onclick="toggleColumnDropdown()" style="display: flex; align-items: center; gap: 8px; font-weight: 700;"><i class="ti ti-settings"></i> Edit Columns <i class="ti ti-chevron-down"></i></button>
@@ -1008,8 +1286,11 @@ td { padding: 12px 8px; color: #5c3b1a; border-bottom: 1px solid rgba(253,230,13
               <label class="dropdown-item"><input type="checkbox" ${columnVisibility.activeBacklogs ? 'checked' : ''} onchange="toggleColumnVisibility('activeBacklogs')"> Active Backlogs</label>
               <label class="dropdown-item"><input type="checkbox" ${columnVisibility.backlogHistory ? 'checked' : ''} onchange="toggleColumnVisibility('backlogHistory')"> Backlog History</label>
               <label class="dropdown-item"><input type="checkbox" ${columnVisibility.tier ? 'checked' : ''} onchange="toggleColumnVisibility('tier')"> Tier</label>
+              <label class="dropdown-item"><input type="checkbox" ${columnVisibility.extraRequirements ? 'checked' : ''} onchange="toggleColumnVisibility('extraRequirements')"> Extra Requirements</label>
               <label class="dropdown-item"><input type="checkbox" ${columnVisibility.description ? 'checked' : ''} onchange="toggleColumnVisibility('description')"> Job Description</label>
               <label class="dropdown-item"><input type="checkbox" ${columnVisibility.pdfFile ? 'checked' : ''} onchange="toggleColumnVisibility('pdfFile')"> Attachment</label>
+              ${customDropdownItemsHtml ? `<h5 style="margin: 12px 0 8px; color: #78350f; font-size: 13px; font-family:'Syne',sans-serif; border-bottom: 1px solid #fde68a; padding-bottom: 6px;">Custom Criteria</h5>` : ''}
+              ${customDropdownItemsHtml}
             </div>
           </div>
         </div>
