@@ -573,8 +573,8 @@ td { padding: 12px 8px; color: #5c3b1a; border-bottom: 1px solid rgba(253,230,13
   const avgPackage = "18.2 LPA";
   const activeRecruiters = companiesData.length;
   
-  const savedEmail = "hasini@gmail.com";
-  const savedPassword = "hasini123";
+  const savedEmail = "drshankar@gmail.com";
+  const savedPassword = "drshankar123";
 
   let currentView = 'login';
 
@@ -1426,7 +1426,7 @@ td { padding: 12px 8px; color: #5c3b1a; border-bottom: 1px solid rgba(253,230,13
     if (email === savedEmail && password === savedPassword) {
       document.getElementById("msg").style.color = "#16a34a";
       document.getElementById("msg").textContent = "Login successful! Redirecting…";
-      localStorage.setItem("facultyName", "Hasini");
+      localStorage.setItem("facultyName", "Dr.Shankar");
       setTimeout(() => renderDashboard(), 600);
     } else {
       document.getElementById("msg").style.color = "#dc2626";
@@ -1444,8 +1444,8 @@ td { padding: 12px 8px; color: #5c3b1a; border-bottom: 1px solid rgba(253,230,13
     document.getElementById("appRoot").innerHTML = `
       <div class="dashboard-container">
         <div class="welcome-section">
-          <div class="welcome-text"><h1>Hello, ${facultyDisplay} ✨</h1><p>Placement dashboard · manage students & placements</p></div>
-          <div style="display: flex; gap: 12px;"><div class="badge-date"><i class="ti ti-calendar-time"></i> Spring 2025</div><button class="logout-btn" id="logoutBtn"><i class="ti ti-logout"></i> Logout</button></div>
+          <div class="welcome-text"><h1>Namasthe, ${facultyDisplay} ✨</h1><p>Placement dashboard · manage students & placements</p></div>
+          <div style="display: flex; gap: 12px;"><div class="badge-date"></div><button class="logout-btn" id="logoutBtn"><i class="ti ti-logout"></i> Logout</button></div>
         </div>
         <div class="stats-row">
           <div class="stat-card-horiz"><div class="stat-icon"><i class="ti ti-users"></i></div><div class="stat-content"><div class="stat-number">${totalStudents}</div><div class="stat-label">Total Students</div></div></div>
@@ -1455,8 +1455,7 @@ td { padding: 12px 8px; color: #5c3b1a; border-bottom: 1px solid rgba(253,230,13
         </div>
         
         <div style="text-align: center; margin-bottom: 28px;">
-          <button class="edit-action-btn" id="openJobsPageBtn"><i class="ti ti-briefcase"></i> Manage Job Openings</button>
-        </div>
+
         
         <div class="action-grid" style="grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));">
           <div class="option-card" id="cardStudents"><div class="card-icon"><i class="ti ti-school"></i></div><h3>Students</h3><p>View branch-wise student profiles & placement stats</p><div class="card-meta"><span class="badge-count">${totalStudents} enrolled</span><i class="ti ti-arrow-right"></i></div></div>
