@@ -84,14 +84,21 @@
                     <div class="position-relative">
                         <button class="btn btn-outline-secondary rounded-circle p-2" type="button" id="notifButton" data-bs-toggle="dropdown" aria-expanded="false" style="width: 42px; height: 42px;">
                             <i class="bi bi-bell fs-5"></i>
-                            <span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle"></span>
+                            {% if notifications|length > 0 %}
+                            <span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle" id="notifBadge"></span>
+                            {% endif %}
                         </button>
-                        <ul class="dropdown-menu dropdown-menu-end shadow border-0 mt-2 p-2" aria-labelledby="notifButton" style="width: 300px; border-radius: var(--radius-sm);">
+                        <ul class="dropdown-menu dropdown-menu-end shadow border-0 mt-2 p-2" aria-labelledby="notifButton" style="width: 300px; border-radius: var(--radius-sm);" id="notifList">
                             <li class="p-2 border-bottom"><strong class="small text-primary">Notifications</strong></li>
-                            <li><a class="dropdown-item small py-2 text-wrap" href="/eligible_companies"><i class="bi bi-info-circle text-warning me-2"></i> New drive announced for TCS: Software Developer!</a></li>
-                            <li><a class="dropdown-item small py-2 text-wrap" href="/my_applications"><i class="bi bi-check-circle text-success me-2"></i> Your application for Infosys is under review.</a></li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item text-center small text-muted py-1" href="#">Clear All</a></li>
+                            {% if notifications %}
+                                {% for notif in notifications %}
+                                <li><a class="dropdown-item small py-2 text-wrap" href="{{ notif.link or '#' }}"><i class="bi bi-info-circle text-warning me-2"></i> {{ notif.message }}</a></li>
+                                {% endfor %}
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item text-center small text-muted py-1" href="#" onclick="clearNotifications(event)">Clear All</a></li>
+                            {% else %}
+                                <li><div class="dropdown-item small py-3 text-wrap text-muted text-center">No new notifications</div></li>
+                            {% endif %}
                         </ul>
                     </div>
                     <button class="btn btn-outline-secondary rounded-circle p-2"
@@ -102,9 +109,7 @@
 </button>
                     
                     <a href="/student_profile" class="d-flex align-items-center gap-2 text-decoration-none">
-                        <div class="rounded-circle bg-warning text-dark fw-bold d-flex align-items-center justify-content-center" style="width: 42px; height: 42px; font-size: 1.1rem; border: 2px solid white; box-shadow: 0 4px 10px rgba(0,0,0,0.08);">
-                            {{ name[0] }}
-                        </div>
+                        <img src="{{ student.profile_photo or ('https://ui-avatars.com/api/?name=' ~ name|urlencode ~ '&background=random') }}" class="rounded-circle" style="width: 42px; height: 42px; object-fit: cover; border: 2px solid white; box-shadow: 0 4px 10px rgba(0,0,0,0.08);" alt="Profile">
                     </a>
                 </div>
             </div>
@@ -278,15 +283,17 @@
                         
                         <form action="/upload" method="POST" enctype="multipart/form-data" class="quick-upload-form">
                             <div class="mb-3">
-                                <label class="form-label text-muted small fw-semibold">Target Job Role</label>
-                                <select name="role" class="form-select form-premium w-100" required>
+                                <label class="form-label text-muted small fw-semibold">Target Job Role or JD</label>
+                                <select name="role" class="form-select form-premium w-100 mb-2" required id="roleSelect" onchange="toggleCustomJD()">
                                     <option value="" disabled selected>Select a job profile...</option>
                                     <option>Frontend Developer</option>
                                     <option>Backend Developer</option>
                                     <option>Full Stack Developer</option>
                                     <option>Data Analyst</option>
                                     <option>AI/ML Engineer</option>
+                                    <option value="Custom">Upload Custom Job Description</option>
                                 </select>
+                                <input type="file" name="jd_file" id="customJdFile" class="form-control form-premium d-none mb-3" accept=".txt,.pdf,.docx">
                             </div>
                             
                             <div class="mb-4">
@@ -355,6 +362,33 @@ window.onload = function() {
             const fileName = e.target.files[0]?.name || "Drag & Drop or click to browse";
             document.getElementById("file-name-placeholder").innerHTML = `<strong>${fileName}</strong>`;
         });
+
+        function toggleCustomJD() {
+            const roleSelect = document.getElementById("roleSelect");
+            const customJdFile = document.getElementById("customJdFile");
+            if (roleSelect.value === "Custom") {
+                customJdFile.classList.remove("d-none");
+                customJdFile.required = true;
+            } else {
+                customJdFile.classList.add("d-none");
+                customJdFile.required = false;
+                customJdFile.value = "";
+            }
+        }
+
+        function clearNotifications(e) {
+            e.preventDefault();
+            fetch('/clear_notifications', { method: 'POST' })
+            .then(response => response.json())
+            .then(data => {
+                if(data.success) {
+                    const notifList = document.getElementById('notifList');
+                    notifList.innerHTML = '<li class="p-2 border-bottom"><strong class="small text-primary">Notifications</strong></li><li><div class="dropdown-item small py-3 text-wrap text-muted text-center">No new notifications</div></li>';
+                    const badge = document.getElementById('notifBadge');
+                    if(badge) badge.remove();
+                }
+            });
+        }
     </script>
 </body>
 </html>

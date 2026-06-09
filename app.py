@@ -1,10 +1,15 @@
-from flask import Flask, request, render_template, redirect, session
+from flask import Flask, request, render_template, redirect, session, jsonify
 import pdfplumber
 import docx
 import mysql.connector
+import os
+from werkzeug.utils import secure_filename
+import json
+from datetime import timedelta
 
 app = Flask(__name__)
 app.secret_key = "placement_portal_secret"
+app.permanent_session_lifetime = timedelta(days=30)
 
 #MYSQL Connection
 db = mysql.connector.connect(
@@ -34,6 +39,11 @@ def init_database():
                 batch INT
             )
         """)
+        
+        try:
+            cursor.execute("ALTER TABLE students ADD COLUMN profile_photo VARCHAR(255) DEFAULT '/static/default_avatar.png'")
+        except Exception:
+            pass
         
         # Create faculty table
         cursor.execute("""
@@ -84,6 +94,36 @@ def init_database():
             )
         """)
         
+        # Create notifications table
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS notifications (
+                notif_id INT AUTO_INCREMENT PRIMARY KEY,
+                student_id INT,
+                message TEXT,
+                link TEXT,
+                is_read BOOLEAN DEFAULT FALSE,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        
+        # Create faculty table
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS faculty (
+                faculty_id INT AUTO_INCREMENT PRIMARY KEY,
+                name VARCHAR(50),
+                email VARCHAR(100),
+                password VARCHAR(50)
+            )
+        """)
+        
+        # Insert Dr. Shankar if not exists
+        cursor.execute("SELECT COUNT(*) as count FROM faculty")
+        if cursor.fetchone()["count"] == 0:
+            cursor.execute("""
+                INSERT INTO faculty (name, email, password)
+                VALUES ('Dr. Shankar', 'drshankar@gmail.com', 'shankar123')
+            """)
+        
         # Check and insert default students if missing
         cursor.execute("SELECT COUNT(*) as count FROM students")
         if cursor.fetchone()["count"] == 0:
@@ -112,6 +152,24 @@ def init_database():
 
 init_database()
 
+def notify_students_new_job(company_name, role):
+    """
+    Helper function to notify all students when a new job is posted.
+    Call this function from the faculty job post route.
+    """
+    try:
+        message = f"New Job Posted: {company_name} is hiring for {role}!"
+        link = "/eligible_companies"
+        
+        # Insert a notification for every student in the database
+        cursor.execute("""
+            INSERT INTO notifications (student_id, message, link)
+            SELECT student_id, %s, %s FROM students
+        """, (message, link))
+        db.commit()
+        print(f"Successfully notified students about {company_name} - {role}")
+    except Exception as e:
+        print("Failed to notify students:", e)
 
 @app.route("/")
 def home():
@@ -161,9 +219,10 @@ def home():
 def upload():
     file = request.files["resume"]
     filename = file.filename.lower()
-    role = request.form["role"]
+    role = request.form.get("role")
+    custom_jd = request.form.get("custom_jd", "")
     
-    if role == "Select role":
+    if not role or role == "Select a job profile...":
         return "Please select a role."
     
     text = ""
@@ -209,10 +268,37 @@ def upload():
         "optional": ["Pandas", "NumPy", "Scikit-learn", "TensorFlow", "PyTorch", "Deep Learning"]
     }
     }
+    
+    if role == "Custom":
+        custom_text = ""
+        jd_file = request.files.get("jd_file")
+        if jd_file and jd_file.filename:
+            jd_filename = jd_file.filename.lower()
+            if jd_filename.endswith(".pdf"):
+                with pdfplumber.open(jd_file) as pdf:
+                    for page in pdf.pages:
+                        custom_text += page.extract_text() or ""
+            elif jd_filename.endswith(".docx"):
+                document = docx.Document(jd_file)
+                for para in document.paragraphs:
+                    custom_text += para.text + "\n"
+            elif jd_filename.endswith(".txt"):
+                custom_text = jd_file.read().decode('utf-8', errors='ignore')
+        else:
+            custom_text = custom_jd
 
-    selected_role = role_skills[role]
-    required_skills = selected_role["required"]
-    optional_skills = selected_role["optional"]
+        all_possible_skills = ["Java", "Python", "C++", "C", "HTML", "CSS", "JavaScript", "TypeScript", "React", "Angular", "Vue.js", "Node.js", "Spring Boot", "MySQL", "MongoDB", "PostgreSQL", "SQL", "DBMS", "Machine Learning", "Deep Learning", "TensorFlow", "PyTorch", "Pandas", "NumPy", "Excel", "Power BI", "Tableau", "Git", "Docker", "Kubernetes", "AWS", "Azure", "GCP", "Linux", "Data Structures", "Algorithms", "DSA", "Problem Solving", "Communication"]
+        required_skills = []
+        for s in all_possible_skills:
+            if s.lower() in custom_text.lower():
+                required_skills.append(s)
+        optional_skills = []
+        if not required_skills:
+            required_skills = ["Problem Solving", "Communication"]
+    else:
+        selected_role = role_skills.get(role, {"required": ["Java", "Python", "SQL"], "optional": []})
+        required_skills = selected_role["required"]
+        optional_skills = selected_role["optional"]
 
     found_required = []
     missing_required = []
@@ -407,6 +493,7 @@ def student_login_page():
 def student_login_check():
     email = request.form["email"]
     password = request.form["password"]
+    remember = request.form.get("rememberMe")
 
     query = "SELECT * FROM students WHERE email = %s AND password = %s"
     cursor.execute(query, (email,password))
@@ -415,90 +502,78 @@ def student_login_check():
     if student: 
         session["student_id"] = student["student_id"]
         session["student_name"] = student["name"]
+        if remember:
+            session.permanent = True
         return redirect("/student_dashboard")
     else :
-        return """
-        <script>
-            alert("Invalid email or password!");
-            window.location.href = "/student_login";
-        </script>
-        """
+        return render_template("student/login.html", error="Wrong password or invalid credentials.")
 
-@app.route("/forgot_password")
-def forgot_password_page():
-    return render_template("student/forgot_password.html")
-
-@app.route("/send_verification_code", methods=["POST"])
-def send_verification_code():
-    email = request.form.get("email")
-    
-    # Check if email exists in database
-    cursor.execute("SELECT * FROM students WHERE email = %s", (email,))
-    student = cursor.fetchone()
-    
-    if not student:
-        return """
-        <script>
-            alert("Email not found in student records.");
-            window.location.href = "/forgot_password";
-        </script>
-        """
+@app.route("/google_login_check", methods=["POST"])
+def google_login_check():
+    import base64
+    credential = request.form.get("credential")
+    remember = request.form.get("rememberMe")
+    if not credential:
+        return render_template("student/login.html", error="Google Sign-In failed.")
         
-    import random
-    code = str(random.randint(100000, 999999))
-    session["reset_code"] = code
-    session["reset_email"] = email
-    
-    # Simulating sending email by printing code to python console
-    print("\n" + "="*50)
-    print(f"PASSWORD RESET CODE FOR {email}: {code}")
-    print("="*50 + "\n")
-    
-    # Storing code in a temporary cookie/session variable to display as a simulated alert on verify page
-    session["simulated_sent_code"] = code
-    
-    return redirect("/verify_code")
-
-@app.route("/verify_code")
-def verify_code_page():
-    if "reset_email" not in session:
-        return redirect("/forgot_password")
-    # Retrieve simulated code to show it in an alert box for easy user testing
-    simulated_code = session.get("simulated_sent_code")
-    return render_template("student/verify_code.html", email=session["reset_email"], simulated_code=simulated_code)
-
-@app.route("/reset_password", methods=["POST"])
-def reset_password_action():
-    if "reset_email" not in session:
-        return redirect("/forgot_password")
+    try:
+        parts = credential.split(".")
+        if len(parts) != 3:
+            raise ValueError("Invalid JWT format")
+            
+        payload = parts[1]
+        payload += "=" * ((4 - len(payload) % 4) % 4)
+        decoded_payload = base64.urlsafe_b64decode(payload).decode('utf-8')
+        user_info = json.loads(decoded_payload)
         
-    entered_code = request.form.get("code")
-    new_password = request.form.get("password")
-    email = session["reset_email"]
-    
-    if entered_code != session.get("reset_code"):
-        return """
-        <script>
-            alert("Invalid verification code. Please try again.");
-            window.location.href = "/verify_code";
-        </script>
-        """
+        email = user_info.get("email")
+        if not email:
+            raise ValueError("Email not found in Google token")
+            
+        cursor.execute("SELECT * FROM students WHERE email = %s", (email,))
+        student = cursor.fetchone()
         
-    # Update password in DB
-    cursor.execute("UPDATE students SET password = %s WHERE email = %s", (new_password, email))
-    db.commit()
+        if student:
+            session["student_id"] = student["student_id"]
+            session["student_name"] = student["name"]
+            if remember:
+                session.permanent = True
+            return redirect("/student_dashboard")
+        else:
+            return render_template("student/login.html", error=f"Email {email} is not registered. Please contact faculty.")
+            
+    except Exception as e:
+        print("Google Auth Error:", e)
+        return render_template("student/login.html", error="Google Sign-In verification failed.")
+
+@app.route("/api/faculty_login", methods=["POST"])
+def api_faculty_login():
+    data = request.get_json()
+    email = data.get("email")
+    password = data.get("password")
     
-    # Clear session reset keys
-    session.pop("reset_code", None)
-    session.pop("reset_email", None)
-    session.pop("simulated_sent_code", None)
+    cursor.execute("SELECT * FROM faculty WHERE email = %s AND password = %s", (email, password))
+    faculty = cursor.fetchone()
     
-    return """
-    <script>
-        alert("Password reset successful! Please login with your new password.");
-        window.location.href = "/student_login";
-    </script>
-    """
+    if faculty:
+        session["faculty_id"] = faculty["faculty_id"]
+        session["faculty_name"] = faculty["name"]
+        return jsonify({"success": True, "name": faculty["name"]})
+    else:
+        return jsonify({"success": False, "message": "Invalid email or password"})
+
+@app.route("/clear_notifications", methods=["POST"])
+def clear_notifications():
+    if "student_id" in session:
+        try:
+            student_id = session["student_id"]
+            cursor.execute("UPDATE notifications SET is_read = 1 WHERE student_id = %s", (student_id,))
+            db.commit()
+            return jsonify({"success": True})
+        except Exception as e:
+            print("Error clearing notifications:", e)
+            return jsonify({"success": False, "error": str(e)})
+    return jsonify({"success": False, "error": "Not logged in"})
 
 @app.route("/student_dashboard")
 def student_dashboard():
@@ -580,6 +655,10 @@ def student_dashboard():
     """, (student_id,))
     recent_applications = cursor.fetchall()
     
+    # Fetch unread notifications
+    cursor.execute("SELECT * FROM notifications WHERE student_id = %s AND is_read = FALSE ORDER BY created_at DESC", (student_id,))
+    notifications = cursor.fetchall()
+    
     # Resume score from session or default
     resume_score = session.get("resume_score", 0)
     
@@ -592,7 +671,8 @@ def student_dashboard():
         interview_count=interview_count,
         resume_score=resume_score,
         upcoming_drives=upcoming_drives,
-        recent_applications=recent_applications
+        recent_applications=recent_applications,
+        notifications=notifications
     )
 
 @app.route("/student_profile")
@@ -615,24 +695,19 @@ def update_profile():
         
     student_id = session["student_id"]
     
-    name = request.form.get("name")
-    email = request.form.get("email")
-    branch = request.form.get("branch")
-    cgpa = request.form.get("cgpa")
-    backlogs = request.form.get("backlogs")
-    skills = request.form.get("skills")
-    batch = request.form.get("batch")
-    
-    query = """
-        UPDATE students 
-        SET name = %s, email = %s, branch = %s, cgpa = %s, backlogs = %s, skills = %s, batch = %s
-        WHERE student_id = %s
-    """
-    cursor.execute(query, (name, email, branch, cgpa, backlogs, skills, batch, student_id))
-    db.commit()
-    
-    session["student_name"] = name
-    
+    if "profile_photo" in request.files:
+        photo = request.files["profile_photo"]
+        if photo.filename != "":
+            filename = secure_filename(photo.filename)
+            upload_folder = os.path.join(app.root_path, "static", "uploads")
+            os.makedirs(upload_folder, exist_ok=True)
+            filepath = os.path.join(upload_folder, f"student_{student_id}_{filename}")
+            photo.save(filepath)
+            
+            db_path = f"/static/uploads/student_{student_id}_{filename}"
+            cursor.execute("UPDATE students SET profile_photo = %s WHERE student_id = %s", (db_path, student_id))
+            db.commit()
+            
     return redirect("/student_profile")
 
 @app.route("/eligible_companies")
@@ -710,6 +785,7 @@ def apply_job():
     
     student_id = session["student_id"]
     job_id = request.form.get("job_id")
+    drive_link = request.form.get("drive_link")
     
     # Fetch student and job details to verify tier restrictions in backend
     cursor.execute("SELECT * FROM students WHERE student_id = %s", (student_id,))
@@ -767,7 +843,7 @@ def apply_job():
         INSERT INTO applications (application_id, student_id, job_id, resume_path, status, applied_date) 
         VALUES (%s, %s, %s, %s, %s, CURDATE())
     """
-    cursor.execute(query, (next_id, student_id, job_id, "Uploaded Resume", "Pending"))
+    cursor.execute(query, (next_id, student_id, job_id, drive_link, "Pending"))
     db.commit()
     
     return """
@@ -804,6 +880,115 @@ def student_logout():
     session.clear()
     return redirect("/student_login")
 
+@app.route("/faculty_login")
+def faculty_login_page():
+    return render_template("faculty/login.html")
+
+
+
+@app.route("/faculty_login_check", methods=["POST"])
+def faculty_login_check():
+
+    email = request.form["email"].strip()
+    password = request.form["password"].strip()
+
+    print("Email:", email)
+    print("Password:", password)
+
+    if email == "drshankar@gmail.com" and password == "shankar123":
+        session["faculty_email"] = email
+        session["faculty_name"] = "Dr. Shankar"
+        return redirect("/faculty_dashboard")
+
+    return render_template(
+        "faculty/login.html",
+        error="Invalid email or password"
+    )
+
+@app.route("/faculty_dashboard")
+def faculty_dashboard():
+    if "faculty_email" not in session:
+        return redirect("/faculty_login")
+
+    cursor.execute("SELECT COUNT(*) AS count FROM students")
+    total_students = cursor.fetchone()["count"]
+
+    cursor.execute("SELECT COUNT(*) AS count FROM jobs")
+    active_jobs = cursor.fetchone()["count"]
+
+    placement_rate = 92
+
+    return render_template(
+        "faculty/dashboard.html",
+        name=session["faculty_name"],
+        total_students=total_students,
+        active_jobs=active_jobs,
+        placement_rate=placement_rate
+    )
+
+@app.route("/faculty_logout")
+def faculty_logout():
+    session.pop("faculty_email", None)
+    session.pop("faculty_name", None)
+    return redirect("/faculty_login")
+
+
+@app.route("/faculty/upload_students", methods=["POST"])
+def faculty_upload_students():
+    if "file" not in request.files:
+        return jsonify({"error": "No file uploaded"}), 400
+        
+    file = request.files["file"]
+    filename = file.filename.lower()
+    
+    if filename.endswith(".xlsx"):
+        try:
+            import pandas as pd
+            df = pd.read_excel(file)
+            
+            # Expected columns or similar: student_id, name, email, password, branch, cgpa, backlogs, skills, batch
+            for index, row in df.iterrows():
+                try:
+                    # Try to map columns flexibly
+                    row_dict = {str(k).lower().replace(' ', '_'): v for k, v in row.items()}
+                    
+                    student_id = int(row_dict.get('student_id', 0))
+                    name = str(row_dict.get('name', ''))
+                    email = str(row_dict.get('email', ''))
+                    password = str(row_dict.get('password', email.split('@')[0] if email else 'default123'))
+                    branch = str(row_dict.get('branch', ''))
+                    cgpa = float(row_dict.get('cgpa', 0.0))
+                    backlogs = int(row_dict.get('backlogs', 0))
+                    skills = str(row_dict.get('skills', ''))
+                    batch = int(row_dict.get('batch', 2028))
+                    
+                    if student_id == 0 or not email:
+                        continue
+                        
+                    # Check if exists
+                    cursor.execute("SELECT * FROM students WHERE student_id = %s", (student_id,))
+                    if cursor.fetchone():
+                        # Update
+                        query = """UPDATE students SET name=%s, email=%s, branch=%s, cgpa=%s, backlogs=%s, skills=%s, batch=%s WHERE student_id=%s"""
+                        cursor.execute(query, (name, email, branch, cgpa, backlogs, skills, batch, student_id))
+                    else:
+                        # Insert
+                        query = """INSERT INTO students (student_id, name, email, password, branch, cgpa, backlogs, skills, batch) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)"""
+                        cursor.execute(query, (student_id, name, email, password, branch, cgpa, backlogs, skills, batch))
+                    
+                except Exception as e:
+                    print(f"Error processing row {index}: {e}")
+                    
+            db.commit()
+            return jsonify({"success": True, "message": "Students updated successfully."})
+        except Exception as e:
+            return jsonify({"error": f"Failed to process Excel: {str(e)}"}), 500
+            
+    elif filename.endswith(".pdf"):
+        # Basic PDF extraction warning as structured data is hard from generic PDF
+        return jsonify({"error": "PDF parsing for structured student data requires a specific format. Please use Excel (.xlsx)."}), 400
+    
+    return jsonify({"error": "Invalid file format. Only .xlsx and .pdf allowed."}), 400
 
 if __name__ == "__main__":
     app.run(debug = True)

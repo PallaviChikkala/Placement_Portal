@@ -108,7 +108,7 @@
                 </div>
                 <div>
                     <button type="button" class="btn btn-premium btn-sm" data-bs-toggle="modal" data-bs-target="#editProfileModal">
-                        <i class="bi bi-pencil-square me-2"></i> Edit Profile
+                        <i class="bi bi-camera me-2"></i> Add Profile Photo
                     </button>
                 </div>
             </div>
@@ -120,16 +120,21 @@
                 <div class="profile-cover"></div>
                 
                 <div class="p-4 text-center text-sm-start">
-                    <div class="d-sm-flex align-items-end gap-4 profile-avatar-container">
-                        <img src="/static/StudentLogin.png" class="profile-avatar" alt="Student Profile Picture">
-                        <div class="mb-3">
-<h3 class="mb-1 profile-name fw-bold">
-    {{ student.name }}
-</h3>
-                            <p class="text-muted mb-2"><i class="bi bi-envelope me-2"></i>{{ student.email }}</p>
-                            <span class="badge bg-warning text-dark px-3 py-2 fw-semibold rounded-pill">
-                                {{ student.branch }} Department
-                            </span>
+                    <div class="d-sm-flex justify-content-between align-items-end gap-4 profile-avatar-container pe-4">
+                        <div class="d-sm-flex align-items-end gap-4">
+                            <img src="{{ student.profile_photo or ('https://ui-avatars.com/api/?name=' ~ student.name|urlencode ~ '&background=random&size=128') }}" class="profile-avatar" alt="Student Profile Picture">
+                            <div class="mb-3">
+                                <h3 class="mb-1 profile-name fw-bold">
+                                    {{ student.name }}
+                                </h3>
+                                <p class="text-muted mb-2"><i class="bi bi-envelope me-2"></i>{{ student.email }}</p>
+                                <span class="badge bg-warning text-dark px-3 py-2 fw-semibold rounded-pill">
+                                    {{ student.branch }} Department
+                                </span>
+                            </div>
+                        </div>
+                        <div class="mb-3 text-center d-none d-sm-block">
+                            <img src="/static/StudentLogin.png" class="profile-avatar mb-2" alt="NIT AP Logo" style="margin-top: 0; border-color: var(--primary-light);">
                         </div>
                     </div>
 
@@ -196,54 +201,20 @@
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content modal-content-custom p-4">
                 <div class="modal-header border-0 pb-0">
-                    <h4 class="modal-title fw-bold text-primary" id="editProfileModalLabel" style="font-family: var(--font-heading);">Update Profile</h4>
+                    <h4 class="modal-title fw-bold text-primary" id="editProfileModalLabel" style="font-family: var(--font-heading);">Add/Update Profile Photo</h4>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <form action="/update_profile" method="POST">
-                        <div class="mb-3">
-                            <label class="form-label text-muted small fw-semibold">Full Name</label>
-                            <input type="text" name="name" class="form-control form-premium" value="{{ student.name }}" required>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label text-muted small fw-semibold">Email Address</label>
-                            <input type="email" name="email" class="form-control form-premium" value="{{ student.email }}" required>
-                        </div>
-                        <div class="row g-2 mb-3">
-                            <div class="col-6">
-                                <label class="form-label text-muted small fw-semibold">Branch</label>
-                                <select name="branch" class="form-select form-premium" required>
-                                    <option {% if student.branch == 'AI' %}selected{% endif %}>AI</option>
-                                    <option {% if student.branch == 'CSE' %}selected{% endif %}>CSE</option>
-                                    <option {% if student.branch == 'ECE' %}selected{% endif %}>ECE</option>
-                                    <option {% if student.branch == 'EEE' %}selected{% endif %}>EEE</option>
-                                    <option {% if student.branch == 'MECH' %}selected{% endif %}>MECH</option>
-                                </select>
-                            </div>
-                            <div class="col-6">
-                                <label class="form-label text-muted small fw-semibold">Batch Year</label>
-                                <input type="number" name="batch" class="form-control form-premium" value="{{ student.batch or '2028' }}" required>
-                            </div>
-                        </div>
-                        <div class="row g-2 mb-3">
-                            <div class="col-6">
-                                <label class="form-label text-muted small fw-semibold">Cumulative CGPA</label>
-                                <input type="number" name="cgpa" step="0.01" min="0" max="10" class="form-control form-premium" value="{{ student.cgpa }}" required>
-                            </div>
-                            <div class="col-6">
-                                <label class="form-label text-muted small fw-semibold">Active Backlogs</label>
-                                <input type="number" name="backlogs" min="0" class="form-control form-premium" value="{{ student.backlogs }}" required>
-                            </div>
-                        </div>
+                    <form action="/update_profile" method="POST" enctype="multipart/form-data">
                         <div class="mb-4">
-                            <label class="form-label text-muted small fw-semibold">Skills (Comma Separated)</label>
-                            <textarea name="skills" class="form-control form-premium" rows="3" placeholder="HTML, CSS, JavaScript, Python...">{{ student.skills }}</textarea>
-                            <div class="form-text text-muted" style="font-size: 0.75rem;">Separate multiple skills with commas.</div>
+                            <label class="form-label text-muted small fw-semibold">Profile Photo</label>
+                            <input type="file" name="profile_photo" class="form-control form-premium" accept="image/*" required>
+                            <div class="form-text text-muted" style="font-size: 0.75rem;">Upload a square image for best results (JPG, PNG).</div>
                         </div>
                         
                         <div class="d-flex gap-2 justify-content-end">
                             <button type="button" class="btn btn-secondary rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
-                            <button type="submit" class="btn btn-premium px-4">Save Changes</button>
+                            <button type="submit" class="btn btn-premium px-4">Upload Photo</button>
                         </div>
                     </form>
                 </div>

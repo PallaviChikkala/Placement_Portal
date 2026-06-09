@@ -285,25 +285,53 @@
         </div>
     </div>
 
-    <!-- Confirm Apply Modal -->
+    <!-- Confirm Apply Modal (Multi-step) -->
     <div class="modal fade" id="applyConfirmModal" tabindex="-1" aria-labelledby="applyConfirmModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content modal-content-custom p-4 text-center">
                 <div class="modal-header border-0 pb-0 justify-content-end">
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <div class="modal-body pt-0">
+                <div class="modal-body pt-0" id="apply-step-1">
                     <div class="p-3 bg-warning-subtle rounded-circle d-inline-flex mb-3">
-                        <i class="bi bi-check2-all fs-2 text-warning"></i>
+                        <i class="bi bi-file-text fs-2 text-warning"></i>
                     </div>
-                    <h4 class="fw-bold text-primary mb-2" style="font-family: var(--font-heading);">Submit Application?</h4>
-                    <p class="text-muted small px-2">You are applying for the role of <strong class="text-dark" id="confirm-role-name">Role</strong> at <strong class="text-dark" id="confirm-company-name">Company</strong>. Your active resume profile will be submitted to the recruiter.</p>
-                    
-                    <form action="/apply_job" method="POST" class="mt-4">
+                    <h4 class="fw-bold text-primary mb-2">Step 1 of 3</h4>
+                    <p class="text-muted small px-2">Have you thoroughly read the Job Description for <strong class="text-dark" id="confirm-role-name">Role</strong> at <strong class="text-dark" id="confirm-company-name">Company</strong>?</p>
+                    <div class="d-flex gap-2 justify-content-center mt-4">
+                        <button type="button" class="btn btn-secondary rounded-pill px-4" data-bs-dismiss="modal">No, Cancel</button>
+                        <button type="button" class="btn btn-premium px-4" onclick="nextStep(2)">Yes, I have</button>
+                    </div>
+                </div>
+
+                <div class="modal-body pt-0 d-none" id="apply-step-2">
+                    <div class="p-3 bg-warning-subtle rounded-circle d-inline-flex mb-3">
+                        <i class="bi bi-person-lines-fill fs-2 text-warning"></i>
+                    </div>
+                    <h4 class="fw-bold text-primary mb-2">Step 2 of 3</h4>
+                    <p class="text-muted small px-2">Is your resume updated with your latest skills and projects?</p>
+                    <div class="d-flex gap-2 justify-content-center mt-4">
+                        <button type="button" class="btn btn-secondary rounded-pill px-4" data-bs-dismiss="modal">No, let me update</button>
+                        <button type="button" class="btn btn-premium px-4" onclick="nextStep(3)">Yes, it is updated</button>
+                    </div>
+                </div>
+
+                <div class="modal-body pt-0 d-none" id="apply-step-3">
+                    <div class="p-3 bg-warning-subtle rounded-circle d-inline-flex mb-3">
+                        <i class="bi bi-shield-check fs-2 text-warning"></i>
+                    </div>
+                    <h4 class="fw-bold text-primary mb-2">Step 3 of 3</h4>
+                    <p class="text-muted small px-2">I confirm my compliance with the Training & Placement guidelines.</p>
+                    <form action="/apply_job" method="POST" class="mt-3 text-start">
                         <input type="hidden" name="job_id" id="confirm-job-id">
-                        <div class="d-flex gap-2 justify-content-center">
+                        <div class="mb-3">
+                            <label class="form-label text-muted small fw-semibold">Google Drive Link (Resume)</label>
+                            <input type="url" name="drive_link" class="form-control form-premium" placeholder="https://drive.google.com/..." required>
+                            <div class="form-text text-muted" style="font-size: 0.75rem;">Make sure access is set to "Anyone with the link".</div>
+                        </div>
+                        <div class="d-flex gap-2 justify-content-center mt-4">
                             <button type="button" class="btn btn-secondary rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
-                            <button type="submit" class="btn btn-premium px-4">Submit</button>
+                            <button type="submit" class="btn btn-premium px-4">Submit Application</button>
                         </div>
                     </form>
                 </div>
@@ -381,11 +409,20 @@ window.onload = function() {
             myModal.show();
         }
 
+        function nextStep(stepNumber) {
+            document.getElementById("apply-step-1").classList.add("d-none");
+            document.getElementById("apply-step-2").classList.add("d-none");
+            document.getElementById("apply-step-3").classList.add("d-none");
+            document.getElementById("apply-step-" + stepNumber).classList.remove("d-none");
+        }
+
         // Show confirmation modal
         function confirmApplication(jobId, company, role) {
             document.getElementById("confirm-job-id").value = jobId;
             document.getElementById("confirm-company-name").innerText = company;
             document.getElementById("confirm-role-name").innerText = role;
+            
+            nextStep(1); // Reset to step 1
             
             const confirmModal = new bootstrap.Modal(document.getElementById('applyConfirmModal'));
             confirmModal.show();

@@ -37,6 +37,10 @@ CREATE TABLE faculty(
     password VARCHAR(50)
     );
     
+INSERT INTO faculty (faculty_id, name, email, password)
+VALUES (1, 'Dr. Shankar', 'drshankar@gmail.com', 'shankar123');
+
+SELECT * FROM faculty;
 
 CREATE TABLE recruiters(
 	recruiter_id INT PRIMARY KEY,
