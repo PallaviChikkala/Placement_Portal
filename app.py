@@ -164,11 +164,11 @@ def init_database():
         cursor.execute("SELECT COUNT(*) as count FROM jobs")
         if cursor.fetchone()["count"] == 0:
             cursor.execute("""
-                INSERT INTO jobs (job_id, company_name, role, package_lpa, tier, eligible_branches, min_cgpa, max_backlogs, required_skills, job_description, deadline)
+                INSERT INTO jobs (job_id, company_name, role, ctc, location, bond, cgpa_cutoff, active_backlogs, branches, tier, description)
                 VALUES 
-                (1, 'TCS', 'Software Developer', 7.00, 'Tier 2', 'AI, CSE, ECE, EEE', 7.00, 0, 'Java, HTML, CSS, SQL', 'Join the TCS digital developer team to work on next-generation cloud architectures.', '2026-06-10'),
-                (2, 'Infosys', 'Specialist Programmer', 20.00, 'Tier 1', 'CSE, IT', 9.50, 0, 'Java, DSA, Web Development', 'High performance developer role working on core software products and algorithmic scaling.', '2026-06-15'),
-                (3, 'Wipro', 'Full Stack Developer', 8.00, 'Tier 2', 'AI, CSE, ECE', 6.50, 1, 'HTML, CSS, JavaScript, React', 'Design and implement web interfaces and microservice endpoints in our digital unit.', '2026-06-18')
+                ('1', 'TCS', 'Software Developer', '7.00 LPA', 'Pune', 'None', 7.00, 0, 'AI, CSE, ECE, EEE', 'Tier 2', 'Join the TCS digital developer team to work on next-generation cloud architectures.'),
+                ('2', 'Infosys', 'Specialist Programmer', '20.00 LPA', 'Bangalore', 'None', 9.50, 0, 'CSE, IT', 'Tier 1', 'High performance developer role working on core software products and algorithmic scaling.'),
+                ('3', 'Wipro', 'Full Stack Developer', '8.00 LPA', 'Hyderabad', 'None', 6.50, 1, 'AI, CSE, ECE', 'Tier 2', 'Design and implement web interfaces and microservice endpoints in our digital unit.')
             """)
             
         db.commit()
@@ -234,8 +234,19 @@ def home():
             <option>Network Engineer</option>
             <option>Software Test Engineer</option>
             <option>UI/UX Designer</option>
+            <option>Resume Analyzer</option>
+            <option>Custom</option>
         </select>
-
+            <div>
+                <label>Upload JD File (Optional):</label>
+                <input type = "file" name = "jd_file" />
+            </div>
+            <div>
+                <label>Or Paste Custom JD Text:</label><br>
+                <textarea name="custom_jd" rows="5" cols="40" placeholder="Paste custom Job Description here..."></textarea>
+            </div>
+            <br>
+            <label>Upload Student Resume (PDF/DOCX):</label>
             <input type = "file" name = "resume" placeholder = "Upload resume"/><br>
             <button type = "submit">Analyze resume</button>
         </form>
@@ -243,8 +254,8 @@ def home():
 
 @app.route("/upload",methods = ["POST"])
 def upload():
-    file = request.files["resume"]
-    filename = file.filename.lower()
+    file = request.files.get("resume")
+    filename = file.filename.lower() if file else ""
     role = request.form.get("role")
     custom_jd = request.form.get("custom_jd", "")
     
@@ -292,6 +303,11 @@ def upload():
     "AI/ML Engineer": {
         "required": ["Python", "Machine Learning", "Mathematics"],
         "optional": ["Pandas", "NumPy", "Scikit-learn", "TensorFlow", "PyTorch", "Deep Learning"]
+    },
+
+    "Resume Analyzer": {
+        "required": ["Python", "Natural Language Processing", "Regex", "Text Parsing"],
+        "optional": ["Machine Learning", "Spacy", "NLTK", "Flask"]
     }
     }
     
@@ -623,32 +639,27 @@ def student_dashboard():
     upcoming_drives = []
     
     for job in all_jobs:
-        # Determine job tier dynamically from package
-        package = float(job['package_lpa']) if job['package_lpa'] is not None else 0
-        if package > 15:
-            job_tier_num = 1
-        elif package >= 7:
-            job_tier_num = 2
-        else:
-            job_tier_num = 3
+        # Determine job tier
+        job_tier_str = str(job.get('tier', 'Tier 3')).lower()
+        job_tier_num = 1 if '1' in job_tier_str else (2 if '2' in job_tier_str else 3)
 
         # Eligibility logic
-        eligible_branches = [b.strip().lower() for b in job['eligible_branches'].split(',')] if job['eligible_branches'] else []
+        eligible_branches = [b.strip().lower() for b in job.get('branches', '').split(',')] if job.get('branches') else []
         student_branch = student['branch'].strip().lower() if student['branch'] else ""
         
-        cgpa_ok = student['cgpa'] >= float(job['min_cgpa']) if student['cgpa'] is not None and job['min_cgpa'] is not None else True
-        backlogs_ok = student['backlogs'] <= int(job['max_backlogs']) if student['backlogs'] is not None and job['max_backlogs'] is not None else True
+        cgpa_ok = student['cgpa'] >= float(job.get('cgpa_cutoff') or 0) if student['cgpa'] is not None else True
+        backlogs_ok = student['backlogs'] <= int(job.get('active_backlogs') or 0) if student['backlogs'] is not None else True
         branch_ok = (student_branch in eligible_branches) or (not eligible_branches)
         
-        # Tier check
+        # Tier check: 
+        # Tier 1 selected -> cannot apply to Tier 2, Tier 3.
+        # Tier 2 selected -> cannot apply to Tier 3.
         student_selected_tier = student.get('selected_tier')
         tier_ok = True
         if student_selected_tier is not None and student_selected_tier > 0:
             if student_selected_tier == 1 and job_tier_num in [2, 3]:
                 tier_ok = False
-            elif student_selected_tier == 2 and job_tier_num in [2, 3]:
-                tier_ok = False
-            elif student_selected_tier == 3 and job_tier_num == 3:
+            elif student_selected_tier == 2 and job_tier_num == 3:
                 tier_ok = False
 
         is_eligible = cgpa_ok and backlogs_ok and branch_ok and tier_ok
@@ -658,6 +669,14 @@ def student_dashboard():
         # Attach eligibility flag to job for display
         job_copy = dict(job)
         job_copy['is_eligible'] = is_eligible
+        
+        # Also fix mapping for display
+        job_copy['package_lpa'] = job.get('ctc') or ''
+        job_copy['min_cgpa'] = job.get('cgpa_cutoff') or 0
+        job_copy['max_backlogs'] = job.get('active_backlogs') or 0
+        job_copy['eligible_branches'] = job.get('branches') or ''
+        job_copy['deadline'] = 'Ongoing' # Placeholder if not in DB
+        
         upcoming_drives.append(job_copy)
     
     # Sort upcoming drives by deadline
@@ -673,7 +692,7 @@ def student_dashboard():
     
     # Fetch recent applications
     cursor.execute("""
-        SELECT a.applied_date, a.status, j.company_name, j.role, j.package_lpa 
+        SELECT a.applied_date, a.status, j.company_name, j.role, j.ctc AS package_lpa 
         FROM applications a 
         JOIN jobs j ON a.job_id = j.job_id 
         WHERE a.student_id = %s 
@@ -751,19 +770,14 @@ def eligible_companies():
     # Check eligibility for each job
     jobs_list = []
     for job in all_jobs:
-        package = float(job['package_lpa']) if job['package_lpa'] is not None else 0
-        if package > 15:
-            job_tier_num = 1
-        elif package >= 7:
-            job_tier_num = 2
-        else:
-            job_tier_num = 3
+        job_tier_str = str(job.get('tier', 'Tier 3')).lower()
+        job_tier_num = 1 if '1' in job_tier_str else (2 if '2' in job_tier_str else 3)
 
-        eligible_branches = [b.strip().lower() for b in job['eligible_branches'].split(',')] if job['eligible_branches'] else []
+        eligible_branches = [b.strip().lower() for b in job.get('branches', '').split(',')] if job.get('branches') else []
         student_branch = student['branch'].strip().lower() if student['branch'] else ""
         
-        cgpa_ok = student['cgpa'] >= float(job['min_cgpa']) if student['cgpa'] is not None and job['min_cgpa'] is not None else True
-        backlogs_ok = student['backlogs'] <= int(job['max_backlogs']) if student['backlogs'] is not None and job['max_backlogs'] is not None else True
+        cgpa_ok = student['cgpa'] >= float(job.get('cgpa_cutoff') or 0) if student['cgpa'] is not None else True
+        backlogs_ok = student['backlogs'] <= int(job.get('active_backlogs') or 0) if student['backlogs'] is not None else True
         branch_ok = (student_branch in eligible_branches) or (not eligible_branches)
         
         # Tier check
@@ -772,18 +786,16 @@ def eligible_companies():
         if student_selected_tier is not None and student_selected_tier > 0:
             if student_selected_tier == 1 and job_tier_num in [2, 3]:
                 tier_ok = False
-            elif student_selected_tier == 2 and job_tier_num in [2, 3]:
-                tier_ok = False
-            elif student_selected_tier == 3 and job_tier_num == 3:
+            elif student_selected_tier == 2 and job_tier_num == 3:
                 tier_ok = False
 
         reasons = []
         if not cgpa_ok:
-            reasons.append(f"CGPA below requirement ({student['cgpa']} < {job['min_cgpa']})")
+            reasons.append(f"CGPA below requirement ({student['cgpa']} < {job.get('cgpa_cutoff')})")
         if not backlogs_ok:
-            reasons.append(f"Backlogs exceed maximum allowed ({student['backlogs']} > {job['max_backlogs']})")
+            reasons.append(f"Backlogs exceed maximum allowed ({student['backlogs']} > {job.get('active_backlogs')})")
         if not branch_ok:
-            reasons.append(f"Branch not eligible (Your branch: {student['branch'].upper()}, Eligible: {job['eligible_branches']})")
+            reasons.append(f"Branch not eligible (Your branch: {student['branch'].upper()}, Eligible: {job.get('branches')})")
         if not tier_ok:
             reasons.append(f"Tier Policy restriction: Selected in Tier {student_selected_tier}, cannot apply for Tier {job_tier_num}")
             
@@ -800,6 +812,13 @@ def eligible_companies():
         job_item['reasons'] = reasons
         job_item['applied'] = applied
         job_item['application_status'] = status
+        
+        job_item['package_lpa'] = job.get('ctc') or ''
+        job_item['min_cgpa'] = job.get('cgpa_cutoff') or 0
+        job_item['max_backlogs'] = job.get('active_backlogs') or 0
+        job_item['eligible_branches'] = job.get('branches') or ''
+        job_item['deadline'] = 'Ongoing' # Placeholder if not in DB
+
         jobs_list.append(job_item)
         
     return render_template("student/eligible_companies.html", jobs=jobs_list, student=student)
@@ -823,22 +842,15 @@ def apply_job():
         return "Invalid request."
         
     # Tier calculation
-    package = float(job['package_lpa']) if job['package_lpa'] is not None else 0
-    if package > 15:
-        job_tier_num = 1
-    elif package >= 7:
-        job_tier_num = 2
-    else:
-        job_tier_num = 3
+    job_tier_str = str(job.get('tier', 'Tier 3')).lower()
+    job_tier_num = 1 if '1' in job_tier_str else (2 if '2' in job_tier_str else 3)
         
     student_selected_tier = student.get('selected_tier')
     tier_ok = True
     if student_selected_tier is not None and student_selected_tier > 0:
         if student_selected_tier == 1 and job_tier_num in [2, 3]:
             tier_ok = False
-        elif student_selected_tier == 2 and job_tier_num in [2, 3]:
-            tier_ok = False
-        elif student_selected_tier == 3 and job_tier_num == 3:
+        elif student_selected_tier == 2 and job_tier_num == 3:
             tier_ok = False
             
     if not tier_ok:
@@ -890,7 +902,7 @@ def my_applications():
     
     query = """
         SELECT a.applied_date, a.status, a.resume_path, 
-               j.company_name, j.role, j.package_lpa, j.tier, j.deadline
+               j.company_name, j.role, j.ctc as package_lpa, j.tier, 'Ongoing' as deadline
         FROM applications a
         JOIN jobs j ON a.job_id = j.job_id
         WHERE a.student_id = %s
@@ -970,6 +982,24 @@ def faculty_dashboard():
     cursor.execute("SELECT COUNT(*) AS count FROM jobs")
     active_jobs = cursor.fetchone()["count"]
 
+    # Calculate average LPA
+    cursor.execute("SELECT ctc FROM jobs WHERE ctc IS NOT NULL AND ctc != ''")
+    ctc_rows = cursor.fetchall()
+    total_lpa = 0
+    count_lpa = 0
+    for r in ctc_rows:
+        import re
+        m = re.search(r'([\d.]+)', str(r['ctc']))
+        if m:
+            total_lpa += float(m.group(1))
+            count_lpa += 1
+    avg_lpa = round(total_lpa / count_lpa, 1) if count_lpa > 0 else 0.0
+
+    # Calculate placement rate
+    cursor.execute("SELECT COUNT(DISTINCT student_id) as placed FROM applications WHERE status = 'Selected'")
+    placed_students = cursor.fetchone()["placed"]
+    placement_rate = round((placed_students / total_students * 100), 1) if total_students > 0 else 0.0
+
     # Check if master sheet file exists (pdf or xlsx)
     upload_dir = os.path.join(app.static_folder, "uploads")
     master_sheet_status = "Empty"
@@ -982,7 +1012,8 @@ def faculty_dashboard():
         name=session["faculty_name"],
         total_students=total_students,
         active_jobs=active_jobs,
-        placement_rate=92,
+        placement_rate=placement_rate,
+        avg_lpa=avg_lpa,
         master_sheet_status=master_sheet_status
     )
 
@@ -1179,6 +1210,22 @@ def faculty_job_delete(job_db_id):
     if redir: return jsonify({"success": False, "error": "Not logged in"})
     try:
         cursor.execute("DELETE FROM jobs WHERE job_id=%s", (job_db_id,))
+        db.commit()
+        return jsonify({"success": True})
+    except Exception as e:
+        db.rollback()
+        return jsonify({"success": False, "error": str(e)})
+
+
+@app.route("/faculty/jobs/delete_column/<string:col_name>", methods=["POST"])
+def faculty_job_delete_column(col_name):
+    redir = faculty_required()
+    if redir: return jsonify({"success": False, "error": "Not logged in"})
+    try:
+        import re
+        if not re.match(r'^custom_[a-zA-Z0-9_]+$', col_name):
+            raise Exception("Invalid column name")
+        cursor.execute(f"ALTER TABLE jobs DROP COLUMN {col_name}")
         db.commit()
         return jsonify({"success": True})
     except Exception as e:

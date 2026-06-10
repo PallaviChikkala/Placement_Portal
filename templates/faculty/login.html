@@ -67,6 +67,16 @@ body {
 .divider { border: none; border-top: 1px solid rgba(253,230,138,0.5); margin: 16px 0 10px; }
 .footer-row { display: flex; justify-content: space-between; font-size: 11px; color: #b97f10; }
 .footer-row a { color: #d97706; text-decoration: none; font-weight: 600; }
+
+/* Hide default browser password eye icons */
+input[type="password"]::-ms-reveal,
+input[type="password"]::-ms-clear {
+    display: none;
+}
+input[type="password"]::-webkit-credentials-auto-fill-button,
+input[type="password"]::-webkit-textfield-decoration-container {
+    display: none !important;
+}
 </style>
 </head>
 <body>
@@ -130,7 +140,10 @@ body {
         <label class="field-label">Password</label>
         <div class="field-row">
           <i class="ti ti-lock"></i>
-          <input type="password" name="password" placeholder="••••••••" required>
+          <input type="password" name="password" id="password" placeholder="••••••••" required>
+          <button type="button" onclick="togglePassword()" style="background:none; border:none; cursor:pointer; color:#d97706; padding:0 4px; display:flex; align-items:center;">
+            <i id="eyeIcon" class="ti ti-eye-off" style="font-size: 18px;"></i>
+          </button>
         </div>
         <div style="text-align: right; margin-bottom: 12px; margin-top: 4px;">
           <a href="/forgot_password" style="font-size: 12px; color: #d97706; text-decoration: none; font-weight: 700;">Forgot password?</a>
@@ -146,5 +159,18 @@ body {
     </div>
   </div>
 </div>
+<script>
+function togglePassword() {
+  const pwd = document.getElementById("password");
+  const icon = document.getElementById("eyeIcon");
+  if (pwd.type === "password") {
+    pwd.type = "text";
+    icon.className = "ti ti-eye";
+  } else {
+    pwd.type = "password";
+    icon.className = "ti ti-eye-off";
+  }
+}
+</script>
 </body>
 </html>

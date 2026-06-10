@@ -35,8 +35,20 @@
             <option>Network Engineer</option>
             <option>Software Test Engineer</option>
             <option>UI/UX Designer</option>
+            <option>Resume Analyzer</option>
+            <option>Custom</option>
         </select>
         <form action = "/upload" method = "POST" enctype = "multipart/form-data">
+            <div>
+                <label>Upload JD File (Optional):</label>
+                <input type = "file" name = "jd_file" />
+            </div>
+            <div>
+                <label>Or Paste Custom JD Text:</label><br>
+                <textarea name="custom_jd" rows="5" cols="40" placeholder="Paste custom Job Description here..."></textarea>
+            </div>
+            <br>
+            <label>Upload Student Resume (PDF/DOCX):</label>
             <input type = "file" name = "resume" placeholder = "Upload resume"/><br>
             <button type = "submit">Analyze resume</button>
         </form>

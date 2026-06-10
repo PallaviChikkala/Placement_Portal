@@ -49,6 +49,19 @@ body { min-height: 100vh; font-family: 'DM Sans', sans-serif; background: linear
 .badge-count { font-size:11px; font-weight:700; background:rgba(253,230,138,0.4); padding:4px 10px; border-radius:20px; color:#b45309; }
 /* Toast */
 #toastContainer { position:fixed; bottom:24px; right:24px; display:flex; flex-direction:column; gap:10px; z-index:2000; }
+/* Calendar */
+.calendar-dropdown { display: none; position: absolute; right: 0; top: 100%; margin-top: 10px; width: 300px; background: white; border-radius: 20px; box-shadow: 0 15px 45px rgba(120,53,15,0.15); border: 1px solid rgba(253,230,138,0.6); padding: 16px; z-index: 100; font-family: 'DM Sans', sans-serif; }
+.calendar-dropdown.active { display: block; animation: calPop 0.2s cubic-bezier(0.175,0.885,0.32,1.275); transform-origin: top right; }
+@keyframes calPop { 0% { opacity:0; transform:scale(0.9); } 100% { opacity:1; transform:scale(1); } }
+.calendar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+.calendar-header h4 { font-family: 'Syne', sans-serif; font-size: 16px; color: #78350f; font-weight: 800; }
+.calendar-header button { background: none; border: none; font-size: 18px; color: #d97706; cursor: pointer; padding: 4px; border-radius: 8px; transition: 0.2s; display: flex; align-items: center; justify-content: center; }
+.calendar-header button:hover { background: rgba(253,230,138,0.4); }
+.calendar-weekdays { display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; font-size: 11px; font-weight: 700; color: #b45309; margin-bottom: 8px; text-transform: uppercase; }
+.calendar-days { display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; gap: 4px; }
+.cal-day { font-size: 13px; color: #5c3b1a; font-weight: 500; padding: 8px 0; border-radius: 12px; cursor: default; }
+.cal-day:hover { background: rgba(253,230,138,0.2); }
+.cal-day.today { background: linear-gradient(135deg, #f59e0b, #d97706); color: white; font-weight: 700; box-shadow: 0 4px 10px rgba(217,119,6,0.3); }
 </style>
 </head>
 <body>
@@ -64,9 +77,24 @@ body { min-height: 100vh; font-family: 'DM Sans', sans-serif; background: linear
     </div>
   </div>
   <div style="display:flex; align-items:center; gap:16px;">
-    <span style="background:rgba(253,230,138,0.3); padding:6px 14px; border-radius:30px; color:#b45309; font-weight:600; display:flex; align-items:center; gap:6px; font-size:12px;">
-      <i class="ti ti-calendar-time"></i> Calendar
-    </span>
+    <div class="calendar-container" style="position: relative;">
+      <span id="calendarToggleBtn" style="background:rgba(253,230,138,0.3); padding:6px 14px; border-radius:30px; color:#b45309; font-weight:600; display:flex; align-items:center; gap:6px; font-size:12px; cursor:pointer; user-select:none;">
+        <i class="ti ti-calendar-time"></i> <span id="currentDateLabel">Calendar</span>
+      </span>
+      <div id="calendarDropdown" class="calendar-dropdown">
+        <div class="calendar-header">
+          <button id="prevMonth"><i class="ti ti-chevron-left"></i></button>
+          <h4 id="monthYearDisplay">June 2026</h4>
+          <button id="nextMonth"><i class="ti ti-chevron-right"></i></button>
+        </div>
+        <div class="calendar-weekdays">
+          <span>Su</span><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span>
+        </div>
+        <div id="calendarDays" class="calendar-days">
+          <!-- JS generated -->
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -96,7 +124,7 @@ body { min-height: 100vh; font-family: 'DM Sans', sans-serif; background: linear
     </div>
     <div class="stat-card-horiz">
       <div class="stat-icon"><i class="ti ti-coin"></i></div>
-      <div><div class="stat-number">18.2 LPA</div><div class="stat-label">Avg Package</div></div>
+      <div><div class="stat-number">{{ avg_lpa }} LPA</div><div class="stat-label">Avg Package</div></div>
     </div>
   </div>
 
@@ -155,6 +183,61 @@ function showToast(msg, type="success") {
   setTimeout(() => { toast.style.opacity="1"; toast.style.transform="translateY(0)"; }, 10);
   setTimeout(() => { toast.style.opacity="0"; toast.style.transform="translateY(-20px)"; setTimeout(() => toast.remove(), 300); }, 3200);
 }
+
+// Calendar Logic
+const calBtn = document.getElementById('calendarToggleBtn');
+const calDrop = document.getElementById('calendarDropdown');
+const dateLabel = document.getElementById('currentDateLabel');
+const monthYearDisp = document.getElementById('monthYearDisplay');
+const daysContainer = document.getElementById('calendarDays');
+const prevBtn = document.getElementById('prevMonth');
+const nextBtn = document.getElementById('nextMonth');
+
+let currentDate = new Date();
+let displayDate = new Date();
+
+function initCalendar() {
+  const opts = { weekday: 'short', day: 'numeric', month: 'short' };
+  dateLabel.textContent = currentDate.toLocaleDateString('en-US', opts);
+  renderCalendar();
+}
+
+function renderCalendar() {
+  const year = displayDate.getFullYear();
+  const month = displayDate.getMonth();
+  
+  monthYearDisp.textContent = new Intl.DateTimeFormat('en-US', { month: 'long', year: 'numeric' }).format(displayDate);
+  
+  daysContainer.innerHTML = '';
+  
+  const firstDay = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  
+  for(let i = 0; i < firstDay; i++) {
+    daysContainer.innerHTML += `<div></div>`;
+  }
+  
+  for(let i = 1; i <= daysInMonth; i++) {
+    const isToday = i === currentDate.getDate() && month === currentDate.getMonth() && year === currentDate.getFullYear();
+    daysContainer.innerHTML += `<div class="cal-day ${isToday ? 'today' : ''}">${i}</div>`;
+  }
+}
+
+prevBtn.onclick = (e) => { e.stopPropagation(); displayDate.setMonth(displayDate.getMonth() - 1); renderCalendar(); };
+nextBtn.onclick = (e) => { e.stopPropagation(); displayDate.setMonth(displayDate.getMonth() + 1); renderCalendar(); };
+
+calBtn.onclick = (e) => {
+  e.stopPropagation();
+  calDrop.classList.toggle('active');
+};
+
+document.addEventListener('click', (e) => {
+  if (!calBtn.contains(e.target) && !calDrop.contains(e.target)) {
+    calDrop.classList.remove('active');
+  }
+});
+
+initCalendar();
 </script>
 </body>
 </html>
