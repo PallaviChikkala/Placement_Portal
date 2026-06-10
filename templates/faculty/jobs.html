@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Job Openings — NIT AP Placement Portal</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+* { box-sizing:border-box; margin:0; padding:0; }
+body { min-height:100vh; font-family:'DM Sans',sans-serif; background:linear-gradient(145deg,#fffdf5 0%,#fff8e1 40%,#fef3c0 75%,#fffdf5 100%); }
+.blob { position:fixed; border-radius:50%; pointer-events:none; filter:blur(55px); z-index:0; }
+.blob-1 { width:280px; height:280px; background:rgba(230,180,40,0.22); top:-70px; left:-50px; }
+.blob-2 { width:220px; height:220px; background:rgba(255,220,80,0.18); bottom:-50px; right:-30px; }
+.global-header { position:fixed; top:0; left:0; right:0; z-index:100; background:rgba(255,255,255,0.95); backdrop-filter:blur(12px); border-bottom:1px solid rgba(253,230,138,0.6); padding:10px 28px; display:flex; align-items:center; justify-content:space-between; box-shadow:0 2px 12px rgba(0,0,0,0.02); }
+.logo-area { display:flex; align-items:center; gap:14px; }
+.logo-icon { width:44px; height:44px; background:linear-gradient(135deg,#f59e0b,#d97706); border-radius:14px; display:flex; align-items:center; justify-content:center; color:white; font-size:24px; font-weight:800; font-family:'Syne',sans-serif; }
+.logo-text h2 { font-family:'Syne',sans-serif; font-size:16px; font-weight:800; color:#78350f; line-height:1.2; }
+.logo-text p { font-size:9px; letter-spacing:0.5px; color:#b97f10; text-transform:uppercase; }
+.header-right { font-size: 11px; background: rgba(253,230,138,0.3); padding: 6px 14px; border-radius: 30px; color: #b45309; display: flex; align-items: center; gap: 6px; text-decoration: none; font-weight: 600; }
+
+.page-body { padding:100px 32px 40px; max-width:1400px; margin:0 auto; position:relative; z-index:2; }
+.page-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:32px; flex-wrap:wrap; gap:16px; }
+.page-header h1 { font-family:'Syne',sans-serif; font-size:32px; font-weight:800; color:#78350f; display:flex; align-items:center; gap:12px; }
+.back-home-btn { background:rgba(255,255,255,0.7); border:1px solid #fde68a; padding:8px 20px; border-radius:40px; cursor:pointer; color:#78350f; font-family:'DM Sans',sans-serif; font-size:13px; font-weight:600; display:inline-flex; align-items:center; gap:6px; text-decoration:none; transition:background 0.2s; }
+.back-home-btn:hover { background:rgba(255,255,255,0.95); }
+.edit-action-btn { background:linear-gradient(135deg,#f59e0b,#d97706); color:white; border:none; padding:10px 24px; border-radius:40px; cursor:pointer; font-weight:600; display:inline-flex; align-items:center; gap:8px; font-family:'DM Sans',sans-serif; font-size:14px; text-decoration:none; transition:opacity 0.2s; }
+.edit-action-btn:hover { opacity:0.9; }
+
+.controls-row { display:flex; justify-content:space-between; align-items:center; margin-bottom:24px; flex-wrap:wrap; gap:16px; }
+.student-table-panel { background:rgba(255,255,255,0.75); border-radius:32px; overflow:hidden; box-shadow:0 10px 30px rgba(120,53,15,0.05); }
+.table-header { display:flex; justify-content:space-between; align-items:center; padding:20px 28px; background:rgba(255,253,240,0.7); border-bottom:1px solid #fde68a; flex-wrap:wrap; gap:12px; }
+.table-header h3 { font-family:'Syne',sans-serif; font-size:18px; color:#78350f; font-weight:800; }
+.table-wrapper { overflow-x:auto; padding:16px 20px; }
+
+table { width:100%; border-collapse:collapse; }
+th { text-align:left; padding:14px 10px; color:#b45309; border-bottom:1px solid #fde68a; font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; white-space:nowrap; transition: display 0s; }
+td { padding:12px 10px; color:#5c3b1a; border-bottom:1px solid rgba(253,230,138,0.4); font-size:13px; vertical-align:middle; transition: display 0s; }
+tr:hover td { background-color:rgba(253,230,138,0.12); }
+
+.tier-badge { padding:5px 12px; border-radius:40px; font-size:11px; font-weight:800; display:inline-block; text-transform:uppercase; letter-spacing:0.5px; }
+.tier-badge.tier-1 { background:#fee2e2; color:#b91c1c; }
+.tier-badge.tier-2 { background:#fef3c7; color:#d97706; }
+.tier-badge.tier-3 { background:#dbeafe; color:#1d4ed8; }
+
+.action-btns { display:flex; gap:10px; align-items:center; justify-content:center; }
+.icon-btn { background:none; border:none; cursor:pointer; font-size:20px; padding:4px; transition:transform 0.2s; }
+.icon-btn:hover { transform:scale(1.2); }
+
+/* Dropdown for Columns */
+.columns-dropdown-container { position: relative; display: inline-block; }
+.columns-dropdown-menu {
+  display: none; position: absolute; right: 0; top: 100%; margin-top: 8px;
+  background: white; border-radius: 16px; box-shadow: 0 10px 40px rgba(120,53,15,0.12);
+  border: 1px solid rgba(253,230,138,0.5); padding: 16px; z-index: 50;
+  width: 260px; max-height: 400px; overflow-y: auto;
+}
+.columns-dropdown-menu.active { display: block; }
+.columns-dropdown-header { font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 700; color: #78350f; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid #fde68a; }
+.column-option { display: flex; align-items: center; gap: 10px; padding: 8px 0; cursor: pointer; }
+.column-option input[type="checkbox"] {
+  appearance: none; width: 18px; height: 18px; border-radius: 4px; border: 2px solid #d97706;
+  background-color: white; cursor: pointer; display: flex; align-items: center; justify-content: center;
+}
+.column-option input[type="checkbox"]:checked { background-color: #d97706; }
+.column-option input[type="checkbox"]:checked::after { content: "✓"; color: white; font-size: 12px; font-weight: bold; }
+.column-option span { font-size: 13px; color: #5c3b1a; font-weight: 500; user-select: none; }
+
+/* Modals */
+.modal-overlay { position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(120,53,15,0.35); backdrop-filter:blur(8px); display:flex; align-items:center; justify-content:center; z-index:1000; opacity:0; pointer-events:none; transition:opacity 0.3s; }
+.modal-overlay.active { opacity:1; pointer-events:all; }
+.modal-content { background:white; border-radius:28px; width:90%; max-width:680px; max-height:85vh; overflow-y:auto; box-shadow:0 24px 60px rgba(120,53,15,0.15); padding:36px; transform:scale(0.92); transition:transform 0.3s cubic-bezier(0.34,1.56,0.64,1); border:1px solid rgba(253,230,138,0.5); }
+.modal-overlay.active .modal-content { transform:scale(1); }
+.modal-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:24px; border-bottom:1px solid rgba(253,230,138,0.6); padding-bottom:14px; }
+.modal-header h2 { font-family:'Syne',sans-serif; font-size:22px; font-weight:800; color:#78350f; display:flex; align-items:center; gap:10px; }
+.modal-close-btn { background:none; border:none; font-size:28px; color:#b45309; cursor:pointer; line-height:1; }
+.modal-close-btn:hover { color:#ef4444; }
+
+.form-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:18px; margin-bottom:24px; }
+.form-grid .full-width { grid-column:span 2; }
+.form-group { display:flex; flex-direction:column; gap:7px; }
+.form-group label { font-size:12px; font-weight:700; color:#78350f; }
+.form-group input, .form-group select, .form-group textarea { padding:11px 14px; border-radius:10px; border:1px solid rgba(253,230,138,0.8); background:#fffdf7; color:#5c3b1a; font-family:inherit; font-size:13px; outline:none; transition:all 0.2s; }
+.form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color:#d97706; background:white; box-shadow:0 0 0 3px rgba(253,230,138,0.4); }
+
+.tier-selector { display:flex; gap:10px; }
+.tier-btn { flex:1; padding:11px; border-radius:10px; border:1px solid rgba(253,230,138,0.8); background:#fffdf9; color:#78350f; cursor:pointer; font-weight:700; font-family:'DM Sans',sans-serif; transition:all 0.2s; text-align:center; }
+.tier-btn:hover { background:rgba(253,230,138,0.3); }
+.tier-btn.active { background:linear-gradient(135deg,#f59e0b,#d97706); color:white; border-color:#d97706; }
+
+.branches-checkbox-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(130px,1fr)); gap:10px; background:#fffdf9; border:1px solid rgba(253,230,138,0.8); border-radius:10px; padding:12px; }
+.branch-check-label { display:flex; align-items:center; gap:8px; font-size:12px; font-weight:600; color:#5c3b1a; cursor:pointer; }
+.branch-check-label input[type="checkbox"] {
+  appearance: none; width: 16px; height: 16px; border-radius: 4px; border: 2px solid #d97706;
+  background-color: white; cursor: pointer; display: flex; align-items: center; justify-content: center;
+}
+.branch-check-label input[type="checkbox"]:checked { background-color: #d97706; }
+.branch-check-label input[type="checkbox"]:checked::after { content: "✓"; color: white; font-size: 10px; font-weight: bold; }
+
+.modal-footer { display:flex; justify-content:flex-end; gap:12px; border-top:1px solid #fde68a; padding-top:18px; }
+#toastContainer { position:fixed; bottom:24px; right:24px; display:flex; flex-direction:column; gap:10px; z-index:2000; }
+.pdf-label { font-size:12px; font-weight:600; color:#5c3b1a; display:flex; align-items:center; gap:8px; }
+.pdf-name { color:#dc2626; font-size:13px; }
+.empty-state { text-align:center; padding:40px; color:#b97f10; font-weight:600; }
+</style>
+</head>
+<body>
+<div class="blob blob-1"></div><div class="blob blob-2"></div>
+
+<div class="global-header">
+  <div class="logo-area">
+    <div class="logo-icon">N</div>
+    <div class="logo-text"><h2>National Institute of Technology<br>Andhra Pradesh</h2><p>Placement &amp; Career Cell</p></div>
+  </div>
+  <div style="display:flex; align-items:center; gap:16px;">
+    <span style="background:rgba(253,230,138,0.3); padding:6px 14px; border-radius:30px; color:#b45309; font-weight:600; display:flex; align-items:center; gap:6px; font-size:12px;">
+      <i class="ti ti-calendar-time"></i> Calendar
+    </span>
+    <a href="/faculty_logout" class="header-right" style="margin:0;"><i class="ti ti-logout"></i> Logout</a>
+  </div>
+</div>
+
+<div class="page-body">
+  <div class="page-header">
+    <h1><i class="ti ti-briefcase"></i> Job Openings Manager</h1>
+    <a href="/faculty_dashboard" class="back-home-btn"><i class="ti ti-home"></i> Back to Dashboard</a>
+  </div>
+
+  <div class="controls-row">
+    <div style="display:flex;gap:12px;flex-wrap:wrap;">
+      <button class="edit-action-btn" onclick="openAddModal()"><i class="ti ti-plus"></i> Add Job Opening</button>
+      <button class="back-home-btn" onclick="openCriteriaModal()" style="border-color:#fde68a;"><i class="ti ti-adjustments"></i> Add Criteria Column</button>
+    </div>
+    <div style="display:flex;gap:16px;align-items:center;">
+      <div style="font-size:13px;font-weight:700;color:#b45309;"><i class="ti ti-shield-check"></i> Complete Faculty Authorization</div>
+      <div class="columns-dropdown-container">
+        <button class="back-home-btn" id="editColumnsBtn" style="border-color:#fde68a;background:rgba(255,255,255,0.95);">
+          <i class="ti ti-settings"></i> Edit Columns <i class="ti ti-chevron-down" style="font-size:14px;margin-left:4px;"></i>
+        </button>
+        <div class="columns-dropdown-menu" id="columnsMenu">
+          <div class="columns-dropdown-header">Show/Hide Columns</div>
+          <!-- Populated by JS -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="student-table-panel">
+    <div class="table-header">
+      <h3>Active Placements ({{ jobs|length }})</h3>
+    </div>
+    <div class="table-wrapper">
+      <table id="jobsTable">
+        <thead>
+          <tr>
+            <th data-col="0">Job ID</th>
+            <th data-col="1">Company</th>
+            <th data-col="2">CTC</th>
+            <th data-col="3">Location</th>
+            <th data-col="4">Bond</th>
+            <th data-col="5">CGPA Cutoff</th>
+            <th data-col="6">Branch Eligible</th>
+            <th data-col="7">Active Backlogs</th>
+            <th data-col="8">Backlog History</th>
+            <th data-col="9">Extra Requirements</th>
+            <th data-col="10">Tier</th>
+            <th data-col="11">Job Description</th>
+            <th data-col="12">Attachment</th>
+            {% for col in custom_cols %}
+              <th data-col="{{ 13 + loop.index0 }}">{{ col.label }}</th>
+            {% endfor %}
+            <th style="text-align:center;">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if jobs %}
+            {% for job in jobs %}
+            <tr>
+              <td data-col="0"><strong>{{ job.job_id }}</strong></td>
+              <td data-col="1"><strong>{{ job.company_name }}</strong></td>
+              <td data-col="2">{{ job.ctc }}</td>
+              <td data-col="3">{{ job.location }}</td>
+              <td data-col="4">{{ job.bond or 'None' }}</td>
+              <td data-col="5">{{ job.cgpa_cutoff }}</td>
+              <td data-col="6">{{ job.branches }}</td>
+              <td data-col="7">{{ job.active_backlogs }}</td>
+              <td data-col="8">{{ job.backlog_history }}</td>
+              <td data-col="9">
+                {% set reqs = [] %}
+                {% if job.req_aadhar %}{% set _ = reqs.append("Aadhar") %}{% endif %}
+                {% if job.req_pan %}{% set _ = reqs.append("PAN") %}{% endif %}
+                {% if job.req_other %}{% set _ = reqs.append(job.req_other) %}{% endif %}
+                {{ reqs | join(', ') if reqs else 'None' }}
+              </td>
+              <td data-col="10">
+                <span class="tier-badge tier-{{ job.tier | lower | replace(' ', '-') | replace('tier-', '') }}">{{ job.tier }}</span>
+              </td>
+              <td data-col="11">
+                {% if job.description and job.description|length > 40 %}
+                  {{ job.description[:37] }}...
+                  <a href="#" onclick="viewDesc('{{ job.job_id }}'); return false;" style="color:#d97706;font-weight:700;font-size:11px;margin-left:4px;">View</a>
+                {% else %}
+                  {{ job.description or '—' }}
+                {% endif %}
+              </td>
+              <td data-col="12">
+                {% if job.pdf_path %}
+                  <a href="/faculty/job_pdf/{{ job.job_id }}" target="_blank" style="color:#d97706;font-weight:700;font-size:12px;display:inline-flex;align-items:center;gap:4px;text-decoration:none;">
+                    <i class="ti ti-file-pdf" style="color:#ef4444;font-size:16px;"></i> View
+                  </a>
+                {% else %}
+                  <span style="color:#a1a1aa;font-size:12px;">No Attachment</span>
+                {% endif %}
+              </td>
+              {% for col in custom_cols %}
+                <td data-col="{{ 13 + loop.index0 }}">{{ job[col.db_name] or '—' }}</td>
+              {% endfor %}
+              <td style="text-align:center;">
+                <div class="action-btns">
+                  <button class="icon-btn" onclick="viewApplicants('{{ job.job_id }}')" title="View Applicants" style="color:#3b82f6;"><i class="ti ti-users"></i></button>
+                  <button class="icon-btn" onclick="openEditModal('{{ job.job_id }}')" title="Edit" style="color:#d97706;"><i class="ti ti-edit"></i></button>
+                  <button class="icon-btn" onclick="deleteJob('{{ job.job_id }}', '{{ job.company_name }}')" title="Delete" style="color:#ef4444;"><i class="ti ti-trash"></i></button>
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          {% else %}
+            <tr><td colspan="14" class="empty-state"><i class="ti ti-mood-empty" style="font-size:32px;display:block;margin-bottom:8px;"></i>No job openings found. Click "+ Add Job Opening" to create one.</td></tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Add/Edit Job Modal -->
+<div class="modal-overlay" id="jobModal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2 id="modalTitle"><i class="ti ti-plus"></i> Add Job Opening</h2>
+      <button class="modal-close-btn" onclick="closeModal('jobModal')">&times;</button>
+    </div>
+    <form id="jobForm" action="/faculty/jobs/add" method="POST" enctype="multipart/form-data">
+      <input type="hidden" name="job_id_edit" id="job_id_edit" value="">
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Job ID *</label>
+          <input type="text" name="job_id" id="fJobId" required placeholder="e.g. JOB105">
+        </div>
+        <div class="form-group">
+          <label>Company Name *</label>
+          <input type="text" name="company_name" id="fCompany" required placeholder="e.g. Google">
+        </div>
+        <div class="form-group">
+          <label>Role *</label>
+          <input type="text" name="role" id="fRole" required placeholder="e.g. Software Engineer">
+        </div>
+        <div class="form-group">
+          <label>CTC (LPA) *</label>
+          <input type="text" name="ctc" id="fCtc" required placeholder="e.g. 24 LPA">
+        </div>
+        <div class="form-group">
+          <label>Job Location *</label>
+          <input type="text" name="location" id="fLocation" required placeholder="e.g. Hyderabad">
+        </div>
+        <div class="form-group">
+          <label>Bond Details</label>
+          <input type="text" name="bond" id="fBond" placeholder="e.g. 1 Year / None">
+        </div>
+        <div class="form-group">
+          <label>CGPA Cutoff *</label>
+          <input type="number" step="0.01" min="0" max="10" name="cgpa_cutoff" id="fCgpa" required placeholder="e.g. 8.0">
+        </div>
+        <div class="form-group">
+          <label>Max Active Backlogs *</label>
+          <input type="number" min="0" name="active_backlogs" id="fActiveBacklogs" required placeholder="0">
+        </div>
+        <div class="form-group">
+          <label>Max Backlog History *</label>
+          <input type="number" min="0" name="backlog_history" id="fBacklogHistory" required placeholder="0">
+        </div>
+        <div class="form-group full-width">
+          <label>Select Eligible Branches *</label>
+          <div class="branches-checkbox-grid">
+            {% for branch in ['CSE', 'ECE', 'Mechanical', 'Chemical', 'Bio-Technology'] %}
+            <label class="branch-check-label">
+              <input type="checkbox" name="branches" value="{{ branch }}" class="branch-cb"> {{ branch }}
+            </label>
+            {% endfor %}
+          </div>
+        </div>
+        <div class="form-group full-width">
+          <label>Select Job Tier *</label>
+          <div class="tier-selector">
+            <button type="button" class="tier-btn active" onclick="setTier('Tier 1', this)">Tier 1</button>
+            <button type="button" class="tier-btn" onclick="setTier('Tier 2', this)">Tier 2</button>
+            <button type="button" class="tier-btn" onclick="setTier('Tier 3', this)">Tier 3</button>
+          </div>
+          <input type="hidden" name="tier" id="fTier" value="Tier 1">
+        </div>
+        <div class="form-group full-width">
+          <label>Extra Requirements</label>
+          <div style="display:flex;gap:20px;align-items:center;background:#fffdf9;border:1px solid rgba(253,230,138,0.8);border-radius:10px;padding:12px;flex-wrap:wrap;">
+            <label class="branch-check-label"><input type="checkbox" name="req_aadhar" id="fAadhar"> Require Aadhar Card</label>
+            <label class="branch-check-label"><input type="checkbox" name="req_pan" id="fPan"> Require PAN Card</label>
+          </div>
+        </div>
+        <div class="form-group full-width">
+          <label>Other Requirement</label>
+          <input type="text" name="req_other" id="fReqOther" placeholder="e.g. Passport, Portfolio URL">
+        </div>
+        {% for col in custom_cols %}
+        <div class="form-group full-width">
+          <label>{{ col.label }}</label>
+          <input type="text" name="{{ col.db_name }}" id="f_{{ col.db_name }}" placeholder="Enter {{ col.label }}">
+        </div>
+        {% endfor %}
+        <div class="form-group full-width">
+          <label>Job Description *</label>
+          <textarea name="description" id="fDescription" rows="4" required placeholder="Describe responsibilities, expectations, and skills..."></textarea>
+        </div>
+        <div class="form-group full-width">
+          <label>Upload Job PDF (Optional)</label>
+          <input type="file" name="pdf_file" id="fPdf" accept=".pdf" style="background:white;border:1px solid #fde68a;border-radius:10px;padding:8px;">
+          <div id="currentPdfInfo" style="display:none;margin-top:8px;" class="pdf-label">
+            <i class="ti ti-file-pdf" style="color:#ef4444;font-size:16px;"></i>
+            <span id="currentPdfName" class="pdf-name"></span>
+            <span style="font-size:11px;color:#b97f10;">(Upload a new file to replace)</span>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="back-home-btn" onclick="closeModal('jobModal')">Cancel</button>
+        <button type="submit" class="edit-action-btn" style="margin-bottom:0;">Save Job Opening</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Add Criteria Modal -->
+<div class="modal-overlay" id="criteriaModal">
+  <div class="modal-content" style="max-width:480px;">
+    <div class="modal-header">
+      <h2 id="criteriaTitle"><i class="ti ti-adjustments"></i> Add Criteria Column</h2>
+      <button class="modal-close-btn" onclick="closeModal('criteriaModal')">&times;</button>
+    </div>
+    <form action="/faculty/jobs/add_column" method="POST">
+      <div class="form-group" style="margin-bottom:20px;">
+        <label>New Criteria Name</label>
+        <input type="text" name="name" id="newCriteriaName" placeholder="e.g. Minimum 10th Score" required>
+      </div>
+      <div class="form-group" style="margin-bottom:20px;">
+        <label>Data Type</label>
+        <select name="type" id="newCriteriaType">
+          <option value="text">Text (Short Answer)</option>
+          <option value="number">Number (Score/Percentage)</option>
+          <option value="boolean">Yes/No Checkbox</option>
+        </select>
+      </div>
+      <div style="display:flex;justify-content:flex-end;gap:12px;">
+        <button type="button" class="back-home-btn" onclick="closeModal('criteriaModal')">Cancel</button>
+        <button type="submit" class="edit-action-btn" style="margin-bottom:0;">Add Column</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Description Modal -->
+<div class="modal-overlay" id="descModal">
+  <div class="modal-content" style="max-width:520px;">
+    <div class="modal-header">
+      <h2 id="descModalTitle"><i class="ti ti-file-text"></i> Job Description</h2>
+      <button class="modal-close-btn" onclick="closeModal('descModal')">&times;</button>
+    </div>
+    <div id="descModalBody" style="color:#5c3b1a;line-height:1.7;font-size:14px;white-space:pre-wrap;margin-bottom:24px;font-weight:500;"></div>
+    <div style="display:flex;justify-content:flex-end;">
+      <button class="edit-action-btn" onclick="closeModal('descModal')" style="margin-bottom:0;">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- Applicants Modal -->
+<div class="modal-overlay" id="applicantsModal">
+  <div class="modal-content" style="max-width:700px;">
+    <div class="modal-header">
+      <h2 id="applicantsTitle"><i class="ti ti-users"></i> Applicants</h2>
+      <button class="modal-close-btn" onclick="closeModal('applicantsModal')">&times;</button>
+    </div>
+    <div class="table-wrapper" style="max-height:400px;overflow-y:auto;" id="applicantsBody">
+      <p style="text-align:center;color:#b97f10;font-weight:600;">Loading...</p>
+    </div>
+    <div style="display:flex;justify-content:flex-end;border-top:1px solid #fde68a;padding-top:18px;margin-top:16px;">
+      <button class="edit-action-btn" onclick="closeModal('applicantsModal')" style="margin-bottom:0;">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- Job data for JS modals -->
+<script>
+const jobsData = {{ jobs_json | safe }};
+
+/* Edit Columns Dropdown Logic */
+const editColumnsBtn = document.getElementById('editColumnsBtn');
+const columnsMenu = document.getElementById('columnsMenu');
+
+const defaultColumns = [
+  "Job ID", "Company", "CTC", "Location", "Bond", "CGPA Cutoff",
+  "Branch Eligible", "Active Backlogs", "Backlog History",
+  "Extra Requirements", "Tier", "Job Description", "Attachment"
+  {% for col in custom_cols %}
+  , "{{ col.label }}"
+  {% endfor %}
+];
+
+// Initialize dropdown checkboxes
+const colsHTML = defaultColumns.map((name, i) => `
+  <label class="column-option">
+    <input type="checkbox" checked onchange="toggleCol(${i}, this.checked)">
+    <span>${name}</span>
+  </label>
+`).join('');
+columnsMenu.innerHTML += colsHTML;
+
+// Toggle column visibility
+function toggleCol(colIndex, show) {
+  const table = document.getElementById("jobsTable");
+  const th = table.querySelector(`th[data-col="${colIndex}"]`);
+  const tds = table.querySelectorAll(`td[data-col="${colIndex}"]`);
+  
+  if (th) th.style.display = show ? "" : "none";
+  tds.forEach(td => td.style.display = show ? "" : "none");
+}
+
+editColumnsBtn.addEventListener('click', (e) => {
+  e.stopPropagation();
+  columnsMenu.classList.toggle('active');
+});
+
+document.addEventListener('click', (e) => {
+  if (!columnsMenu.contains(e.target) && e.target !== editColumnsBtn) {
+    columnsMenu.classList.remove('active');
+  }
+});
+
+/* Modal Actions */
+function openAddModal() {
+  document.getElementById("modalTitle").innerHTML = '<i class="ti ti-plus"></i> Add Job Opening';
+  document.getElementById("jobForm").action = "/faculty/jobs/add";
+  document.getElementById("job_id_edit").value = "";
+  document.getElementById("jobForm").reset();
+  document.getElementById("currentPdfInfo").style.display = "none";
+  document.querySelectorAll(".tier-btn").forEach((b,i)=>b.classList.toggle("active",i===0));
+  document.getElementById("fTier").value = "Tier 1";
+  document.getElementById("fJobId").readOnly = false;
+  document.getElementById("fJobId").style.cssText = "";
+  openModal("jobModal");
+}
+
+function openEditModal(jobDbIdStr) {
+  const job = jobsData.find(j => String(j.job_id).trim() === String(jobDbIdStr).trim());
+  if (!job) {
+      showToast("Could not locate job data.", "error");
+      return;
+  }
+  
+  document.getElementById("modalTitle").innerHTML = '<i class="ti ti-edit"></i> Edit Job Opening';
+  document.getElementById("jobForm").action = "/faculty/jobs/edit";
+  document.getElementById("job_id_edit").value = job.job_id;
+  document.getElementById("fJobId").value = job.job_id;
+  document.getElementById("fJobId").readOnly = true;
+  document.getElementById("fJobId").style.cssText = "background:#f3f4f6;color:#9ca3af;border-color:#d1d5db;";
+  
+  document.getElementById("fCompany").value = job.company_name;
+  document.getElementById("fRole").value = job.role || "";
+  document.getElementById("fCtc").value = job.ctc;
+  document.getElementById("fLocation").value = job.location;
+  document.getElementById("fBond").value = job.bond || "";
+  document.getElementById("fCgpa").value = job.cgpa_cutoff;
+  document.getElementById("fActiveBacklogs").value = job.active_backlogs;
+  document.getElementById("fBacklogHistory").value = job.backlog_history;
+  document.getElementById("fDescription").value = job.description || "";
+  document.getElementById("fReqOther").value = job.req_other || "";
+  document.getElementById("fAadhar").checked = !!job.req_aadhar;
+  document.getElementById("fPan").checked = !!job.req_pan;
+  
+  {% for col in custom_cols %}
+  if (document.getElementById("f_{{ col.db_name }}")) {
+      document.getElementById("f_{{ col.db_name }}").value = job.{{ col.db_name }} || "";
+  }
+  {% endfor %}
+  
+  const branches = job.branches ? job.branches.split(",").map(b=>b.trim()) : [];
+  document.querySelectorAll(".branch-cb").forEach(cb => { cb.checked = branches.includes(cb.value); });
+  
+  setTierByName(job.tier || "Tier 1");
+  
+  if (job.pdf_path) {
+    document.getElementById("currentPdfInfo").style.display = "flex";
+    document.getElementById("currentPdfName").textContent = job.pdf_path.split("/").pop();
+  } else {
+    document.getElementById("currentPdfInfo").style.display = "none";
+  }
+  openModal("jobModal");
+}
+
+function setTier(name, btn) {
+  document.querySelectorAll(".tier-btn").forEach(b => b.classList.remove("active"));
+  btn.classList.add("active");
+  document.getElementById("fTier").value = name;
+}
+
+function setTierByName(name) {
+  document.querySelectorAll(".tier-btn").forEach(b => { b.classList.toggle("active", b.textContent.trim() === name); });
+  document.getElementById("fTier").value = name;
+}
+
+function deleteJob(jobIdStr, company) {
+  if (!confirm(`Are you sure you want to delete the job opening for "${company}"?`)) return;
+  fetch(`/faculty/jobs/delete/${jobIdStr}`, { method:"POST" })
+    .then(r => r.json())
+    .then(data => { if (data.success) { showToast(`Job for "${company}" deleted!`, "warning"); setTimeout(() => location.reload(), 800); } else showToast(data.error || "Error", "error"); });
+}
+
+function viewDesc(jobIdStr) {
+  const job = jobsData.find(j => j.job_id === jobIdStr);
+  if (!job) return;
+  document.getElementById("descModalTitle").innerHTML = `<i class="ti ti-file-text"></i> ${job.company_name} — Description`;
+  document.getElementById("descModalBody").textContent = job.description || "No description provided.";
+  openModal("descModal");
+}
+
+function viewApplicants(jobIdStr) {
+  document.getElementById("applicantsBody").innerHTML = "<p style='text-align:center;color:#b97f10;font-weight:600;padding:20px;'>Loading...</p>";
+  openModal("applicantsModal");
+  fetch(`/faculty/jobs/applicants/${jobIdStr}`)
+    .then(r => r.json())
+    .then(data => {
+      const job = jobsData.find(j => j.job_id === jobIdStr);
+      document.getElementById("applicantsTitle").innerHTML = `<i class="ti ti-users"></i> Applicants — ${job ? job.company_name : ''}`;
+      if (!data.applicants || data.applicants.length === 0) {
+        document.getElementById("applicantsBody").innerHTML = "<p style='text-align:center;color:#b97f10;font-weight:500;padding:24px;'>No applications received yet.</p>";
+        return;
+      }
+      let rows = data.applicants.map(a => `<tr>
+        <td><strong>${a.student_id}</strong></td>
+        <td>${a.name}</td><td>${a.branch}</td>
+        <td>${a.resume_link ? `<a href="${a.resume_link}" target="_blank" style="color:#d97706;">View Resume</a>` : '—'}</td>
+        <td><span style="background:#eef2e6;color:#2b6e4e;padding:4px 10px;border-radius:20px;font-size:11px;">Submitted</span></td>
+      </tr>`).join("");
+      document.getElementById("applicantsBody").innerHTML = `<table>
+        <thead><tr><th>Student ID</th><th>Name</th><th>Branch</th><th>Resume</th><th>Status</th></tr></thead>
+        <tbody>${rows}</tbody></table>`;
+    });
+}
+
+function openModal(id) { document.getElementById(id).classList.add("active"); }
+function closeModal(id) { document.getElementById(id).classList.remove("active"); }
+
+document.querySelectorAll(".modal-overlay").forEach(m => m.addEventListener("click", e => { if (e.target === m) m.classList.remove("active"); }));
+
+function openCriteriaModal() {
+  document.getElementById('newCriteriaName').value = "";
+  openModal('criteriaModal');
+}
+
+function saveCriteriaColumn() {
+  const name = document.getElementById('newCriteriaName').value;
+  if (!name) {
+      showToast("Please enter a criteria name.", "error");
+      return;
+  }
+  showToast(`Added custom criteria column: ${name}`, "success");
+  closeModal('criteriaModal');
+}
+
+{% with messages = get_flashed_messages(with_categories=true) %}{% if messages %}{% for cat, msg in messages %}showToast("{{ msg }}","{{ cat if cat != 'message' else 'success' }}");{% endfor %}{% endif %}{% endwith %}
+
+function showToast(msg, type="success") {
+  let c = document.getElementById("toastContainer");
+  const t = document.createElement("div");
+  const bg={success:"linear-gradient(135deg,#10b981,#059669)",warning:"linear-gradient(135deg,#f59e0b,#d97706)",error:"linear-gradient(135deg,#ef4444,#dc2626)",info:"linear-gradient(135deg,#3b82f6,#2563eb)"};
+  t.style.cssText=`background:${bg[type]||bg.success};color:white;padding:14px 24px;border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,0.15);display:flex;align-items:center;gap:12px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;opacity:0;transform:translateY(20px);transition:all 0.3s;`;
+  t.innerHTML=`<i class="ti ti-circle-check" style="font-size:18px;"></i><span>${msg}</span>`;
+  c.appendChild(t);setTimeout(()=>{t.style.opacity="1";t.style.transform="translateY(0)";},10);
+  setTimeout(()=>{t.style.opacity="0";t.style.transform="translateY(-20px)";setTimeout(()=>t.remove(),300);},3200);
+}
+</script>
+</body>
+</html>

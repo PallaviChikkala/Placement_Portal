@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Students — NIT AP Placement Portal</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+* { box-sizing:border-box; margin:0; padding:0; }
+body { min-height:100vh; font-family:'DM Sans',sans-serif; background:linear-gradient(145deg,#fffdf5 0%,#fff8e1 40%,#fef3c0 75%,#fffdf5 100%); }
+.blob { position:fixed; border-radius:50%; pointer-events:none; filter:blur(55px); z-index:0; }
+.blob-1 { width:280px; height:280px; background:rgba(230,180,40,0.22); top:-70px; left:-50px; }
+.global-header { position:fixed; top:0; left:0; right:0; z-index:100; background:rgba(255,255,255,0.95); backdrop-filter:blur(12px); border-bottom:1px solid rgba(253,230,138,0.6); padding:10px 28px; display:flex; align-items:center; justify-content:space-between; box-shadow:0 2px 12px rgba(0,0,0,0.02); }
+.logo-area { display:flex; align-items:center; gap:14px; }
+.logo-icon { width:44px; height:44px; background:linear-gradient(135deg,#f59e0b,#d97706); border-radius:14px; display:flex; align-items:center; justify-content:center; color:white; font-size:24px; font-weight:800; font-family:'Syne',sans-serif; }
+.logo-text h2 { font-family:'Syne',sans-serif; font-size:16px; font-weight:800; color:#78350f; line-height:1.2; }
+.logo-text p { font-size:9px; color:#b97f10; text-transform:uppercase; }
+.page-body { padding:100px 32px 40px; max-width:1300px; margin:0 auto; position:relative; z-index:2; }
+.page-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:32px; flex-wrap:wrap; gap:16px; }
+.page-header h1 { font-family:'Syne',sans-serif; font-size:32px; font-weight:800; color:#78350f; display:flex; align-items:center; gap:12px; }
+.back-home-btn { background:rgba(255,255,255,0.7); border:1px solid #fde68a; padding:8px 20px; border-radius:40px; cursor:pointer; color:#78350f; font-family:'DM Sans',sans-serif; font-size:13px; font-weight:600; display:inline-flex; align-items:center; gap:6px; text-decoration:none; }
+.back-home-btn:hover { background:rgba(255,255,255,0.95); }
+.branch-grid-page { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:28px; margin:30px 0; }
+.branch-card-page { background:rgba(255,255,255,0.85); backdrop-filter:blur(12px); border-radius:32px; padding:28px 24px; cursor:pointer; transition:0.3s; text-decoration:none; display:block; border:1px solid rgba(253,230,138,0.3); }
+.branch-card-page:hover { transform:translateY(-8px); background:rgba(255,255,255,0.96); box-shadow:0 12px 30px rgba(120,53,15,0.08); }
+.branch-icon-page { font-size:48px; background:linear-gradient(135deg,#fef3c7,#ffedd5); padding:14px; border-radius:28px; display:inline-block; margin-bottom:16px; color:#d97706; }
+.branch-card-page h2 { font-family:'Syne',sans-serif; font-size:22px; font-weight:800; color:#78350f; }
+.branch-detail-stats { display:flex; gap:20px; margin-top:20px; padding-top:16px; border-top:1px solid rgba(253,230,138,0.6); }
+.stat-number-branch { font-family:'Syne',sans-serif; font-size:24px; font-weight:800; color:#d97706; }
+.stat-label-branch { font-size:11px; color:#b97f10; font-weight:600; }
+
+/* Branch Detail view */
+.student-table-panel { background:rgba(255,255,255,0.75); border-radius:32px; overflow:hidden; margin-top:28px; box-shadow:0 10px 30px rgba(120,53,15,0.05); }
+.table-header { display:flex; justify-content:space-between; align-items:center; padding:20px 28px; background:rgba(255,253,240,0.7); border-bottom:1px solid #fde68a; flex-wrap:wrap; gap:12px; }
+.table-header h3 { font-family:'Syne',sans-serif; font-size:18px; color:#78350f; font-weight:800; }
+.table-wrapper { overflow-x:auto; padding:16px 20px; }
+table { width:100%; border-collapse:collapse; }
+th { text-align:left; padding:14px 10px; color:#b45309; border-bottom:1px solid #fde68a; font-size:12px; font-weight:700; text-transform:uppercase; }
+td { padding:12px 10px; color:#5c3b1a; border-bottom:1px solid rgba(253,230,138,0.4); font-size:13px; }
+.status-badge { background:#eef2e6; padding:4px 12px; border-radius:40px; font-size:11px; display:inline-block; font-weight:600; }
+.status-badge.placed { background:#e0f2e9; color:#2b6e4e; }
+.prev-years-stats { background:rgba(255,255,255,0.7); border-radius:24px; padding:20px; margin:20px 0; border:1px solid rgba(253,230,138,0.4); }
+.prev-years-stats h3 { font-family:'Syne',sans-serif; color:#78350f; font-size:16px; margin-bottom:12px; }
+.years-grid { display:flex; gap:20px; flex-wrap:wrap; }
+.year-card { background:rgba(255,255,255,0.8); border-radius:16px; padding:12px 18px; text-align:center; border:1px solid rgba(253,230,138,0.4); }
+.year-card .year { font-size:11px; font-weight:700; color:#b97f10; text-transform:uppercase; }
+.year-card .rate { font-size:20px; font-weight:700; color:#78350f; font-family:'Syne',sans-serif; }
+.upload-section { background:rgba(255,255,255,0.75); border-radius:24px; padding:20px 24px; border:1px solid rgba(253,230,138,0.5); margin-bottom:28px; }
+.upload-section h3 { font-family:'Syne',sans-serif; color:#78350f; margin-bottom:14px; display:flex; align-items:center; gap:8px; }
+.upload-area { display:flex; gap:12px; flex-wrap:wrap; align-items:center; }
+.upload-area input[type="file"] { padding:8px; background:white; border-radius:10px; border:1px solid #fde68a; font-family:'DM Sans',sans-serif; }
+.send-btn { background:linear-gradient(135deg,#f59e0b,#d97706); color:white; border:none; padding:9px 22px; border-radius:30px; cursor:pointer; font-weight:600; font-family:'DM Sans',sans-serif; }
+</style>
+</head>
+<body>
+<div class="blob blob-1"></div>
+<div class="global-header">
+  <div class="logo-area">
+    <div class="logo-icon">N</div>
+    <div class="logo-text"><h2>National Institute of Technology<br>Andhra Pradesh</h2><p>Placement &amp; Career Cell</p></div>
+  </div>
+  <a href="/faculty_logout" style="font-size:12px;color:#b45309;text-decoration:none;display:flex;align-items:center;gap:6px;background:rgba(253,230,138,0.3);padding:6px 14px;border-radius:30px;"><i class="ti ti-logout"></i> Logout</a>
+</div>
+
+<div class="page-body">
+  <div class="page-header">
+    <h1>
+      {% if branch %}
+        <i class="ti ti-users-group"></i> {{ branch }} · Student Details
+      {% else %}
+        <i class="ti ti-school"></i> Student Branches
+      {% endif %}
+    </h1>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+      {% if branch %}
+        <a href="/faculty/students" class="back-home-btn"><i class="ti ti-arrow-back-up"></i> Branches</a>
+      {% endif %}
+      <a href="/faculty_dashboard" class="back-home-btn"><i class="ti ti-home"></i> Dashboard</a>
+    </div>
+  </div>
+
+  {% if not branch %}
+
+    <div class="branch-grid-page">
+      {% for b in branch_stats %}
+      <a href="/faculty/students/{{ b.name }}" class="branch-card-page">
+        <div class="branch-icon-page"><i class="ti ti-building-community"></i></div>
+        <h2>{{ b.name }}</h2>
+        <div class="branch-detail-stats">
+          <div><div class="stat-number-branch">{{ b.total }}</div><div class="stat-label-branch">Students</div></div>
+          <div><div class="stat-number-branch">{{ b.placed }}</div><div class="stat-label-branch">Placed</div></div>
+          <div><div class="stat-number-branch">{{ b.rate }}%</div><div class="stat-label-branch">Rate</div></div>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+
+  {% else %}
+    <!-- Previous Years Stats -->
+    <div class="prev-years-stats">
+      <h3>📊 Previous Years Placement — {{ branch }}</h3>
+      <div class="years-grid">
+        {% for year, rate in prev_stats.items() %}
+        <div class="year-card">
+          <div class="year">{{ year }}</div>
+          <div class="rate">{{ rate }}%</div>
+        </div>
+        {% endfor %}
+        <div class="year-card">
+          <div class="year">Current</div>
+          <div class="rate">{{ current_rate }}%</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Students Table -->
+    <div class="student-table-panel">
+      <div class="table-header">
+        <h3>{{ branch }} Students ({{ students|length }})</h3>
+        <div>🏆 Placed: {{ current_rate }}% ({{ placed_count }}/{{ students|length }})</div>
+      </div>
+      <div class="table-wrapper">
+        <table>
+          <thead><tr><th>ID</th><th>Name</th><th>Email</th><th>CGPA</th><th>Backlogs</th><th>Skills</th><th>Status</th></tr></thead>
+          <tbody>
+            {% for s in students %}
+            <tr>
+              <td>{{ s.student_id }}</td>
+              <td>{{ s.name }}</td>
+              <td>{{ s.email }}</td>
+              <td>{{ s.cgpa }}</td>
+              <td>{{ s.backlogs }}</td>
+              <td>{{ s.skills or '—' }}</td>
+              <td>
+                {% set apps = s.applications | default([]) %}
+                {% if apps %}
+                  <span class="status-badge placed">Applied ({{ apps|length }})</span>
+                {% else %}
+                  <span class="status-badge">No Applications</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  {% endif %}
+</div>
+</body>
+</html>

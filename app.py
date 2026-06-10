@@ -68,19 +68,45 @@ def init_database():
         # Create jobs table
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS jobs (
-                job_id INT PRIMARY KEY,
-                company_name VARCHAR(50),
-                role VARCHAR(50) NOT NULL,
-                package_lpa DECIMAL(7,2),
-                tier VARCHAR(20),
-                eligible_branches TEXT,
-                min_cgpa DECIMAL(3,2),
-                max_backlogs INT DEFAULT 0,
-                required_skills TEXT,
-                job_description TEXT,
-                deadline DATE
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                job_id VARCHAR(30) UNIQUE,
+                company_name VARCHAR(100),
+                role VARCHAR(100),
+                ctc VARCHAR(30),
+                location VARCHAR(100),
+                bond VARCHAR(50) DEFAULT 'None',
+                cgpa_cutoff DECIMAL(4,2) DEFAULT 0.0,
+                active_backlogs INT DEFAULT 0,
+                backlog_history INT DEFAULT 0,
+                branches TEXT,
+                tier VARCHAR(20) DEFAULT 'Tier 1',
+                description TEXT,
+                req_aadhar TINYINT(1) DEFAULT 0,
+                req_pan TINYINT(1) DEFAULT 0,
+                req_other VARCHAR(200),
+                pdf_path VARCHAR(300)
             )
         """)
+        
+        # Add missing columns for existing installs (including 'id' for older schemas)
+        for col_sql in [
+            "ALTER TABLE jobs ADD COLUMN IF NOT EXISTS id INT AUTO_INCREMENT PRIMARY KEY",
+            "ALTER TABLE jobs ADD COLUMN IF NOT EXISTS ctc VARCHAR(30)",
+            "ALTER TABLE jobs ADD COLUMN IF NOT EXISTS location VARCHAR(100)",
+            "ALTER TABLE jobs ADD COLUMN IF NOT EXISTS bond VARCHAR(50) DEFAULT 'None'",
+            "ALTER TABLE jobs ADD COLUMN IF NOT EXISTS cgpa_cutoff DECIMAL(4,2) DEFAULT 0.0",
+            "ALTER TABLE jobs ADD COLUMN IF NOT EXISTS active_backlogs INT DEFAULT 0",
+            "ALTER TABLE jobs ADD COLUMN IF NOT EXISTS backlog_history INT DEFAULT 0",
+            "ALTER TABLE jobs ADD COLUMN IF NOT EXISTS branches TEXT",
+            "ALTER TABLE jobs ADD COLUMN IF NOT EXISTS req_aadhar TINYINT(1) DEFAULT 0",
+            "ALTER TABLE jobs ADD COLUMN IF NOT EXISTS req_pan TINYINT(1) DEFAULT 0",
+            "ALTER TABLE jobs ADD COLUMN IF NOT EXISTS req_other VARCHAR(200)",
+            "ALTER TABLE jobs ADD COLUMN IF NOT EXISTS pdf_path VARCHAR(300)",
+        ]:
+            try:
+                cursor.execute(col_sql)
+            except Exception:
+                pass
         
         # Create applications table
         cursor.execute("""
@@ -882,49 +908,84 @@ def student_logout():
 
 @app.route("/faculty_login")
 def faculty_login_page():
-    return render_template("faculty/login.html")
-
+    try:
+        cursor.execute("SELECT COUNT(*) AS c FROM students")
+        total_students = cursor.fetchone()["c"]
+    except Exception:
+        total_students = 0
+    try:
+        cursor.execute("SELECT COUNT(*) AS c FROM jobs")
+        active_jobs = cursor.fetchone()["c"]
+    except Exception:
+        active_jobs = 0
+    return render_template("faculty/login.html", total_students=total_students, active_jobs=active_jobs)
 
 
 @app.route("/faculty_login_check", methods=["POST"])
 def faculty_login_check():
+    email = request.form.get("email", "").strip()
+    password = request.form.get("password", "").strip()
 
-    email = request.form["email"].strip()
-    password = request.form["password"].strip()
+    cursor.execute("SELECT * FROM faculty WHERE email = %s AND password = %s", (email, password))
+    faculty = cursor.fetchone()
 
-    print("Email:", email)
-    print("Password:", password)
+    if faculty:
+        session["faculty_email"] = email
+        session["faculty_name"] = faculty["name"]
+        session.permanent = True
+        return redirect("/faculty_dashboard")
 
+    # Fallback for hardcoded Dr. Shankar
     if email == "drshankar@gmail.com" and password == "shankar123":
         session["faculty_email"] = email
         session["faculty_name"] = "Dr. Shankar"
+        session.permanent = True
         return redirect("/faculty_dashboard")
 
-    return render_template(
-        "faculty/login.html",
-        error="Invalid email or password"
-    )
+    try:
+        cursor.execute("SELECT COUNT(*) AS c FROM students")
+        total_students = cursor.fetchone()["c"]
+        cursor.execute("SELECT COUNT(*) AS c FROM jobs")
+        active_jobs = cursor.fetchone()["c"]
+    except Exception:
+        total_students = active_jobs = 0
+    return render_template("faculty/login.html", error="Invalid email or password.",
+                           total_students=total_students, active_jobs=active_jobs)
+
+
+def faculty_required():
+    """Returns None if faculty is logged in, else a redirect response."""
+    if "faculty_email" not in session:
+        return redirect("/faculty_login")
+    return None
+
 
 @app.route("/faculty_dashboard")
 def faculty_dashboard():
-    if "faculty_email" not in session:
-        return redirect("/faculty_login")
+    redir = faculty_required()
+    if redir: return redir
 
     cursor.execute("SELECT COUNT(*) AS count FROM students")
     total_students = cursor.fetchone()["count"]
-
     cursor.execute("SELECT COUNT(*) AS count FROM jobs")
     active_jobs = cursor.fetchone()["count"]
 
-    placement_rate = 92
+    # Check if master sheet file exists (pdf or xlsx)
+    upload_dir = os.path.join(app.static_folder, "uploads")
+    master_sheet_status = "Empty"
+    if os.path.exists(os.path.join(upload_dir, "master_sheet.pdf")) or \
+       os.path.exists(os.path.join(upload_dir, "master_sheet.xlsx")):
+        master_sheet_status = "Uploaded"
 
     return render_template(
         "faculty/dashboard.html",
         name=session["faculty_name"],
         total_students=total_students,
         active_jobs=active_jobs,
-        placement_rate=placement_rate
+        placement_rate=92,
+        master_sheet_status=master_sheet_status
     )
+
 
 @app.route("/faculty_logout")
 def faculty_logout():
@@ -933,62 +994,567 @@ def faculty_logout():
     return redirect("/faculty_login")
 
 
+# ─── FACULTY: JOBS ───────────────────────────────────────────────────────────
+
+@app.route("/faculty/jobs")
+def faculty_jobs():
+    redir = faculty_required()
+    if redir: return redir
+
+    try:
+        cursor.execute("SELECT * FROM jobs ORDER BY id DESC")
+    except Exception:
+        # Fallback if 'id' column doesn't exist in older schema
+        cursor.execute("SELECT * FROM jobs ORDER BY job_id DESC")
+    jobs = cursor.fetchall()
+    
+    # Get custom columns dynamically
+    cursor.execute("SHOW COLUMNS FROM jobs")
+    all_columns = cursor.fetchall()
+    custom_cols = [{"db_name": c["Field"], "label": c["Field"].replace("custom_", "").replace("_", " ").title()} for c in all_columns if c["Field"].startswith("custom_")]
+
+    jobs_json = json.dumps([dict(j) for j in jobs], default=str)
+    return render_template("faculty/jobs.html", jobs=jobs, jobs_json=jobs_json, custom_cols=custom_cols)
+
+
+@app.route("/faculty/jobs/add", methods=["POST"])
+def faculty_job_add():
+    redir = faculty_required()
+    if redir: return redir
+
+    job_id    = request.form.get("job_id", "").strip()
+    company   = request.form.get("company_name", "").strip()
+    role      = request.form.get("role", "").strip()
+    ctc       = request.form.get("ctc", "").strip()
+    location  = request.form.get("location", "").strip()
+    bond      = request.form.get("bond", "None").strip()
+    cgpa      = float(request.form.get("cgpa_cutoff", 0))
+    act_bl    = int(request.form.get("active_backlogs", 0))
+    bl_hist   = int(request.form.get("backlog_history", 0))
+    branches  = ", ".join(request.form.getlist("branches"))
+    tier      = request.form.get("tier", "Tier 1")
+    desc      = request.form.get("description", "").strip()
+    req_aadhar = 1 if request.form.get("req_aadhar") else 0
+    req_pan    = 1 if request.form.get("req_pan") else 0
+    req_other  = request.form.get("req_other", "").strip()
+
+    custom_fields = [k for k in request.form.keys() if k.startswith("custom_")]
+    custom_cols_str = ", ".join(custom_fields)
+    custom_placeholders = ", ".join(["%s"] * len(custom_fields))
+    custom_values = [request.form.get(k, "").strip() for k in custom_fields]
+
+    pdf_path = None
+    pdf_file = request.files.get("pdf_file")
+    if pdf_file and pdf_file.filename:
+        upload_dir = os.path.join(app.static_folder, "uploads", "job_pdfs")
+        os.makedirs(upload_dir, exist_ok=True)
+        fname = secure_filename(f"{job_id}_{pdf_file.filename}")
+        pdf_file.save(os.path.join(upload_dir, fname))
+        pdf_path = f"/static/uploads/job_pdfs/{fname}"
+
+    try:
+        col_sql = f", {custom_cols_str}" if custom_cols_str else ""
+        val_sql = f", {custom_placeholders}" if custom_placeholders else ""
+        cursor.execute(f"""
+            INSERT INTO jobs (job_id, company_name, role, ctc, location, bond,
+                cgpa_cutoff, active_backlogs, backlog_history, branches, tier,
+                description, req_aadhar, req_pan, req_other, pdf_path{col_sql})
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s{val_sql})
+        """, [job_id, company, role, ctc, location, bond,
+               cgpa, act_bl, bl_hist, branches, tier,
+               desc, req_aadhar, req_pan, req_other, pdf_path] + custom_values)
+        db.commit()
+        # Notify all students about the new job
+        notify_students_new_job(company, role)
+        from flask import flash
+        flash(f"Job opening for {company} added successfully!", "success")
+    except Exception as e:
+        db.rollback()
+        from flask import flash
+        flash(f"Error adding job: {str(e)}", "error")
+
+    return redirect("/faculty/jobs")
+
+
+@app.route("/faculty/jobs/edit", methods=["POST"])
+def faculty_job_edit():
+    redir = faculty_required()
+    if redir: return redir
+
+    db_job_id = request.form.get("job_id_edit", "").strip()
+    company   = request.form.get("company_name", "").strip()
+    role      = request.form.get("role", "").strip()
+    ctc       = request.form.get("ctc", "").strip()
+    location  = request.form.get("location", "").strip()
+    bond      = request.form.get("bond", "None").strip()
+    cgpa      = float(request.form.get("cgpa_cutoff", 0))
+    act_bl    = int(request.form.get("active_backlogs", 0))
+    bl_hist   = int(request.form.get("backlog_history", 0))
+    branches  = ", ".join(request.form.getlist("branches"))
+    tier      = request.form.get("tier", "Tier 1")
+    desc      = request.form.get("description", "").strip()
+    req_aadhar = 1 if request.form.get("req_aadhar") else 0
+    req_pan    = 1 if request.form.get("req_pan") else 0
+    req_other  = request.form.get("req_other", "").strip()
+
+    custom_fields = [k for k in request.form.keys() if k.startswith("custom_")]
+    custom_set_sql = "".join([f", {k}=%s" for k in custom_fields])
+    custom_values = [request.form.get(k, "").strip() for k in custom_fields]
+
+    # Check if a new PDF was uploaded
+    pdf_file = request.files.get("pdf_file")
+    pdf_update_sql = ""
+    pdf_args = []
+    if pdf_file and pdf_file.filename:
+        upload_dir = os.path.join(app.static_folder, "uploads", "job_pdfs")
+        os.makedirs(upload_dir, exist_ok=True)
+        fname = secure_filename(f"job_{db_job_id}_{pdf_file.filename}")
+        pdf_file.save(os.path.join(upload_dir, fname))
+        pdf_update_sql = ", pdf_path=%s"
+        pdf_args = [f"/static/uploads/job_pdfs/{fname}"]
+
+    try:
+        cursor.execute(f"""
+            UPDATE jobs SET company_name=%s, role=%s, ctc=%s, location=%s, bond=%s,
+                cgpa_cutoff=%s, active_backlogs=%s, backlog_history=%s, branches=%s,
+                tier=%s, description=%s, req_aadhar=%s, req_pan=%s, req_other=%s
+                {pdf_update_sql}
+                {custom_set_sql}
+            WHERE TRIM(job_id) = TRIM(%s)
+        """, [company, role, ctc, location, bond,
+               cgpa, act_bl, bl_hist, branches, tier,
+               desc, req_aadhar, req_pan, req_other] + pdf_args + custom_values + [db_job_id])
+        if cursor.rowcount == 0:
+            raise Exception("No row found to update. Job ID may be mismatched.")
+        db.commit()
+        from flask import flash
+        flash(f"Job for {company} updated successfully!", "success")
+    except Exception as e:
+        db.rollback()
+        from flask import flash
+        flash(f"Error updating job: {str(e)}", "error")
+
+    return redirect("/faculty/jobs")
+
+
+@app.route("/faculty/jobs/add_column", methods=["POST"])
+def faculty_job_add_column():
+    redir = faculty_required()
+    if redir: return redir
+    
+    name = request.form.get("name", "").strip()
+    col_type = request.form.get("type", "").strip()
+    
+    if not name:
+        from flask import flash
+        flash("Column name cannot be empty.", "error")
+        return redirect("/faculty/jobs")
+        
+    import re
+    sanitized = re.sub(r'[^a-zA-Z0-9_]', '_', name.lower())
+    col_name = f"custom_{sanitized}"
+    
+    sql_type = "VARCHAR(255)"
+    if col_type == "number":
+        sql_type = "DECIMAL(10,2)"
+    elif col_type == "boolean":
+        sql_type = "TINYINT(1)"
+        
+    try:
+        cursor.execute(f"ALTER TABLE jobs ADD COLUMN {col_name} {sql_type}")
+        db.commit()
+        from flask import flash
+        flash(f"Custom column '{name}' added successfully!", "success")
+    except Exception as e:
+        db.rollback()
+        from flask import flash
+        flash(f"Error adding column: {str(e)}", "error")
+        
+    return redirect("/faculty/jobs")
+
+
+@app.route("/faculty/jobs/delete/<string:job_db_id>", methods=["POST"])
+def faculty_job_delete(job_db_id):
+    redir = faculty_required()
+    if redir: return jsonify({"success": False, "error": "Not logged in"})
+    try:
+        cursor.execute("DELETE FROM jobs WHERE job_id=%s", (job_db_id,))
+        db.commit()
+        return jsonify({"success": True})
+    except Exception as e:
+        db.rollback()
+        return jsonify({"success": False, "error": str(e)})
+
+
+@app.route("/faculty/jobs/applicants/<string:job_db_id>")
+def faculty_job_applicants(job_db_id):
+    redir = faculty_required()
+    if redir: return jsonify({"applicants": []})
+
+    cursor.execute("""
+        SELECT a.*, s.name, s.branch, s.student_id
+        FROM applications a
+        JOIN students s ON a.student_id = s.student_id
+        WHERE a.job_id = %s
+    """, (job_db_id,))
+    apps = cursor.fetchall()
+    return jsonify({"applicants": [dict(a) for a in apps]})
+
+
+@app.route("/faculty/job_pdf/<string:job_db_id>")
+def faculty_job_pdf(job_db_id):
+    redir = faculty_required()
+    if redir: return redir
+
+    cursor.execute("SELECT pdf_path FROM jobs WHERE job_id=%s", (job_db_id,))
+    job = cursor.fetchone()
+    if not job or not job["pdf_path"]:
+        from flask import flash
+        flash("No PDF attached to this job.", "error")
+        return redirect("/faculty/jobs")
+    
+    # Strip the leading '/static/' to get the true relative path in the static folder
+    pdf_path = job["pdf_path"]
+    if pdf_path.startswith("/static/"):
+        pdf_path = pdf_path[8:]
+    from flask import send_from_directory
+    return send_from_directory(app.static_folder, pdf_path)
+
+
+# ─── FACULTY: STUDENTS ───────────────────────────────────────────────────────
+
+PREV_YEARS_STATS = {
+    "CSE":          {"2023": 94, "2024": 96, "2025": 92},
+    "ECE":          {"2023": 86, "2024": 88, "2025": 85},
+    "Mechanical":   {"2023": 78, "2024": 82, "2025": 80},
+    "Chemical":     {"2023": 72, "2024": 75, "2025": 78},
+    "Bio-Technology": {"2023": 70, "2024": 74, "2025": 76},
+}
+
+@app.route("/faculty/students")
+def faculty_students():
+    redir = faculty_required()
+    if redir: return redir
+
+    cursor.execute("SELECT branch, COUNT(*) as total FROM students GROUP BY branch")
+    branch_counts = {r["branch"]: r["total"] for r in cursor.fetchall()}
+
+    branch_stats = []
+    for br in ["CSE", "ECE", "Mechanical", "Chemical", "Bio-Technology"]:
+        total = branch_counts.get(br, 0)
+        # Approximate placed count via applications
+        cursor.execute("""
+            SELECT COUNT(DISTINCT a.student_id) as cnt
+            FROM applications a
+            JOIN students s ON a.student_id = s.student_id
+            WHERE s.branch = %s
+        """, (br,))
+        placed = cursor.fetchone()["cnt"]
+        rate = round((placed / total) * 100) if total else 0
+        branch_stats.append({"name": br, "total": total, "placed": placed, "rate": rate})
+
+    return render_template("faculty/students.html", branch_stats=branch_stats, branch=None)
+
+
+@app.route("/faculty/students/<branch_name>")
+def faculty_branch_detail(branch_name):
+    redir = faculty_required()
+    if redir: return redir
+
+    cursor.execute("SELECT * FROM students WHERE branch = %s ORDER BY name", (branch_name,))
+    students = cursor.fetchall()
+
+    placed_count = 0
+    for s in students:
+        cursor.execute("SELECT * FROM applications WHERE student_id=%s", (s["student_id"],))
+        s["applications"] = cursor.fetchall()
+        if s["applications"]:
+            placed_count += 1
+
+    total = len(students)
+    current_rate = round((placed_count / total) * 100) if total else 0
+    prev_stats = PREV_YEARS_STATS.get(branch_name, {})
+
+    return render_template(
+        "faculty/students.html",
+        branch=branch_name,
+        students=students,
+        placed_count=placed_count,
+        current_rate=current_rate,
+        prev_stats=prev_stats,
+        branch_stats=[]
+    )
+
+
+# ─── FACULTY: MASTER SHEET ────────────────────────────────────────────────────
+
+@app.route("/faculty/master_sheet")
+def faculty_master_sheet():
+    redir = faculty_required()
+    if redir: return redir
+
+    upload_dir = os.path.join(app.static_folder, "uploads")
+    # Check for any master sheet file (pdf or xlsx)
+    pdf_path = os.path.join(upload_dir, "master_sheet.pdf")
+    xlsx_path = os.path.join(upload_dir, "master_sheet.xlsx")
+    
+    current_file = None
+    file_type = None
+    file_size = None
+    if os.path.exists(pdf_path):
+        current_file = "master_sheet.pdf"
+        file_type = "PDF"
+        file_size = round(os.path.getsize(pdf_path) / 1024, 1)
+    elif os.path.exists(xlsx_path):
+        current_file = "master_sheet.xlsx"
+        file_type = "XLSX"
+        file_size = round(os.path.getsize(xlsx_path) / 1024, 1)
+
+    return render_template(
+        "faculty/master_sheet.html",
+        current_file=current_file,
+        file_type=file_type,
+        file_size=file_size
+    )
+
+
+@app.route("/faculty/upload_master_sheet", methods=["POST"])
+def faculty_upload_master_sheet():
+    redir = faculty_required()
+    if redir: return redir
+
+    from flask import flash
+
+    if "master_file" not in request.files:
+        flash("No file selected.", "error")
+        return redirect("/faculty/master_sheet")
+
+    file = request.files["master_file"]
+    if not file or not file.filename:
+        flash("No file selected.", "error")
+        return redirect("/faculty/master_sheet")
+
+    filename = file.filename.lower()
+    upload_dir = os.path.join(app.static_folder, "uploads")
+    os.makedirs(upload_dir, exist_ok=True)
+
+    if filename.endswith(".pdf"):
+        # Remove old master sheet files
+        for old in ["master_sheet.pdf", "master_sheet.xlsx"]:
+            old_path = os.path.join(upload_dir, old)
+            if os.path.exists(old_path):
+                os.remove(old_path)
+        save_path = os.path.join(upload_dir, "master_sheet.pdf")
+        file.save(save_path)
+        flash("Master Sheet PDF uploaded successfully!", "success")
+    elif filename.endswith(".xlsx"):
+        # Remove old master sheet files
+        for old in ["master_sheet.pdf", "master_sheet.xlsx"]:
+            old_path = os.path.join(upload_dir, old)
+            if os.path.exists(old_path):
+                os.remove(old_path)
+        save_path = os.path.join(upload_dir, "master_sheet.xlsx")
+        file.save(save_path)
+        flash("Master Sheet XLSX uploaded successfully!", "success")
+    else:
+        flash("Invalid file type. Please upload a PDF or XLSX file.", "error")
+
+    return redirect("/faculty/master_sheet")
+
+
+@app.route("/faculty/download_master_sheet")
+def faculty_download_master_sheet():
+    redir = faculty_required()
+    if redir: return redir
+
+    from flask import send_file
+    upload_dir = os.path.join(app.static_folder, "uploads")
+    pdf_path = os.path.join(upload_dir, "master_sheet.pdf")
+    xlsx_path = os.path.join(upload_dir, "master_sheet.xlsx")
+
+    if os.path.exists(pdf_path):
+        return send_file(pdf_path, as_attachment=True, download_name="master_sheet.pdf")
+    elif os.path.exists(xlsx_path):
+        return send_file(xlsx_path, as_attachment=True, download_name="master_sheet.xlsx")
+    else:
+        from flask import flash
+        flash("No master sheet file found.", "error")
+        return redirect("/faculty/master_sheet")
+
+
+@app.route("/faculty/delete_master_sheet", methods=["POST"])
+def faculty_delete_master_sheet():
+    redir = faculty_required()
+    if redir: return redir
+
+    from flask import flash
+    upload_dir = os.path.join(app.static_folder, "uploads")
+    deleted = False
+    for fname in ["master_sheet.pdf", "master_sheet.xlsx"]:
+        fpath = os.path.join(upload_dir, fname)
+        if os.path.exists(fpath):
+            os.remove(fpath)
+            deleted = True
+    if deleted:
+        flash("Master sheet deleted successfully.", "success")
+    else:
+        flash("No master sheet found to delete.", "error")
+    return redirect("/faculty/master_sheet")
+
+
 @app.route("/faculty/upload_students", methods=["POST"])
 def faculty_upload_students():
+    redir = faculty_required()
+    if redir: return redir
+
     if "file" not in request.files:
-        return jsonify({"error": "No file uploaded"}), 400
-        
+        from flask import flash
+        flash("No file uploaded.", "error")
+        return redirect("/faculty/students")
+
     file = request.files["file"]
     filename = file.filename.lower()
-    
+
     if filename.endswith(".xlsx"):
         try:
             import pandas as pd
             df = pd.read_excel(file)
-            
-            # Expected columns or similar: student_id, name, email, password, branch, cgpa, backlogs, skills, batch
             for index, row in df.iterrows():
                 try:
-                    # Try to map columns flexibly
                     row_dict = {str(k).lower().replace(' ', '_'): v for k, v in row.items()}
-                    
                     student_id = int(row_dict.get('student_id', 0))
-                    name = str(row_dict.get('name', ''))
-                    email = str(row_dict.get('email', ''))
-                    password = str(row_dict.get('password', email.split('@')[0] if email else 'default123'))
-                    branch = str(row_dict.get('branch', ''))
-                    cgpa = float(row_dict.get('cgpa', 0.0))
-                    backlogs = int(row_dict.get('backlogs', 0))
-                    skills = str(row_dict.get('skills', ''))
-                    batch = int(row_dict.get('batch', 2028))
-                    
+                    name       = str(row_dict.get('name', ''))
+                    email      = str(row_dict.get('email', ''))
+                    password   = str(row_dict.get('password', email.split('@')[0] if email else 'default123'))
+                    branch     = str(row_dict.get('branch', ''))
+                    cgpa       = float(row_dict.get('cgpa', 0.0))
+                    backlogs   = int(row_dict.get('backlogs', 0))
+                    skills     = str(row_dict.get('skills', ''))
+                    batch      = int(row_dict.get('batch', 2028))
                     if student_id == 0 or not email:
                         continue
-                        
-                    # Check if exists
-                    cursor.execute("SELECT * FROM students WHERE student_id = %s", (student_id,))
+                    cursor.execute("SELECT * FROM students WHERE student_id=%s", (student_id,))
                     if cursor.fetchone():
-                        # Update
-                        query = """UPDATE students SET name=%s, email=%s, branch=%s, cgpa=%s, backlogs=%s, skills=%s, batch=%s WHERE student_id=%s"""
-                        cursor.execute(query, (name, email, branch, cgpa, backlogs, skills, batch, student_id))
+                        cursor.execute("""UPDATE students SET name=%s,email=%s,branch=%s,cgpa=%s,backlogs=%s,skills=%s,batch=%s WHERE student_id=%s""",
+                                       (name,email,branch,cgpa,backlogs,skills,batch,student_id))
                     else:
-                        # Insert
-                        query = """INSERT INTO students (student_id, name, email, password, branch, cgpa, backlogs, skills, batch) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)"""
-                        cursor.execute(query, (student_id, name, email, password, branch, cgpa, backlogs, skills, batch))
-                    
-                except Exception as e:
-                    print(f"Error processing row {index}: {e}")
-                    
+                        cursor.execute("""INSERT INTO students (student_id,name,email,password,branch,cgpa,backlogs,skills,batch) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
+                                       (student_id,name,email,password,branch,cgpa,backlogs,skills,batch))
+                except Exception as row_err:
+                    print(f"Row {index} error: {row_err}")
             db.commit()
-            return jsonify({"success": True, "message": "Students updated successfully."})
+            from flask import flash
+            flash("Students updated successfully from Excel!", "success")
         except Exception as e:
-            return jsonify({"error": f"Failed to process Excel: {str(e)}"}), 500
+            from flask import flash
+            flash(f"Failed to process Excel: {str(e)}", "error")
+    else:
+        from flask import flash
+        flash("Please upload a .xlsx Excel file.", "error")
+
+    return redirect("/faculty/students")
+
+
+# ─── FORGOT PASSWORD ─────────────────────────────────────────────────────────
+
+@app.route("/forgot_password", methods=["GET", "POST"])
+def forgot_password():
+    if request.method == "POST":
+        email = request.form.get("email", "").strip()
+        if not email:
+            from flask import flash
+            flash("Please enter an email address.", "error")
+            return redirect("/forgot_password")
+        
+        # Check students table
+        cursor.execute("SELECT * FROM students WHERE email=%s", (email,))
+        student = cursor.fetchone()
+        
+        # Check faculty table
+        cursor.execute("SELECT * FROM faculty WHERE email=%s", (email,))
+        faculty = cursor.fetchone()
+        
+        if not student and not faculty:
+            from flask import flash
+            flash("No account found with that email address.", "error")
+            return redirect("/forgot_password")
             
-    elif filename.endswith(".pdf"):
-        # Basic PDF extraction warning as structured data is hard from generic PDF
-        return jsonify({"error": "PDF parsing for structured student data requires a specific format. Please use Excel (.xlsx)."}), 400
-    
-    return jsonify({"error": "Invalid file format. Only .xlsx and .pdf allowed."}), 400
+        role = "student" if student else "faculty"
+        
+        # Generate 6 digit OTP
+        import random
+        otp = str(random.randint(100000, 999999))
+        session['reset_email'] = email
+        session['reset_role'] = role
+        session['reset_otp'] = otp
+        
+        # Mocking email send by flashing it directly
+        from flask import flash
+        flash(f"MOCK EMAIL SEND: Your OTP is {otp}", "info")
+        return redirect("/verify_otp")
+        
+    return render_template("forgot_password.html")
+
+@app.route("/verify_otp", methods=["GET", "POST"])
+def verify_otp():
+    if 'reset_email' not in session:
+        return redirect("/forgot_password")
+        
+    if request.method == "POST":
+        entered_otp = request.form.get("otp", "").strip()
+        if entered_otp == session.get('reset_otp'):
+            session['reset_verified'] = True
+            return redirect("/reset_password")
+        else:
+            from flask import flash
+            flash("Invalid OTP. Please try again.", "error")
+            
+    return render_template("verify_otp.html", email=session.get('reset_email'))
+
+@app.route("/reset_password", methods=["GET", "POST"])
+def reset_password():
+    if not session.get('reset_verified') or 'reset_email' not in session:
+        return redirect("/forgot_password")
+        
+    if request.method == "POST":
+        new_password = request.form.get("new_password", "").strip()
+        confirm_password = request.form.get("confirm_password", "").strip()
+        
+        if len(new_password) < 6:
+            from flask import flash
+            flash("Password must be at least 6 characters long.", "error")
+            return redirect("/reset_password")
+            
+        if new_password != confirm_password:
+            from flask import flash
+            flash("Passwords do not match.", "error")
+            return redirect("/reset_password")
+            
+        email = session['reset_email']
+        role = session['reset_role']
+        
+        try:
+            if role == "student":
+                cursor.execute("UPDATE students SET password=%s WHERE email=%s", (new_password, email))
+            else:
+                cursor.execute("UPDATE faculty SET password=%s WHERE email=%s", (new_password, email))
+            db.commit()
+            
+            # Clear session
+            session.pop('reset_email', None)
+            session.pop('reset_role', None)
+            session.pop('reset_otp', None)
+            session.pop('reset_verified', None)
+            
+            from flask import flash
+            flash("Password has been reset successfully! You can now log in.", "success")
+            return redirect("/")
+        except Exception as e:
+            db.rollback()
+            from flask import flash
+            flash(f"An error occurred: {str(e)}", "error")
+            
+    return render_template("reset_password.html")
 
 if __name__ == "__main__":
-    app.run(debug = True)
+    app.run(debug=True)
