@@ -170,7 +170,1013 @@ function togglePassword() {
     pwd.type = "password";
     icon.className = "ti ti-eye-off";
   }
+<<<<<<< HEAD
 }
+=======
+  // Ensure all jobs have extraRequirements initialized
+  jobsData.forEach(job => {
+    if (!job.extraRequirements) {
+      job.extraRequirements = { aadhar: false, pan: false, other: "" };
+    }
+  });
+
+  // Alias for compatibility
+  let companiesData = jobsData;
+
+  // Master Sheet PDF
+  let masterSheetPDF = JSON.parse(localStorage.getItem("masterSheetPDF")) || null;
+
+  // Column visibility settings
+  const defaultColumnVisibility = {
+    jobId: true,
+    company: true,
+    ctc: true,
+    location: true,
+    bond: true,
+    cgpaCutoff: true,
+    branches: true,
+    activeBacklogs: true,
+    backlogHistory: true,
+    extraRequirements: true,
+    tier: true,
+    description: true,
+    pdfFile: true
+  };
+  let columnVisibility = JSON.parse(localStorage.getItem("columnVisibility")) || defaultColumnVisibility;
+  if (columnVisibility.extraRequirements === undefined) {
+    columnVisibility.extraRequirements = true;
+  }
+
+  let customColumns = JSON.parse(localStorage.getItem("customColumns")) || [];
+  // Ensure all custom columns have visibility initialized
+  customColumns.forEach(col => {
+    if (columnVisibility[col.id] === undefined) {
+      columnVisibility[col.id] = true;
+    }
+  });
+
+  // PDF Storage (simulated as Base64) - retained for backwards compatibility if needed
+  let pdfFiles = [];
+
+  const previousYearsStats = {
+    "CSE": { "2023": 94, "2024": 96, "2025": 92 },
+    "ECE": { "2023": 86, "2024": 88, "2025": 85 },
+    "Mechanical": { "2023": 78, "2024": 82, "2025": 80 },
+    "Chemical": { "2023": 72, "2024": 75, "2025": 78 },
+    "Bio-Technology": { "2023": 70, "2024": 74, "2025": 76 }
+  };
+
+  const branches = ["CSE", "ECE", "Mechanical", "Chemical", "Bio-Technology"];
+  const totalStudents = studentsData.length;
+  const placedCount = studentsData.filter(s => s.placementStatus === "Placed").length;
+  const placementRate = Math.round((placedCount / totalStudents) * 100);
+  const avgPackage = "18.2 LPA";
+  const activeRecruiters = companiesData.length;
+  
+  const savedEmail = "drshankar@gmail.com";
+  const savedPassword = "drshankar123";
+
+  let currentView = 'login';
+
+  function getBranchStats() {
+    return branches.map(branch => ({
+      name: branch,
+      total: studentsData.filter(s => s.branch === branch).length,
+      placed: studentsData.filter(s => s.branch === branch && s.placementStatus === "Placed").length
+    }));
+  }
+
+  function showToast(msg, type = "success") {
+    let container = document.getElementById("toastContainer");
+    if (!container) {
+      container = document.createElement("div");
+      container.id = "toastContainer";
+      container.style.position = "fixed";
+      container.style.bottom = "24px";
+      container.style.right = "24px";
+      container.style.display = "flex";
+      container.style.flexDirection = "column";
+      container.style.gap = "10px";
+      container.style.zIndex = "2000";
+      document.body.appendChild(container);
+    }
+    
+    const toast = document.createElement("div");
+    toast.className = `toast-message ${type}`;
+    
+    let icon = "ti-circle-check";
+    let bg = "linear-gradient(135deg, #10b981, #059669)";
+    if (type === "error") {
+      icon = "ti-circle-x";
+      bg = "linear-gradient(135deg, #ef4444, #dc2626)";
+    } else if (type === "info") {
+      icon = "ti-info-circle";
+      bg = "linear-gradient(135deg, #3b82f6, #2563eb)";
+    } else if (type === "warning") {
+      icon = "ti-alert-triangle";
+      bg = "linear-gradient(135deg, #f59e0b, #d97706)";
+    }
+    
+    toast.style.background = bg;
+    toast.style.color = "white";
+    toast.style.padding = "14px 24px";
+    toast.style.borderRadius = "16px";
+    toast.style.boxShadow = "0 10px 30px rgba(0,0,0,0.15)";
+    toast.style.display = "flex";
+    toast.style.alignItems = "center";
+    toast.style.gap = "12px";
+    toast.style.fontFamily = "'DM Sans', sans-serif";
+    toast.style.fontSize = "14px";
+    toast.style.fontWeight = "600";
+    toast.style.opacity = "0";
+    toast.style.transform = "translateY(20px)";
+    toast.style.transition = "all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)";
+    
+    toast.innerHTML = `<i class="ti ${icon}" style="font-size: 18px;"></i> <span>${msg}</span>`;
+    container.appendChild(toast);
+    
+    setTimeout(() => {
+      toast.style.opacity = "1";
+      toast.style.transform = "translateY(0)";
+    }, 10);
+    
+    setTimeout(() => {
+      toast.style.opacity = "0";
+      toast.style.transform = "translateY(-20px)";
+      setTimeout(() => {
+        toast.remove();
+      }, 300);
+    }, 3200);
+  }
+
+  // Master Sheet Upload & Delete Functions
+  window.handleMasterSheetUpload = function(event) {
+    const file = event.target.files[0];
+    if (file && file.type === 'application/pdf') {
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        masterSheetPDF = {
+          name: file.name,
+          dataURL: e.target.result,
+          uploadedAt: new Date().toLocaleString(),
+          size: (file.size / 1024).toFixed(1) + " KB"
+        };
+        localStorage.setItem("masterSheetPDF", JSON.stringify(masterSheetPDF));
+        showToast(`Master Excel Sheet "${file.name}" uploaded successfully!`, "success");
+        renderMasterSheetPage();
+      };
+      reader.readAsDataURL(file);
+    } else {
+      alert("Please upload a valid PDF file.");
+    }
+    event.target.value = '';
+  };
+
+  window.deleteMasterSheet = function() {
+    if (confirm("Are you sure you want to delete the Master Excel Sheet PDF?")) {
+      const name = masterSheetPDF.name;
+      masterSheetPDF = null;
+      localStorage.removeItem("masterSheetPDF");
+      showToast(`Master Excel Sheet "${name}" deleted successfully!`, "warning");
+      renderMasterSheetPage();
+    }
+  };
+
+  // Job Modal Control Functions
+  let editingJobIdx = null;
+  let tempJobPDF = null;
+
+  window.openAddJobModal = function(idx = null) {
+    editingJobIdx = idx;
+    tempJobPDF = idx !== null ? jobsData[idx].pdfFile : null;
+    
+    let modal = document.getElementById("jobModal");
+    if (!modal) {
+      modal = document.createElement("div");
+      modal.id = "jobModal";
+      modal.className = "modal-overlay";
+      document.body.appendChild(modal);
+    }
+    
+    const isEdit = idx !== null;
+    const job = isEdit ? jobsData[idx] : {
+      jobId: "", company: "", ctc: "", location: "", bond: "", cgpaCutoff: "",
+      branches: [], activeBacklogs: "0", backlogHistory: "0", tier: "Tier 1", description: "",
+      extraRequirements: { aadhar: false, pan: false, other: "" }
+    };
+    if (job && !job.extraRequirements) {
+      job.extraRequirements = { aadhar: false, pan: false, other: "" };
+    }
+    
+    let customFieldsHtml = '';
+    customColumns.forEach(col => {
+      const val = job[col.id] !== undefined ? job[col.id] : col.defaultValue;
+      customFieldsHtml += `
+        <div class="form-group">
+          <label for="form_${col.id}">${col.label}</label>
+          <input type="text" id="form_${col.id}" value="${val}" placeholder="e.g. ${col.defaultValue}">
+        </div>
+      `;
+    });
+    
+    const branchesList = ["CSE", "ECE", "Mechanical", "Chemical", "Bio-Technology"];
+    let branchCheckboxesHtml = '';
+    branchesList.forEach(branch => {
+      const isChecked = job.branches.includes(branch) ? 'checked' : '';
+      branchCheckboxesHtml += `
+        <label class="branch-check-label">
+          <input type="checkbox" class="form-branch-checkbox" value="${branch}" ${isChecked}> ${branch}
+        </label>
+      `;
+    });
+    
+    modal.innerHTML = `
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>${isEdit ? '<i class="ti ti-edit"></i> Edit Job Opening' : '<i class="ti ti-plus"></i> Add Job Opening'}</h2>
+          <button class="modal-close-btn" onclick="closeJobModal()">&times;</button>
+        </div>
+        <form id="jobForm" onsubmit="saveJobForm(event)">
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="formJobId">Job ID *</label>
+              <input type="text" id="formJobId" value="${job.jobId}" required placeholder="e.g. JOB105" ${isEdit ? 'readonly style="background:#f3f4f6; color:#9ca3af; border-color:#d1d5db;"' : ''}>
+            </div>
+            <div class="form-group">
+              <label for="formCompany">Company Name *</label>
+              <input type="text" id="formCompany" value="${job.company}" required placeholder="e.g. Google">
+            </div>
+            <div class="form-group">
+              <label for="formCtc">CTC (LPA) *</label>
+              <input type="text" id="formCtc" value="${job.ctc}" required placeholder="e.g. 24 LPA">
+            </div>
+            <div class="form-group">
+              <label for="formLocation">Job Location *</label>
+              <input type="text" id="formLocation" value="${job.location}" required placeholder="e.g. Hyderabad">
+            </div>
+            <div class="form-group">
+              <label for="formBond">Bond Details</label>
+              <input type="text" id="formBond" value="${job.bond}" placeholder="e.g. 1 Year / None">
+            </div>
+            <div class="form-group">
+              <label for="formCgpaCutoff">CGPA Cutoff *</label>
+              <input type="number" step="0.01" min="0" max="10" id="formCgpaCutoff" value="${job.cgpaCutoff}" required placeholder="e.g. 8.0">
+            </div>
+            <div class="form-group">
+              <label for="formActiveBacklogs">Max Active Backlogs Allowed *</label>
+              <input type="number" min="0" id="formActiveBacklogs" value="${job.activeBacklogs}" required placeholder="0">
+            </div>
+            <div class="form-group">
+              <label for="formBacklogHistory">Max Backlog History Allowed *</label>
+              <input type="number" min="0" id="formBacklogHistory" value="${job.backlogHistory}" required placeholder="0">
+            </div>
+            ${customFieldsHtml}
+            <div class="form-group full-width">
+              <label>Select Eligible Branches *</label>
+              <div class="branches-checkbox-grid">
+                ${branchCheckboxesHtml}
+              </div>
+            </div>
+            <div class="form-group full-width">
+              <label>Select Job Tier *</label>
+              <div class="tier-selector">
+                <button type="button" class="tier-btn ${job.tier === 'Tier 1' ? 'active' : ''}" onclick="selectFormTier('Tier 1')">Tier 1</button>
+                <button type="button" class="tier-btn ${job.tier === 'Tier 2' ? 'active' : ''}" onclick="selectFormTier('Tier 2')">Tier 2</button>
+                <button type="button" class="tier-btn ${job.tier === 'Tier 3' ? 'active' : ''}" onclick="selectFormTier('Tier 3')">Tier 3</button>
+              </div>
+              <input type="hidden" id="formTier" value="${job.tier}">
+            </div>
+            <div class="form-group full-width">
+              <label>Candidate Extra Requirements (Optional for Companies)</label>
+              <div style="display: flex; gap: 20px; align-items: center; background: #fffdf9; border: 1px solid rgba(253, 230, 138, 0.8); border-radius: 12px; padding: 14px; flex-wrap: wrap;">
+                <label class="branch-check-label">
+                  <input type="checkbox" id="formReqAadhar" ${job.extraRequirements?.aadhar ? 'checked' : ''}> Require Aadhar Card
+                </label>
+                <label class="branch-check-label">
+                  <input type="checkbox" id="formReqPan" ${job.extraRequirements?.pan ? 'checked' : ''}> Require PAN Card
+                </label>
+              </div>
+            </div>
+            <div class="form-group full-width">
+              <label for="formReqOther">Other Document/Requirement Name</label>
+              <input type="text" id="formReqOther" value="${job.extraRequirements?.other || ''}" placeholder="e.g. Passport, Portfolio URL, NOC">
+            </div>
+            <div class="form-group full-width">
+              <label for="formDescription">Job Description *</label>
+              <textarea id="formDescription" rows="4" required placeholder="Describe responsibilities, expectations, and skills...">${job.description}</textarea>
+            </div>
+            <div class="form-group full-width">
+              <label>Upload Job PDF (Optional)</label>
+              <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+                <input type="file" id="formPdfUpload" accept=".pdf" onchange="handleJobPdfUpload(event)" style="display:none;">
+                <button type="button" class="back-home-btn" onclick="document.getElementById('formPdfUpload').click()"><i class="ti ti-upload"></i> Choose PDF</button>
+                <span id="formPdfStatus" style="font-size:12px; color:#5c3b1a; font-weight:600;">
+                  ${job.pdfFile ? `<i class="ti ti-file-pdf" style="color:#ef4444; font-size:16px;"></i> ${job.pdfFile.name} (${job.pdfFile.size})` : 'No file uploaded'}
+                </span>
+                ${job.pdfFile ? `<button type="button" onclick="removeFormPdf()" style="background:none; border:none; color:#ef4444; cursor:pointer;" title="Remove File"><i class="ti ti-circle-x" style="font-size:18px;"></i></button>` : ''}
+              </div>
+            </div>
+          </div>
+          <div style="display:flex; justify-content:flex-end; gap:12px; border-top:1px solid #fde68a; padding-top:18px;">
+            <button type="button" class="back-home-btn" onclick="closeJobModal()">Cancel</button>
+            <button type="submit" class="edit-action-btn" style="margin-bottom:0;">Save Job Opening</button>
+          </div>
+        </form>
+      </div>
+    `;
+    setTimeout(() => modal.classList.add("active"), 10);
+  };
+
+  window.closeJobModal = function() {
+    const modal = document.getElementById("jobModal");
+    if (modal) modal.classList.remove("active");
+  };
+
+  window.selectFormTier = function(tierName) {
+    document.getElementById("formTier").value = tierName;
+    const btns = document.querySelectorAll(".tier-btn");
+    btns.forEach(btn => {
+      if (btn.textContent === tierName) btn.classList.add("active");
+      else btn.classList.remove("active");
+    });
+  };
+
+  window.handleJobPdfUpload = function(event) {
+    const file = event.target.files[0];
+    if (file && file.type === 'application/pdf') {
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        tempJobPDF = {
+          name: file.name,
+          dataURL: e.target.result,
+          size: (file.size / 1024).toFixed(1) + " KB"
+        };
+        const statusSpan = document.getElementById("formPdfStatus");
+        if (statusSpan) {
+          statusSpan.innerHTML = `<i class="ti ti-file-pdf" style="color:#ef4444; font-size:16px;"></i> ${tempJobPDF.name} (${tempJobPDF.size})`;
+        }
+        showToast(`Job PDF "${file.name}" uploaded to form!`, "info");
+      };
+      reader.readAsDataURL(file);
+    } else {
+      alert("Please upload a valid PDF file.");
+    }
+  };
+
+  window.removeFormPdf = function() {
+    tempJobPDF = null;
+    const statusSpan = document.getElementById("formPdfStatus");
+    if (statusSpan) statusSpan.textContent = "No file uploaded";
+    event.currentTarget.remove();
+    showToast("PDF removed from form", "info");
+  };
+
+  window.saveJobForm = function(event) {
+    event.preventDefault();
+    
+    const jobId = document.getElementById("formJobId").value.trim();
+    const company = document.getElementById("formCompany").value.trim();
+    const ctc = document.getElementById("formCtc").value.trim();
+    const location = document.getElementById("formLocation").value.trim();
+    const bond = document.getElementById("formBond").value.trim() || "None";
+    const cgpaCutoff = parseFloat(document.getElementById("formCgpaCutoff").value).toFixed(2);
+    const activeBacklogs = document.getElementById("formActiveBacklogs").value.trim();
+    const backlogHistory = document.getElementById("formBacklogHistory").value.trim();
+    const tier = document.getElementById("formTier").value;
+    const description = document.getElementById("formDescription").value.trim();
+    
+    const branchCheckboxes = document.querySelectorAll(".form-branch-checkbox:checked");
+    const branches = Array.from(branchCheckboxes).map(cb => cb.value);
+    
+    if (branches.length === 0) {
+      alert("Please select at least one eligible branch.");
+      return;
+    }
+    
+    if (editingJobIdx === null) {
+      const jobExists = jobsData.some(j => j.jobId.toLowerCase() === jobId.toLowerCase());
+      if (jobExists) {
+        alert(`Job ID "${jobId}" already exists. Please choose a unique Job ID.`);
+        return;
+      }
+    }
+    
+    const aadhar = document.getElementById("formReqAadhar").checked;
+    const pan = document.getElementById("formReqPan").checked;
+    const other = document.getElementById("formReqOther").value.trim();
+
+    const jobData = {
+      jobId, company, ctc, location, bond, cgpaCutoff, branches,
+      activeBacklogs, backlogHistory, tier, description,
+      pdfFile: tempJobPDF,
+      extraRequirements: { aadhar, pan, other }
+    };
+    
+    customColumns.forEach(col => {
+      const inputEl = document.getElementById(`form_${col.id}`);
+      if (inputEl) {
+        jobData[col.id] = inputEl.value.trim();
+      } else {
+        jobData[col.id] = col.defaultValue;
+      }
+    });
+    
+    if (editingJobIdx === null) {
+      jobsData.push(jobData);
+      showToast(`Job opening for ${company} added successfully!`, "success");
+    } else {
+      jobsData[editingJobIdx] = jobData;
+      showToast(`Job opening for ${company} updated successfully!`, "success");
+    }
+    
+    localStorage.setItem("jobsData", JSON.stringify(jobsData));
+    closeJobModal();
+    renderJobsPage();
+  };
+
+  window.deleteJob = function(idx) {
+    if (confirm(`Are you sure you want to delete the job opening for "${jobsData[idx].company}"?`)) {
+      const company = jobsData[idx].company;
+      jobsData.splice(idx, 1);
+      localStorage.setItem("jobsData", JSON.stringify(jobsData));
+      showToast(`Job opening for "${company}" deleted successfully!`, "warning");
+      renderJobsPage();
+    }
+  };
+
+  // Description Modal functions
+  window.viewFullDescription = function(idx) {
+    let modal = document.getElementById("descModal");
+    if (!modal) {
+      modal = document.createElement("div");
+      modal.id = "descModal";
+      modal.className = "modal-overlay";
+      document.body.appendChild(modal);
+    }
+    const job = jobsData[idx];
+    modal.innerHTML = `
+      <div class="modal-content" style="max-width: 520px;">
+        <div class="modal-header">
+          <h2>${job.company} - Job Description</h2>
+          <button class="modal-close-btn" onclick="closeDescModal()">&times;</button>
+        </div>
+        <div style="color: #5c3b1a; line-height: 1.7; font-size: 14px; white-space: pre-wrap; margin-bottom: 24px; font-weight: 500;">${job.description}</div>
+        <div style="display:flex; justify-content:flex-end;">
+          <button class="edit-action-btn" onclick="closeDescModal()" style="margin-bottom:0;">Close</button>
+        </div>
+      </div>
+    `;
+    setTimeout(() => modal.classList.add("active"), 10);
+  };
+
+  window.closeDescModal = function() {
+    const modal = document.getElementById("descModal");
+    if (modal) modal.classList.remove("active");
+  };
+
+  // View Applicants Modal Functions
+  window.viewApplicants = function(idx) {
+    const job = jobsData[idx];
+    let modal = document.getElementById("applicantsModal");
+    if (!modal) {
+      modal = document.createElement("div");
+      modal.id = "applicantsModal";
+      modal.className = "modal-overlay";
+      document.body.appendChild(modal);
+    }
+    
+    // Load applications from localStorage
+    const apps = JSON.parse(localStorage.getItem("studentApplications")) || [];
+    const jobApps = apps.filter(app => app.jobId === job.jobId);
+    
+    let rows = '';
+    if (jobApps.length === 0) {
+      rows = `<tr><td colspan="5" style="text-align:center; padding: 24px; color:#b97f10; font-weight: 500;">No applications received yet.</td></tr>`;
+    } else {
+      jobApps.forEach(app => {
+        let extraDetailsText = [];
+        if (app.extraDetails) {
+          if (app.extraDetails.aadhar) extraDetailsText.push(`<strong>Aadhar:</strong> ${app.extraDetails.aadhar}`);
+          if (app.extraDetails.pan) extraDetailsText.push(`<strong>PAN:</strong> ${app.extraDetails.pan}`);
+          if (app.extraDetails.other) extraDetailsText.push(`<strong>${job.extraRequirements?.other || 'Other'}:</strong> ${app.extraDetails.other}`);
+        }
+        const detailsDisplay = extraDetailsText.length > 0 ? extraDetailsText.join('<br>') : '<span style="color:#a1a1aa;">None required</span>';
+        
+        rows += `
+          <tr>
+            <td><strong>${app.studentId}</strong></td>
+            <td>${app.studentName}</td>
+            <td>${app.studentBranch}</td>
+            <td>${detailsDisplay}</td>
+            <td><span class="status-badge placed" style="background:#eef2e6; color:#2b6e4e;">Submitted</span></td>
+          </tr>
+        `;
+      });
+    }
+    
+    modal.innerHTML = `
+      <div class="modal-content" style="max-width: 700px;">
+        <div class="modal-header">
+          <h2><i class="ti ti-users"></i> Applicants for ${job.company} (${job.jobId})</h2>
+          <button class="modal-close-btn" onclick="closeApplicantsModal()">&times;</button>
+        </div>
+        <div class="table-wrapper" style="max-height: 400px; overflow-y: auto;">
+          <table>
+            <thead>
+              <tr>
+                <th>Student ID</th>
+                <th>Name</th>
+                <th>Branch</th>
+                <th>Submitted Details</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rows}
+            </tbody>
+          </table>
+        </div>
+        <div style="display:flex; justify-content:flex-end; border-top:1px solid #fde68a; padding-top:18px; margin-top:20px;">
+          <button class="edit-action-btn" onclick="closeApplicantsModal()" style="margin-bottom:0;">Close</button>
+        </div>
+      </div>
+    `;
+    setTimeout(() => modal.classList.add("active"), 10);
+  };
+  
+  window.closeApplicantsModal = function() {
+    const modal = document.getElementById("applicantsModal");
+    if (modal) modal.classList.remove("active");
+  };
+
+  // Custom Columns Helpers
+  window.openAddColumnModal = function() {
+    let modal = document.getElementById("columnModal");
+    if (!modal) {
+      modal = document.createElement("div");
+      modal.id = "columnModal";
+      modal.className = "modal-overlay";
+      document.body.appendChild(modal);
+    }
+    
+    modal.innerHTML = `
+      <div class="modal-content" style="max-width: 450px;">
+        <div class="modal-header">
+          <h2><i class="ti ti-column-insert-right"></i> Add Criteria Column</h2>
+          <button class="modal-close-btn" onclick="closeAddColumnModal()">&times;</button>
+        </div>
+        <form id="columnForm" onsubmit="saveCustomColumn(event)">
+          <div class="form-group" style="margin-bottom: 16px;">
+            <label for="colLabel">Criteria / Column Name *</label>
+            <input type="text" id="colLabel" required placeholder="e.g. 12th Percentage, Work Exp">
+          </div>
+          <div class="form-group" style="margin-bottom: 24px;">
+            <label for="colDefaultValue">Default Value for Existing Jobs</label>
+            <input type="text" id="colDefaultValue" placeholder="e.g. 60%, None, 0 years">
+          </div>
+          <div style="display:flex; justify-content:flex-end; gap:12px; border-top:1px solid #fde68a; padding-top:18px;">
+            <button type="button" class="back-home-btn" onclick="closeAddColumnModal()">Cancel</button>
+            <button type="submit" class="edit-action-btn" style="margin-bottom:0;">Add Column</button>
+          </div>
+        </form>
+      </div>
+    `;
+    setTimeout(() => modal.classList.add("active"), 10);
+  };
+  
+  window.closeAddColumnModal = function() {
+    const modal = document.getElementById("columnModal");
+    if (modal) modal.classList.remove("active");
+  };
+  
+  window.saveCustomColumn = function(event) {
+    event.preventDefault();
+    const label = document.getElementById("colLabel").value.trim();
+    const defaultValue = document.getElementById("colDefaultValue").value.trim() || "None";
+    
+    if (!label) return;
+    
+    // Generate a unique ID from label
+    const id = "custom_" + label.toLowerCase().replace(/[^a-z0-9_]/g, "_").replace(/_+/g, "_");
+    
+    // Check if it already exists
+    const isNative = ["jobid", "company", "ctc", "location", "bond", "cgpacutoff", "branches", "activebacklogs", "backloghistory", "tier", "description", "pdffile"].includes(label.toLowerCase().replace(/[^a-z0-9_]/g, ""));
+    const isCustomExists = customColumns.some(col => col.id === id || col.label.toLowerCase() === label.toLowerCase());
+    
+    if (isNative || isCustomExists) {
+      alert(`A column/criteria with name "${label}" already exists.`);
+      return;
+    }
+    
+    // Add to customColumns list
+    const newCol = { id, label, defaultValue };
+    customColumns.push(newCol);
+    localStorage.setItem("customColumns", JSON.stringify(customColumns));
+    
+    // Add to columnVisibility
+    columnVisibility[id] = true;
+    localStorage.setItem("columnVisibility", JSON.stringify(columnVisibility));
+    
+    // Add value to existing jobs
+    jobsData.forEach(job => {
+      if (job[id] === undefined) {
+        job[id] = defaultValue;
+      }
+    });
+    localStorage.setItem("jobsData", JSON.stringify(jobsData));
+    
+    showToast(`Criteria column "${label}" added successfully!`, "success");
+    closeAddColumnModal();
+    renderJobsPage();
+  };
+  
+  window.deleteCustomColumn = function(id) {
+    const colToDelete = customColumns.find(col => col.id === id);
+    if (!colToDelete) return;
+    
+    if (confirm(`Are you sure you want to delete the criteria column "${colToDelete.label}"? This will also remove the data associated with it from all jobs.`)) {
+      // Remove from customColumns list
+      customColumns = customColumns.filter(col => col.id !== id);
+      localStorage.setItem("customColumns", JSON.stringify(customColumns));
+      
+      // Remove from columnVisibility
+      delete columnVisibility[id];
+      localStorage.setItem("columnVisibility", JSON.stringify(columnVisibility));
+      
+      // Remove from all jobs
+      jobsData.forEach(job => {
+        delete job[id];
+      });
+      localStorage.setItem("jobsData", JSON.stringify(jobsData));
+      
+      showToast(`Criteria column "${colToDelete.label}" deleted successfully!`, "warning");
+      renderJobsPage();
+    }
+  };
+
+  // JOBS PAGE: Renders the jobs table and controls
+  window.renderJobsPage = function() {
+    currentView = 'jobsPage';
+    
+    // Construct Custom Dropdown Items
+    let customDropdownItemsHtml = '';
+    customColumns.forEach(col => {
+      customDropdownItemsHtml += `
+        <div class="dropdown-item" style="display: flex; justify-content: space-between; align-items: center; width: 100%; padding: 6px 14px; gap: 8px;">
+          <label style="display: flex; align-items: center; gap: 12px; cursor: pointer; flex: 1; margin: 0; font-size: 13px; color: #5c3b1a; font-weight: 500;">
+            <input type="checkbox" ${columnVisibility[col.id] ? 'checked' : ''} onchange="toggleColumnVisibility('${col.id}')" style="accent-color: #d97706; width: 17px; height: 17px; cursor: pointer;"> ${col.label}
+          </label>
+          <button onclick="event.stopPropagation(); deleteCustomColumn('${col.id}')" style="background:none; border:none; color:#ef4444; cursor:pointer; padding:4px; display: flex; align-items: center; justify-content: center; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.15)'" onmouseout="this.style.transform='scale(1)'" title="Delete Criteria Column"><i class="ti ti-trash" style="font-size: 14px;"></i></button>
+        </div>
+      `;
+    });
+    
+    // Construct Table Header
+    let headerHtml = '<tr>';
+    if (columnVisibility.jobId) headerHtml += '<th>Job ID</th>';
+    if (columnVisibility.company) headerHtml += '<th>Company</th>';
+    if (columnVisibility.ctc) headerHtml += '<th>CTC</th>';
+    if (columnVisibility.location) headerHtml += '<th>Location</th>';
+    if (columnVisibility.bond) headerHtml += '<th>Bond</th>';
+    if (columnVisibility.cgpaCutoff) headerHtml += '<th>CGPA Cutoff</th>';
+    if (columnVisibility.branches) headerHtml += '<th>Branch Eligible</th>';
+    if (columnVisibility.activeBacklogs) headerHtml += '<th>Active Backlogs</th>';
+    if (columnVisibility.backlogHistory) headerHtml += '<th>Backlog History</th>';
+    customColumns.forEach(col => {
+      if (columnVisibility[col.id]) headerHtml += `<th>${col.label}</th>`;
+    });
+    if (columnVisibility.extraRequirements) headerHtml += '<th>Extra Requirements</th>';
+    if (columnVisibility.tier) headerHtml += '<th>Tier</th>';
+    if (columnVisibility.description) headerHtml += '<th>Job Description</th>';
+    if (columnVisibility.pdfFile) headerHtml += '<th>Attachment</th>';
+    headerHtml += '<th style="text-align: center;">Actions</th></tr>';
+    
+    // Construct Table Rows
+    let rowsHtml = '';
+    if (jobsData.length === 0) {
+      let activeColsCount = Object.values(columnVisibility).filter(Boolean).length + 1;
+      rowsHtml = `<tr><td colspan="${activeColsCount}" style="text-align:center; padding: 32px; color: #b97f10; font-weight: 500;">No job openings found. Click "+ Add Job Opening" to create one.</td></tr>`;
+    } else {
+      jobsData.forEach((job, idx) => {
+        rowsHtml += `<tr class="job-row">`;
+        if (columnVisibility.jobId) rowsHtml += `<td><strong>${job.jobId}</strong></td>`;
+        if (columnVisibility.company) rowsHtml += `<td><strong>${job.company}</strong></td>`;
+        if (columnVisibility.ctc) rowsHtml += `<td>${job.ctc}</td>`;
+        if (columnVisibility.location) rowsHtml += `<td>${job.location}</td>`;
+        if (columnVisibility.bond) rowsHtml += `<td>${job.bond}</td>`;
+        if (columnVisibility.cgpaCutoff) rowsHtml += `<td>${job.cgpaCutoff}</td>`;
+        if (columnVisibility.branches) rowsHtml += `<td>${job.branches.join(', ')}</td>`;
+        if (columnVisibility.activeBacklogs) rowsHtml += `<td>${job.activeBacklogs}</td>`;
+        if (columnVisibility.backlogHistory) rowsHtml += `<td>${job.backlogHistory}</td>`;
+        
+        customColumns.forEach(col => {
+          if (columnVisibility[col.id]) {
+            rowsHtml += `<td>${job[col.id] !== undefined ? job[col.id] : col.defaultValue}</td>`;
+          }
+        });
+        
+        if (columnVisibility.extraRequirements) {
+          let reqs = [];
+          if (job.extraRequirements?.aadhar) reqs.push("Aadhar");
+          if (job.extraRequirements?.pan) reqs.push("PAN");
+          if (job.extraRequirements?.other) reqs.push(job.extraRequirements.other);
+          rowsHtml += `<td>${reqs.length > 0 ? reqs.join(', ') : '<span style="color:#a1a1aa; font-size:12px; font-weight:500;">None</span>'}</td>`;
+        }
+        
+        if (columnVisibility.tier) {
+          const tierClass = job.tier.toLowerCase().replace(' ', '-');
+          rowsHtml += `<td><span class="tier-badge ${tierClass}">${job.tier}</span></td>`;
+        }
+        
+        if (columnVisibility.description) {
+          const shortDesc = job.description.length > 40 ? job.description.substring(0, 37) + '...' : job.description;
+          rowsHtml += `<td>
+            <span title="${job.description.replace(/"/g, '&quot;')}">${shortDesc}</span>
+            ${job.description.length > 40 ? `<a href="#" onclick="event.preventDefault(); viewFullDescription(${idx})" style="color:#d97706; font-weight: 700; font-size:11px; margin-left:6px; text-decoration:none;">View</a>` : ''}
+          </td>`;
+        }
+        
+        if (columnVisibility.pdfFile) {
+          if (job.pdfFile) {
+            rowsHtml += `<td>
+              <a href="${job.pdfFile.dataURL}" download="${job.pdfFile.name}" style="color:#d97706; font-weight: 700; text-decoration:none; display:inline-flex; align-items:center; gap:6px; font-size:12px;">
+                <i class="ti ti-file-pdf" style="color:#ef4444; font-size:18px;"></i> View PDF
+              </a>
+            </td>`;
+          } else {
+            rowsHtml += `<td><span style="color:#a1a1aa; font-size:12px; font-weight: 500;">No Attachment</span></td>`;
+          }
+        }
+        
+        rowsHtml += `<td>
+          <div style="display:flex; gap:12px; align-items:center; justify-content: center;">
+            <button onclick="viewApplicants(${idx})" style="background:none; border:none; color:#3b82f6; cursor:pointer; font-size:20px; padding:4px;" title="View Applicants"><i class="ti ti-users"></i></button>
+            <button onclick="openAddJobModal(${idx})" style="background:none; border:none; color:#d97706; cursor:pointer; font-size:20px; padding:4px;" title="Edit Job Details"><i class="ti ti-edit"></i></button>
+            <button onclick="deleteJob(${idx})" style="background:none; border:none; color:#ef4444; cursor:pointer; font-size:20px; padding:4px;" title="Delete Job Opening"><i class="ti ti-trash"></i></button>
+          </div>
+        </td>`;
+        rowsHtml += `</tr>`;
+      });
+    }
+
+    document.getElementById("appRoot").innerHTML = `
+      <div class="branch-page-container">
+        <div class="page-header">
+          <h1><i class="ti ti-briefcase"></i> Job Openings Manager</h1>
+          <button class="back-home-btn" id="backToDashboardBtn"><i class="ti ti-home"></i> Back to Dashboard</button>
+        </div>
+        
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 16px;">
+          <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+            <button class="edit-action-btn" onclick="openAddJobModal()" style="margin-bottom:0;"><i class="ti ti-plus"></i> Add Job Opening</button>
+            <button class="back-home-btn" onclick="openAddColumnModal()" style="display: flex; align-items: center; gap: 8px; font-weight: 700; border-color: #d97706; color: #d97706; background: rgba(253, 230, 138, 0.1);"><i class="ti ti-column-insert-right"></i> Add Criteria Column</button>
+          </div>
+          
+          <div class="dropdown-container">
+            <button class="back-home-btn" onclick="toggleColumnDropdown()" style="display: flex; align-items: center; gap: 8px; font-weight: 700;"><i class="ti ti-settings"></i> Edit Columns <i class="ti ti-chevron-down"></i></button>
+            <div class="dropdown-menu" id="columnDropdownMenu">
+              <h5 style="margin-bottom: 12px; color: #78350f; font-size: 13px; font-family:'Syne',sans-serif; border-bottom: 1px solid #fde68a; padding-bottom: 8px;">Show/Hide Columns</h5>
+              <label class="dropdown-item"><input type="checkbox" ${columnVisibility.jobId ? 'checked' : ''} onchange="toggleColumnVisibility('jobId')"> Job ID</label>
+              <label class="dropdown-item"><input type="checkbox" ${columnVisibility.company ? 'checked' : ''} onchange="toggleColumnVisibility('company')"> Company</label>
+              <label class="dropdown-item"><input type="checkbox" ${columnVisibility.ctc ? 'checked' : ''} onchange="toggleColumnVisibility('ctc')"> CTC</label>
+              <label class="dropdown-item"><input type="checkbox" ${columnVisibility.location ? 'checked' : ''} onchange="toggleColumnVisibility('location')"> Location</label>
+              <label class="dropdown-item"><input type="checkbox" ${columnVisibility.bond ? 'checked' : ''} onchange="toggleColumnVisibility('bond')"> Bond</label>
+              <label class="dropdown-item"><input type="checkbox" ${columnVisibility.cgpaCutoff ? 'checked' : ''} onchange="toggleColumnVisibility('cgpaCutoff')"> CGPA Cutoff</label>
+              <label class="dropdown-item"><input type="checkbox" ${columnVisibility.branches ? 'checked' : ''} onchange="toggleColumnVisibility('branches')"> Branch Eligible</label>
+              <label class="dropdown-item"><input type="checkbox" ${columnVisibility.activeBacklogs ? 'checked' : ''} onchange="toggleColumnVisibility('activeBacklogs')"> Active Backlogs</label>
+              <label class="dropdown-item"><input type="checkbox" ${columnVisibility.backlogHistory ? 'checked' : ''} onchange="toggleColumnVisibility('backlogHistory')"> Backlog History</label>
+              <label class="dropdown-item"><input type="checkbox" ${columnVisibility.tier ? 'checked' : ''} onchange="toggleColumnVisibility('tier')"> Tier</label>
+              <label class="dropdown-item"><input type="checkbox" ${columnVisibility.extraRequirements ? 'checked' : ''} onchange="toggleColumnVisibility('extraRequirements')"> Extra Requirements</label>
+              <label class="dropdown-item"><input type="checkbox" ${columnVisibility.description ? 'checked' : ''} onchange="toggleColumnVisibility('description')"> Job Description</label>
+              <label class="dropdown-item"><input type="checkbox" ${columnVisibility.pdfFile ? 'checked' : ''} onchange="toggleColumnVisibility('pdfFile')"> Attachment</label>
+              ${customDropdownItemsHtml ? `<h5 style="margin: 12px 0 8px; color: #78350f; font-size: 13px; font-family:'Syne',sans-serif; border-bottom: 1px solid #fde68a; padding-bottom: 6px;">Custom Criteria</h5>` : ''}
+              ${customDropdownItemsHtml}
+            </div>
+          </div>
+        </div>
+        
+        <div class="student-table-panel" style="box-shadow: 0 10px 30px rgba(120, 53, 15, 0.05);">
+          <div class="table-header">
+            <h3>Active Placements (${jobsData.length})</h3>
+            <div style="font-size: 13px; font-weight: 700; color: #b45309;"><i class="ti ti-shield-check"></i> Complete Faculty Authorization</div>
+          </div>
+          <div class="table-wrapper">
+            <table>
+              <thead>
+                ${headerHtml}
+              </thead>
+              <tbody>
+                ${rowsHtml}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    `;
+    
+    document.getElementById("backToDashboardBtn")?.addEventListener("click", () => renderDashboard());
+  };
+
+  // MASTER SHEET PAGE: Renders master excel sheet manager
+  window.renderMasterSheetPage = function() {
+    currentView = 'masterSheetPage';
+    
+    let fileInfoHtml = `
+      <div style="text-align: center; padding: 32px; color: #b97f10; background: rgba(255,255,255,0.4); border-radius: 16px;">
+        <i class="ti ti-file-sad" style="font-size: 40px; margin-bottom: 10px; display: inline-block;"></i>
+        <p style="font-weight: 600;">No Master Sheet PDF uploaded yet.</p>
+        <p style="font-size: 12px; margin-top: 4px;">Upload the excel spreadsheet in PDF format below to make it available.</p>
+      </div>
+    `;
+    
+    if (masterSheetPDF) {
+      fileInfoHtml = `
+        <div style="background: rgba(255,255,255,0.9); border-radius: 24px; padding: 24px; border: 1px solid rgba(253, 230, 138, 0.8); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px; box-shadow: 0 4px 20px rgba(120, 53, 15, 0.03);">
+          <div style="display: flex; align-items: center; gap: 16px;">
+            <div style="width: 52px; height: 52px; border-radius: 16px; background: #fee2e2; color: #dc2626; display: flex; align-items: center; justify-content: center; font-size: 28px; box-shadow: 0 4px 10px rgba(220, 38, 38, 0.1);">
+              <i class="ti ti-file-pdf"></i>
+            </div>
+            <div>
+              <h4 style="color: #78350f; font-size: 16px; font-weight: 800; font-family:'Syne',sans-serif;">${masterSheetPDF.name}</h4>
+              <p style="font-size: 12px; color: #b97f10; font-weight: 500; margin-top: 2px;">Uploaded: ${masterSheetPDF.uploadedAt} · Size: ${masterSheetPDF.size}</p>
+            </div>
+          </div>
+          <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+            <a href="${masterSheetPDF.dataURL}" download="${masterSheetPDF.name}" class="edit-action-btn" style="margin-bottom:0; text-decoration:none; display: inline-flex; align-items: center; gap: 6px;"><i class="ti ti-download"></i> Download Master PDF</a>
+            <button onclick="deleteMasterSheet()" class="edit-action-btn" style="margin-bottom:0; background:linear-gradient(135deg, #ef4444, #dc2626); border-color:#dc2626; display: inline-flex; align-items: center; gap: 6px;"><i class="ti ti-trash"></i> Delete</button>
+          </div>
+        </div>
+      `;
+    }
+    
+    document.getElementById("appRoot").innerHTML = `
+      <div class="branch-page-container" style="max-width: 900px;">
+        <div class="page-header">
+          <h1><i class="ti ti-file-spreadsheet"></i> Master Student Sheet Manager</h1>
+          <button class="back-home-btn" id="backToDashboardMSBtn"><i class="ti ti-home"></i> Back to Dashboard</button>
+        </div>
+        
+        <div style="background: rgba(255,255,255,0.75); backdrop-filter: blur(12px); border-radius: 32px; padding: 32px; box-shadow: 0 10px 30px rgba(120, 53, 15, 0.05); border: 1px solid rgba(253, 230, 138, 0.5);">
+          <h3 style="font-family:'Syne',sans-serif; margin-bottom: 20px; color:#78350f; font-size: 20px; display:flex; align-items:center; gap:8px;"><i class="ti ti-shield-lock" style="color:#d97706;"></i> Master Database Controls</h3>
+          
+          <div class="upload-dropzone" onclick="document.getElementById('masterSheetUploadInput').click()">
+            <i class="ti ti-cloud-upload" style="font-size: 56px; color: #d97706; margin-bottom: 16px; display: inline-block;"></i>
+            <h4 style="color: #78350f; margin-bottom: 8px; font-family:'Syne',sans-serif; font-size:18px;">Drag & Drop or Click to Upload PDF</h4>
+            <p style="font-size: 13px; color: #b97f10; font-weight: 500; margin-bottom:4px;">Upload the Excel Master Sheet rendered as a PDF document</p>
+            <p style="font-size: 11px; color: #d97706;">Allowed format: PDF files only</p>
+            <input type="file" id="masterSheetUploadInput" accept=".pdf" style="display: none;" onchange="handleMasterSheetUpload(event)">
+          </div>
+          
+          <h4 style="margin: 28px 0 14px; font-size:15px; color:#78350f; font-family:'Syne',sans-serif;">Current Database File Status:</h4>
+          ${fileInfoHtml}
+        </div>
+      </div>
+    `;
+    
+    document.getElementById("backToDashboardMSBtn")?.addEventListener("click", () => renderDashboard());
+  };
+
+  window.toggleColumnDropdown = function() {
+    const menu = document.getElementById("columnDropdownMenu");
+    if (menu) {
+      menu.classList.toggle("show");
+      const closeDropdown = function(e) {
+        if (!e.target.closest('.dropdown-container')) {
+          menu.classList.remove("show");
+          document.removeEventListener('click', closeDropdown);
+        }
+      };
+      if (menu.classList.contains("show")) {
+        setTimeout(() => document.addEventListener('click', closeDropdown), 10);
+      }
+    }
+  };
+
+  window.toggleColumnVisibility = function(colName) {
+    columnVisibility[colName] = !columnVisibility[colName];
+    localStorage.setItem("columnVisibility", JSON.stringify(columnVisibility));
+    showToast(`Table columns updated!`, "info");
+    renderJobsPage();
+  };
+
+  function renderLogin() {
+    currentView = 'login';
+    const activeJobsCount = jobsData ? jobsData.length : 4;
+    document.getElementById("appRoot").innerHTML = `
+      <div class="layout">
+        <div class="side-cards">
+          <div class="stat-card c1"><div class="trend">+12%</div><div class="icon-wrap"><i class="ti ti-users"></i></div><div class="stat-num">847</div><div class="stat-label">Registered students</div></div>
+          <div class="stat-card c1"><div class="trend">↑ Live</div><div class="icon-wrap"><i class="ti ti-briefcase"></i></div><div class="stat-num">${activeJobsCount}</div><div class="stat-label">Active Job Openings</div></div>
+          <div class="info-card"><div class="info-card-title">Quick stats</div><div class="info-row"><div class="info-icon m1"><i class="ti ti-certificate"></i></div><div class="info-text"><div class="i-val">92%</div><div class="i-lbl">Placement rate</div></div></div></div>
+        </div>
+        <div class="login-panel"><div class="portal-tag"><div class="dot-live"></div>Placement Portal</div><div class="panel-title">Faculty Dashboard</div><div class="panel-sub">Sign in to manage your students</div>
+        <label class="field-label">Email</label><div class="field-row"><i class="ti ti-mail"></i><input type="email" id="email" placeholder="faculty@university.edu"></div>
+        <label class="field-label">Password</label><div class="field-row"><i class="ti ti-lock"></i><input type="password" id="password" placeholder="••••••••"></div>
+        <button class="signin-btn" onclick="attemptLogin()">Sign in →</button><div class="msg" id="msg"></div>
+        <hr class="divider"><div class="footer-row"><span>Placement Cell © 2025</span><a href="#">Forgot password?</a></div></div>
+      </div>
+    `;
+    document.getElementById("email")?.addEventListener("keypress", (e) => e.key === "Enter" && attemptLogin());
+    document.getElementById("password")?.addEventListener("keypress", (e) => e.key === "Enter" && attemptLogin());
+  }
+
+  window.attemptLogin = function() {
+    const email = document.getElementById("email")?.value || "";
+    const password = document.getElementById("password")?.value || "";
+    if (email === savedEmail && password === savedPassword) {
+      document.getElementById("msg").style.color = "#16a34a";
+      document.getElementById("msg").textContent = "Login successful! Redirecting…";
+      localStorage.setItem("facultyName", "Dr.Shankar");
+      setTimeout(() => renderDashboard(), 600);
+    } else {
+      document.getElementById("msg").style.color = "#dc2626";
+      document.getElementById("msg").textContent = "Invalid email or password.";
+    }
+  };
+
+  function renderDashboard() {
+    currentView = 'dashboard';
+    const facultyDisplay = localStorage.getItem("facultyName") || "Faculty";
+    
+    // Dynamically calculate status indicators
+    const masterSheetStatusText = masterSheetPDF ? 'Uploaded' : 'Empty';
+    
+    document.getElementById("appRoot").innerHTML = `
+      <div class="dashboard-container">
+        <div class="welcome-section">
+          <div class="welcome-text"><h1>Namasthe, ${facultyDisplay} ✨</h1><p>Placement dashboard · manage students & placements</p></div>
+          <div style="display: flex; gap: 12px;"><div class="badge-date"></div><button class="logout-btn" id="logoutBtn"><i class="ti ti-logout"></i> Logout</button></div>
+        </div>
+        <div class="stats-row">
+          <div class="stat-card-horiz"><div class="stat-icon"><i class="ti ti-users"></i></div><div class="stat-content"><div class="stat-number">${totalStudents}</div><div class="stat-label">Total Students</div></div></div>
+          <div class="stat-card-horiz"><div class="stat-icon"><i class="ti ti-medal"></i></div><div class="stat-content"><div class="stat-number">${placementRate}%</div><div class="stat-label">Placement Rate</div></div></div>
+          <div class="stat-card-horiz"><div class="stat-icon"><i class="ti ti-briefcase"></i></div><div class="stat-content"><div class="stat-number">${jobsData.length}</div><div class="stat-label">Active Jobs</div></div></div>
+          <div class="stat-card-horiz"><div class="stat-icon"><i class="ti ti-coin"></i></div><div class="stat-content"><div class="stat-number">${avgPackage}</div><div class="stat-label">Avg Package</div></div></div>
+        </div>
+        
+        <div style="text-align: center; margin-bottom: 28px;">
+
+        
+        <div class="action-grid" style="grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));">
+          <div class="option-card" id="cardStudents"><div class="card-icon"><i class="ti ti-school"></i></div><h3>Students</h3><p>View branch-wise student profiles & placement stats</p><div class="card-meta"><span class="badge-count">${totalStudents} enrolled</span><i class="ti ti-arrow-right"></i></div></div>
+          <div class="option-card" id="cardJobs"><div class="card-icon"><i class="ti ti-briefcase"></i></div><h3>JOBS</h3><p>Manage criteria, edit cutoffs, CTC, tiers & upload details</p><div class="card-meta"><span class="badge-count">${jobsData.length} active</span><i class="ti ti-arrow-right"></i></div></div>
+          <div class="option-card" id="cardMasterSheet"><div class="card-icon"><i class="ti ti-file-spreadsheet"></i></div><h3>Master Sheet</h3><p>Upload and download the master student excel sheet PDF</p><div class="card-meta"><span class="badge-count">${masterSheetStatusText}</span><i class="ti ti-arrow-right"></i></div></div>
+        </div>
+      </div>
+    `;
+    document.getElementById("cardStudents")?.addEventListener("click", () => renderStudentBranchPage());
+    document.getElementById("cardJobs")?.addEventListener("click", () => renderJobsPage());
+    document.getElementById("cardMasterSheet")?.addEventListener("click", () => renderMasterSheetPage());
+    document.getElementById("logoutBtn")?.addEventListener("click", () => { localStorage.removeItem("facultyName"); renderLogin(); });
+    document.getElementById("openJobsPageBtn")?.addEventListener("click", () => renderJobsPage());
+  }
+
+  function renderStudentBranchPage() {
+    currentView = 'branchPage';
+    const branchStats = getBranchStats();
+    let branchesHtml = `<div class="branch-grid-page">`;
+    branchStats.forEach(b => {
+      branchesHtml += `<div class="branch-card-page" data-branch="${b.name}"><div class="branch-icon-page"><i class="ti ti-building-community"></i></div><h2>${b.name}</h2><div class="branch-detail-stats"><div><div class="stat-number-branch">${b.total}</div><div class="stat-label-branch">Students</div></div><div><div class="stat-number-branch">${b.placed}</div><div class="stat-label-branch">Placed</div></div><div><div class="stat-number-branch">${Math.round((b.placed/b.total)*100)}%</div><div class="stat-label-branch">Rate</div></div></div></div>`;
+    });
+    branchesHtml += `</div>`;
+    document.getElementById("appRoot").innerHTML = `
+      <div class="branch-page-container"><div class="page-header"><h1><i class="ti ti-school"></i> Student Branches</h1><button class="back-home-btn" id="backHomeBtn"><i class="ti ti-home"></i> Dashboard</button></div>${branchesHtml}</div>
+    `;
+    document.querySelectorAll('.branch-card-page').forEach(card => {
+      card.addEventListener('click', () => renderBranchStudentsDetail(card.getAttribute('data-branch')));
+    });
+    document.getElementById("backHomeBtn")?.addEventListener("click", () => renderDashboard());
+  }
+
+  function renderBranchStudentsDetail(branchName) {
+    const branchStudents = studentsData.filter(s => s.branch === branchName);
+    let rows = '';
+    branchStudents.forEach(s => {
+      const statusClass = s.placementStatus === 'Placed' ? 'status-badge placed' : 'status-badge';
+      rows += `<tr><td>${s.id}</td><td>${s.name}</td><td>${s.cgpa}</td><td><span class="${statusClass}">${s.placementStatus}</span></td><td>${s.offer}</td></tr>`;
+    });
+    const total = branchStudents.length;
+    const placed = branchStudents.filter(s => s.placementStatus === "Placed").length;
+    const placedPercent = total ? Math.round((placed/total)*100) : 0;
+    const prevStats = previousYearsStats[branchName] || { "2023": 0, "2024": 0, "2025": 0 };
+    document.getElementById("appRoot").innerHTML = `
+      <div class="branch-page-container"><div class="page-header"><h1><i class="ti ti-users-group"></i> ${branchName} · Details</h1><div><button class="back-home-btn" id="backToBranchList"><i class="ti ti-arrow-back-up"></i> Branches</button><button class="back-home-btn" id="backHomeFromDetail"><i class="ti ti-home"></i> Dashboard</button></div></div>
+      <div class="prev-years-stats"><h3>📊 Previous Years Placement - ${branchName}</h3><div class="years-grid"><div class="year-card"><div class="year">2023</div><div class="rate">${prevStats["2023"]}%</div></div><div class="year-card"><div class="year">2024</div><div class="rate">${prevStats["2024"]}%</div></div><div class="year-card"><div class="year">2025</div><div class="rate">${prevStats["2025"]}%</div></div><div class="year-card"><div class="year">Current</div><div class="rate">${placedPercent}%</div></div></div></div>
+      <div class="student-table-panel"><div class="table-header"><h3>${branchName} students (${total})</h3><div>🏆 Placed: ${placedPercent}% (${placed}/${total})</div></div><div class="table-wrapper"><table><thead><tr><th>ID</th><th>Name</th><th>CGPA</th><th>Status</th><th>Offer</th></tr></thead><tbody>${rows}</tbody></table></div></div></div>
+    `;
+    document.getElementById("backToBranchList")?.addEventListener("click", () => renderStudentBranchPage());
+    document.getElementById("backHomeFromDetail")?.addEventListener("click", () => renderDashboard());
+  }
+
+  // renderRecruitersPage is replaced by renderJobsPage
+
+  function init() {
+    const isLogged = localStorage.getItem("facultyName");
+    if (isLogged) renderDashboard();
+    else renderLogin();
+  }
+  init();
+>>>>>>> 7766e3912861c3bf589fa8bdc68669610e496131
 </script>
 </body>
 </html>

@@ -658,6 +658,19 @@ def student_dashboard():
     ensure_connection()
     if "student_id" not in session:
         return redirect("/student_login")
+<<<<<<< HEAD
+    
+    # Fetch full student record
+    query = "SELECT * FROM students WHERE student_id = %s"
+    cursor.execute(query, (session["student_id"],))
+    student = cursor.fetchone()
+    
+    return render_template(
+        "student/dashboard.html",
+        name=session["student_name"],
+        student=student
+    )
+=======
         
     student_id = session["student_id"]
     
@@ -757,6 +770,7 @@ def student_dashboard():
         notifications=notifications
     )
 
+>>>>>>> 5044d12c87a2742a41ccaaf65bd6d89c6e52083d
 @app.route("/student_profile")
 def student_profile():
     ensure_connection()
