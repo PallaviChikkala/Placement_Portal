@@ -114,6 +114,7 @@
                 {% if jobs %}
                     {% for job in jobs %}
                     <div class="col-md-6 col-xl-4 job-card-container" 
+                         data-job-id="{{ job.job_id }}"
                          data-company="{{ job.company_name|lower }}" 
                          data-role="{{ job.role|lower }}"
                          data-eligible="{% if job.is_eligible %}true{% else %}false{% endif %}"
@@ -152,6 +153,12 @@
                                     <span><i class="bi bi-calendar-x me-1"></i> Apply Before:</span>
                                     <strong class="text-danger">{{ job.deadline }}</strong>
                                 </div>
+                                {% if job.deadline != 'Ongoing' and job.deadline != 'None' %}
+                                <div class="d-flex justify-content-between text-muted small mt-1">
+                                    <span><i class="bi bi-clock me-1"></i> Time Left:</span>
+                                    <strong class="countdown-timer text-warning" data-deadline="{{ job.deadline }}" data-job-id="{{ job.job_id }}">Calculating...</strong>
+                                </div>
+                                {% endif %}
                             </div>
 
                             {% if not job.is_eligible %}
@@ -173,7 +180,7 @@
                                 {% if job.applied %}
                                     <button class="btn btn-secondary btn-sm flex-grow-1" disabled><i class="bi bi-check2-circle"></i> Applied</button>
                                 {% elif job.is_eligible %}
-                                    <button class="btn btn-premium btn-sm flex-grow-1" onclick="confirmApplication('{{ job.job_id }}', '{{ job.company_name }}', '{{ job.role }}')">Apply</button>
+                                    <button class="btn btn-premium btn-sm flex-grow-1 apply-btn-trigger" data-job-id="{{ job.job_id }}" onclick="confirmApplication('{{ job.job_id }}', '{{ job.company_name }}', '{{ job.role }}')">Apply</button>
                                 {% else %}
                                     <button class="btn btn-secondary btn-sm flex-grow-1" disabled>Not Eligible</button>
                                 {% endif %}
@@ -427,6 +434,49 @@ window.onload = function() {
             const confirmModal = new bootstrap.Modal(document.getElementById('applyConfirmModal'));
             confirmModal.show();
         }
+
+        // Real-time countdown clock
+        function updateCountdowns() {
+            const timers = document.querySelectorAll(".countdown-timer");
+            timers.forEach(t => {
+                const targetStr = t.getAttribute("data-deadline");
+                const jobId = t.getAttribute("data-job-id");
+                if (!targetStr || targetStr === 'Ongoing' || targetStr === 'None') return;
+
+                const targetDate = new Date(targetStr.replace(" ", "T"));
+                const now = new Date();
+                const diff = targetDate - now;
+
+                const applyBtn = document.querySelector(`.apply-btn-trigger[data-job-id="${jobId}"]`);
+
+                if (diff <= 0) {
+                    t.innerText = "Expired";
+                    t.className = "countdown-timer text-danger fw-bold";
+                    if (applyBtn && !applyBtn.disabled) {
+                        applyBtn.disabled = true;
+                        applyBtn.className = "btn btn-secondary btn-sm flex-grow-1";
+                        applyBtn.innerText = "Deadline Passed";
+                        applyBtn.removeAttribute("onclick");
+                    }
+                    return;
+                }
+
+                const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+                const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+                const mins = Math.floor((diff / (1000 * 60)) % 60);
+                const secs = Math.floor((diff / 1000) % 60);
+
+                let display = "";
+                if (days > 0) display += `${days}d `;
+                if (hours > 0 || days > 0) display += `${hours}h `;
+                display += `${mins}m ${secs}s`;
+
+                t.innerText = display;
+            });
+        }
+        
+        setInterval(updateCountdowns, 1000);
+        updateCountdowns();
     </script>
 </body>
 </html>

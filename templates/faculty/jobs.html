@@ -166,8 +166,9 @@ tr:hover td { background-color:rgba(253,230,138,0.12); }
             <th data-col="10">Tier</th>
             <th data-col="11">Job Description</th>
             <th data-col="12">Attachment</th>
+            <th data-col="13">Deadline</th>
             {% for col in custom_cols %}
-              <th data-col="{{ 13 + loop.index0 }}">{{ col.label }}</th>
+              <th data-col="{{ 14 + loop.index0 }}">{{ col.label }}</th>
             {% endfor %}
             <th style="text-align:center;">Actions</th>
           </tr>
@@ -212,8 +213,9 @@ tr:hover td { background-color:rgba(253,230,138,0.12); }
                   <span style="color:#a1a1aa;font-size:12px;">No Attachment</span>
                 {% endif %}
               </td>
+              <td data-col="13">{{ job.deadline or 'Ongoing' }}</td>
               {% for col in custom_cols %}
-                <td data-col="{{ 13 + loop.index0 }}">{{ job[col.db_name] or '—' }}</td>
+                <td data-col="{{ 14 + loop.index0 }}">{{ job[col.db_name] or '—' }}</td>
               {% endfor %}
               <td style="text-align:center;">
                 <div class="action-btns">
@@ -266,6 +268,10 @@ tr:hover td { background-color:rgba(253,230,138,0.12); }
         <div class="form-group">
           <label>Bond Details</label>
           <input type="text" name="bond" id="fBond" placeholder="e.g. 1 Year / None">
+        </div>
+        <div class="form-group">
+          <label>Application Deadline</label>
+          <input type="datetime-local" name="deadline" id="fDeadline">
         </div>
         <div class="form-group">
           <label>CGPA Cutoff *</label>
@@ -406,7 +412,7 @@ const columnsMenu = document.getElementById('columnsMenu');
 const defaultColumns = [
   "Job ID", "Company", "CTC", "Location", "Bond", "CGPA Cutoff",
   "Branch Eligible", "Active Backlogs", "Backlog History",
-  "Extra Requirements", "Tier", "Job Description", "Attachment"
+  "Extra Requirements", "Tier", "Job Description", "Attachment", "Deadline"
 ];
 
 // Initialize dropdown checkboxes
@@ -486,6 +492,7 @@ function openAddModal() {
   document.getElementById("fTier").value = "Tier 1";
   document.getElementById("fJobId").readOnly = false;
   document.getElementById("fJobId").style.cssText = "";
+  document.getElementById("fDeadline").value = "";
   openModal("jobModal");
 }
 
@@ -533,6 +540,18 @@ function openEditModal(jobDbIdStr) {
   } else {
     document.getElementById("currentPdfInfo").style.display = "none";
   }
+  
+  if (job.deadline && job.deadline !== 'None' && job.deadline !== 'Ongoing') {
+      const dateParts = job.deadline.split(" ");
+      if (dateParts.length >= 2) {
+          document.getElementById("fDeadline").value = `${dateParts[0]}T${dateParts[1].substring(0, 5)}`;
+      } else {
+          document.getElementById("fDeadline").value = job.deadline.replace(" ", "T").substring(0, 16);
+      }
+  } else {
+      document.getElementById("fDeadline").value = "";
+  }
+  
   openModal("jobModal");
 }
 
@@ -574,16 +593,64 @@ function viewApplicants(jobIdStr) {
         document.getElementById("applicantsBody").innerHTML = "<p style='text-align:center;color:#b97f10;font-weight:500;padding:24px;'>No applications received yet.</p>";
         return;
       }
-      let rows = data.applicants.map(a => `<tr>
-        <td><strong>${a.student_id}</strong></td>
-        <td>${a.name}</td><td>${a.branch}</td>
-        <td>${a.resume_path ? `<a href="${a.resume_path}" target="_blank" style="color:#d97706;font-weight:600;"><i class="ti ti-external-link"></i> View</a>` : '<span style="color:#a1a1aa;">—</span>'}</td>
-        <td><span style="background:#eef2e6;color:#2b6e4e;padding:6px 14px;border-radius:20px;font-size:12px;font-weight:600;">Submitted</span></td>
-      </tr>`).join("");
+      
+      let rows = data.applicants.map(a => {
+        const statuses = ["Pending", "Shortlisted", "Selected", "Rejected"];
+        let selectOptions = statuses.map(s => `
+          <option value="${s}" ${a.status === s ? 'selected' : ''}>${s}</option>
+        `).join("");
+        
+        return `<tr>
+          <td><strong>${a.student_id}</strong></td>
+          <td>${a.name}</td><td>${a.branch}</td>
+          <td>${a.resume_path ? `<a href="${a.resume_path}" target="_blank" style="color:#d97706;font-weight:600;"><i class="ti ti-external-link"></i> View</a>` : '<span style="color:#a1a1aa;">—</span>'}</td>
+          <td>
+            <select onchange="updateApplicantStatus(this, '${a.application_id}', '${a.student_id}', '${jobIdStr}')" 
+                    style="padding:6px 12px; border-radius:12px; border:1px solid #d97706; background:white; font-size:12px; font-weight:600; color:#78350f; outline:none; cursor:pointer;">
+              ${selectOptions}
+            </select>
+          </td>
+        </tr>`;
+      }).join("");
+
       document.getElementById("applicantsBody").innerHTML = `<table style="min-width: 600px;">
         <thead><tr><th>STUDENT ID</th><th>NAME</th><th>BRANCH</th><th>RESUME</th><th>STATUS</th></tr></thead>
         <tbody>${rows}</tbody></table>`;
     });
+}
+
+function updateApplicantStatus(selectEl, appId, studentId, jobId) {
+  const status = selectEl.value;
+  selectEl.style.opacity = "0.5";
+  selectEl.disabled = true;
+
+  fetch("/faculty/applications/update_status", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      application_id: appId,
+      status: status
+    })
+  })
+  .then(r => r.json())
+  .then(data => {
+    selectEl.style.opacity = "1";
+    selectEl.disabled = false;
+    if (data.success) {
+      showToast(`Status updated to ${status}!`, "success");
+      // Find and update status locally in jobsData if cached
+      const jobIdx = jobsData.findIndex(j => String(j.job_id) === String(jobId));
+    } else {
+      showToast(data.error || "Failed to update status", "error");
+    }
+  })
+  .catch(err => {
+    selectEl.style.opacity = "1";
+    selectEl.disabled = false;
+    showToast("Network error updating status", "error");
+  });
 }
 
 function openModal(id) { document.getElementById(id).classList.add("active"); }

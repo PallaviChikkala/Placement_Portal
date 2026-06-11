@@ -40,8 +40,37 @@ body { min-height: 100vh; font-family: 'DM Sans', sans-serif; background: linear
 .edit-action-btn { background: linear-gradient(135deg, #f59e0b, #d97706); color:white; border:none; padding:10px 24px; border-radius:40px; cursor:pointer; font-weight:600; display:inline-flex; align-items:center; gap:8px; font-family:'DM Sans',sans-serif; transition:opacity 0.2s; text-decoration:none; font-size:14px; }
 .edit-action-btn:hover { opacity:0.9; }
 .action-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr)); gap:28px; margin-bottom:48px; }
-.option-card { background:rgba(255,255,255,0.78); backdrop-filter:blur(12px); border-radius:28px; padding:28px 24px; cursor:pointer; transition:0.25s; text-align:center; text-decoration:none; display:block; border:1px solid rgba(253,230,138,0.4); }
-.option-card:hover { transform:translateY(-6px); background:rgba(255,255,255,0.92); box-shadow:0 12px 30px rgba(120,53,15,0.08); }
+.option-card {
+  background:rgba(255,255,255,0.78);
+  backdrop-filter:blur(12px);
+  border-radius:28px;
+  padding:28px 24px;
+  cursor:pointer;
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  text-decoration:none;
+  display:block;
+  border:1px solid rgba(253,230,138,0.4);
+  position: relative;
+  overflow: hidden;
+}
+.option-card::after {
+  content: '';
+  position: absolute;
+  top: 0; left: -100%;
+  width: 50%; height: 100%;
+  background: linear-gradient(to right, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.22) 100%);
+  transform: skewX(-25deg);
+  transition: 0.8s ease-in-out;
+}
+.option-card:hover {
+  transform:translateY(-8px) scale(1.025);
+  background:rgba(255,255,255,0.94);
+  box-shadow:0 16px 36px rgba(120,53,15,0.12);
+  border-color: #d97706;
+}
+.option-card:hover::after {
+  left: 125%;
+}
 .card-icon { font-size:42px; color:#d97706; margin-bottom:20px; display:inline-block; }
 .option-card h3 { font-family:'Syne',sans-serif; font-size:26px; font-weight:800; color:#78350f; }
 .option-card p { font-size:13px; color:#b97f10; margin-top:8px; font-weight:500; }
@@ -148,6 +177,24 @@ body { min-height: 100vh; font-family: 'DM Sans', sans-serif; background: linear
       <p>Manage criteria, edit cutoffs, CTC, tiers &amp; upload details</p>
       <div class="card-meta">
         <span class="badge-count">{{ active_jobs }} active</span>
+        <i class="ti ti-arrow-right" style="color:#d97706;"></i>
+      </div>
+    </a>
+    <a href="/faculty/selected_students" class="option-card">
+      <div class="card-icon"><i class="ti ti-trophy"></i></div>
+      <h3>Selected Students</h3>
+      <p>View placement outcomes, company selections, and student tier distribution</p>
+      <div class="card-meta">
+        <span class="badge-count">Placed tracking</span>
+        <i class="ti ti-arrow-right" style="color:#d97706;"></i>
+      </div>
+    </a>
+    <a href="/faculty/applied_students" class="option-card">
+      <div class="card-icon"><i class="ti ti-clipboard-list"></i></div>
+      <h3>Applied Students</h3>
+      <p>View job-wise student applicant tables and download spreadsheets</p>
+      <div class="card-meta">
+        <span class="badge-count">Manage applications</span>
         <i class="ti ti-arrow-right" style="color:#d97706;"></i>
       </div>
     </a>

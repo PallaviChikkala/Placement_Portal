@@ -12,17 +12,36 @@ app.secret_key = "placement_portal_secret"
 app.permanent_session_lifetime = timedelta(days=30)
 
 #MYSQL Connection
-db = mysql.connector.connect(
-    host = "localhost",
-    user = "root",
-    password = "Pallavi@2007",
-    database = "placement_portal"
- )
+def get_connection():
+    return mysql.connector.connect(
+        host="localhost",
+        user="root",
+        password="Hasini@1234",
+        database="placement_portal",
+        connection_timeout=30,
+        autocommit=False
+    )
 
-cursor = db.cursor(dictionary = True)
+db = get_connection()
+cursor = db.cursor(dictionary=True)
+
+def ensure_connection():
+    """Auto-reconnect if MySQL connection has gone away."""
+    global db, cursor
+    try:
+        db.ping(reconnect=True, attempts=3, delay=1)
+        if not cursor or cursor._connection is None:
+            cursor = db.cursor(dictionary=True)
+    except Exception:
+        try:
+            db = get_connection()
+            cursor = db.cursor(dictionary=True)
+        except Exception as e:
+            print("DB reconnect failed:", e)
 
 # Database Tables & Mock Data Initialization
 def init_database():
+    ensure_connection()
     try:
         # Create students table
         cursor.execute("""
@@ -36,7 +55,11 @@ def init_database():
                 backlogs INT,
                 skills TEXT,
                 selected_tier INT DEFAULT NULL,
-                batch INT
+                batch INT,
+                roll_number VARCHAR(50) DEFAULT NULL,
+                phone_number VARCHAR(20) DEFAULT NULL,
+                aadhar VARCHAR(20) DEFAULT NULL,
+                pan VARCHAR(20) DEFAULT NULL
             )
         """)
         
@@ -44,6 +67,17 @@ def init_database():
             cursor.execute("ALTER TABLE students ADD COLUMN profile_photo VARCHAR(255) DEFAULT '/static/default_avatar.png'")
         except Exception:
             pass
+            
+        for col_sql in [
+            "ALTER TABLE students ADD COLUMN roll_number VARCHAR(50) DEFAULT NULL",
+            "ALTER TABLE students ADD COLUMN phone_number VARCHAR(20) DEFAULT NULL",
+            "ALTER TABLE students ADD COLUMN aadhar VARCHAR(20) DEFAULT NULL",
+            "ALTER TABLE students ADD COLUMN pan VARCHAR(20) DEFAULT NULL"
+        ]:
+            try:
+                cursor.execute(col_sql)
+            except Exception:
+                pass
         
         # Create faculty table
         cursor.execute("""
@@ -84,24 +118,26 @@ def init_database():
                 req_aadhar TINYINT(1) DEFAULT 0,
                 req_pan TINYINT(1) DEFAULT 0,
                 req_other VARCHAR(200),
-                pdf_path VARCHAR(300)
+                pdf_path VARCHAR(300),
+                deadline DATETIME DEFAULT NULL
             )
         """)
         
         # Add missing columns for existing installs (including 'id' for older schemas)
         for col_sql in [
-            "ALTER TABLE jobs ADD COLUMN IF NOT EXISTS id INT AUTO_INCREMENT PRIMARY KEY",
-            "ALTER TABLE jobs ADD COLUMN IF NOT EXISTS ctc VARCHAR(30)",
-            "ALTER TABLE jobs ADD COLUMN IF NOT EXISTS location VARCHAR(100)",
-            "ALTER TABLE jobs ADD COLUMN IF NOT EXISTS bond VARCHAR(50) DEFAULT 'None'",
-            "ALTER TABLE jobs ADD COLUMN IF NOT EXISTS cgpa_cutoff DECIMAL(4,2) DEFAULT 0.0",
-            "ALTER TABLE jobs ADD COLUMN IF NOT EXISTS active_backlogs INT DEFAULT 0",
-            "ALTER TABLE jobs ADD COLUMN IF NOT EXISTS backlog_history INT DEFAULT 0",
-            "ALTER TABLE jobs ADD COLUMN IF NOT EXISTS branches TEXT",
-            "ALTER TABLE jobs ADD COLUMN IF NOT EXISTS req_aadhar TINYINT(1) DEFAULT 0",
-            "ALTER TABLE jobs ADD COLUMN IF NOT EXISTS req_pan TINYINT(1) DEFAULT 0",
-            "ALTER TABLE jobs ADD COLUMN IF NOT EXISTS req_other VARCHAR(200)",
-            "ALTER TABLE jobs ADD COLUMN IF NOT EXISTS pdf_path VARCHAR(300)",
+            "ALTER TABLE jobs ADD COLUMN id INT AUTO_INCREMENT PRIMARY KEY",
+            "ALTER TABLE jobs ADD COLUMN ctc VARCHAR(30)",
+            "ALTER TABLE jobs ADD COLUMN location VARCHAR(100)",
+            "ALTER TABLE jobs ADD COLUMN bond VARCHAR(50) DEFAULT 'None'",
+            "ALTER TABLE jobs ADD COLUMN cgpa_cutoff DECIMAL(4,2) DEFAULT 0.0",
+            "ALTER TABLE jobs ADD COLUMN active_backlogs INT DEFAULT 0",
+            "ALTER TABLE jobs ADD COLUMN backlog_history INT DEFAULT 0",
+            "ALTER TABLE jobs ADD COLUMN branches TEXT",
+            "ALTER TABLE jobs ADD COLUMN req_aadhar TINYINT(1) DEFAULT 0",
+            "ALTER TABLE jobs ADD COLUMN req_pan TINYINT(1) DEFAULT 0",
+            "ALTER TABLE jobs ADD COLUMN req_other VARCHAR(200)",
+            "ALTER TABLE jobs ADD COLUMN pdf_path VARCHAR(300)",
+            "ALTER TABLE jobs ADD COLUMN deadline DATETIME DEFAULT NULL"
         ]:
             try:
                 cursor.execute(col_sql)
@@ -619,6 +655,7 @@ def clear_notifications():
 
 @app.route("/student_dashboard")
 def student_dashboard():
+    ensure_connection()
     if "student_id" not in session:
         return redirect("/student_login")
         
@@ -675,7 +712,7 @@ def student_dashboard():
         job_copy['min_cgpa'] = job.get('cgpa_cutoff') or 0
         job_copy['max_backlogs'] = job.get('active_backlogs') or 0
         job_copy['eligible_branches'] = job.get('branches') or ''
-        job_copy['deadline'] = 'Ongoing' # Placeholder if not in DB
+        job_copy['deadline'] = str(job.get('deadline')) if job.get('deadline') else 'Ongoing'
         
         upcoming_drives.append(job_copy)
     
@@ -722,6 +759,7 @@ def student_dashboard():
 
 @app.route("/student_profile")
 def student_profile():
+    ensure_connection()
     if "student_id" not in session:
         return redirect("/student_login")
 
@@ -755,8 +793,36 @@ def update_profile():
             
     return redirect("/student_profile")
 
+@app.route("/update_profile_details", methods=["POST"])
+def update_profile_details():
+    if "student_id" not in session:
+        return redirect("/student_login")
+        
+    student_id = session["student_id"]
+    roll_number = request.form.get("roll_number", "").strip()
+    phone_number = request.form.get("phone_number", "").strip()
+    aadhar = request.form.get("aadhar", "").strip()
+    pan = request.form.get("pan", "").strip()
+    
+    try:
+        cursor.execute("""
+            UPDATE students 
+            SET roll_number=%s, phone_number=%s, aadhar=%s, pan=%s 
+            WHERE student_id=%s
+        """, (roll_number, phone_number, aadhar, pan, student_id))
+        db.commit()
+        from flask import flash
+        flash("Profile details updated successfully!", "success")
+    except Exception as e:
+        db.rollback()
+        from flask import flash
+        flash(f"Error updating details: {str(e)}", "error")
+        
+    return redirect("/student_profile")
+
 @app.route("/eligible_companies")
 def eligible_companies():
+    ensure_connection()
     if "student_id" not in session:
         return redirect("/student_login")
     
@@ -817,7 +883,7 @@ def eligible_companies():
         job_item['min_cgpa'] = job.get('cgpa_cutoff') or 0
         job_item['max_backlogs'] = job.get('active_backlogs') or 0
         job_item['eligible_branches'] = job.get('branches') or ''
-        job_item['deadline'] = 'Ongoing' # Placeholder if not in DB
+        job_item['deadline'] = str(job.get('deadline')) if job.get('deadline') else 'Ongoing'
 
         jobs_list.append(job_item)
         
@@ -825,6 +891,7 @@ def eligible_companies():
 
 @app.route("/apply_job", methods=["POST"])
 def apply_job():
+    ensure_connection()
     if "student_id" not in session:
         return redirect("/student_login")
     
@@ -840,6 +907,26 @@ def apply_job():
     
     if not student or not job:
         return "Invalid request."
+        
+    # Check if deadline has passed
+    from datetime import datetime
+    if job.get('deadline'):
+        deadline = job['deadline']
+        if isinstance(deadline, str):
+            try:
+                deadline = datetime.strptime(deadline, "%Y-%m-%d %H:%M:%S")
+            except Exception:
+                try:
+                    deadline = datetime.strptime(deadline, "%Y-%m-%dT%H:%M")
+                except Exception:
+                    pass
+        if isinstance(deadline, datetime) and datetime.now() > deadline:
+            return """
+            <script>
+                alert("Application deadline has passed for this job!");
+                window.location.href = "/eligible_companies";
+            </script>
+            """
         
     # Tier calculation
     job_tier_str = str(job.get('tier', 'Tier 3')).lower()
@@ -893,6 +980,7 @@ def apply_job():
 
 @app.route("/my_applications")
 def my_applications():
+    ensure_connection()
     if "student_id" not in session:
         return redirect("/student_login")
         
@@ -902,7 +990,7 @@ def my_applications():
     
     query = """
         SELECT a.applied_date, a.status, a.resume_path, 
-               j.company_name, j.role, j.ctc as package_lpa, j.tier, 'Ongoing' as deadline
+               j.company_name, j.role, j.ctc as package_lpa, j.tier, j.deadline
         FROM applications a
         JOIN jobs j ON a.job_id = j.job_id
         WHERE a.student_id = %s
@@ -920,6 +1008,7 @@ def student_logout():
 
 @app.route("/faculty_login")
 def faculty_login_page():
+    ensure_connection()
     try:
         cursor.execute("SELECT COUNT(*) AS c FROM students")
         total_students = cursor.fetchone()["c"]
@@ -935,6 +1024,7 @@ def faculty_login_page():
 
 @app.route("/faculty_login_check", methods=["POST"])
 def faculty_login_check():
+    ensure_connection()
     email = request.form.get("email", "").strip()
     password = request.form.get("password", "").strip()
 
@@ -974,6 +1064,7 @@ def faculty_required():
 
 @app.route("/faculty_dashboard")
 def faculty_dashboard():
+    ensure_connection()
     redir = faculty_required()
     if redir: return redir
 
@@ -1029,6 +1120,7 @@ def faculty_logout():
 
 @app.route("/faculty/jobs")
 def faculty_jobs():
+    ensure_connection()
     redir = faculty_required()
     if redir: return redir
 
@@ -1050,6 +1142,7 @@ def faculty_jobs():
 
 @app.route("/faculty/jobs/add", methods=["POST"])
 def faculty_job_add():
+    ensure_connection()
     redir = faculty_required()
     if redir: return redir
 
@@ -1068,6 +1161,7 @@ def faculty_job_add():
     req_aadhar = 1 if request.form.get("req_aadhar") else 0
     req_pan    = 1 if request.form.get("req_pan") else 0
     req_other  = request.form.get("req_other", "").strip()
+    deadline   = request.form.get("deadline", "").strip() or None
 
     custom_fields = [k for k in request.form.keys() if k.startswith("custom_")]
     custom_cols_str = ", ".join(custom_fields)
@@ -1089,11 +1183,11 @@ def faculty_job_add():
         cursor.execute(f"""
             INSERT INTO jobs (job_id, company_name, role, ctc, location, bond,
                 cgpa_cutoff, active_backlogs, backlog_history, branches, tier,
-                description, req_aadhar, req_pan, req_other, pdf_path{col_sql})
-            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s{val_sql})
+                description, req_aadhar, req_pan, req_other, pdf_path, deadline{col_sql})
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s{val_sql})
         """, [job_id, company, role, ctc, location, bond,
                cgpa, act_bl, bl_hist, branches, tier,
-               desc, req_aadhar, req_pan, req_other, pdf_path] + custom_values)
+               desc, req_aadhar, req_pan, req_other, pdf_path, deadline] + custom_values)
         db.commit()
         # Notify all students about the new job
         notify_students_new_job(company, role)
@@ -1127,6 +1221,7 @@ def faculty_job_edit():
     req_aadhar = 1 if request.form.get("req_aadhar") else 0
     req_pan    = 1 if request.form.get("req_pan") else 0
     req_other  = request.form.get("req_other", "").strip()
+    deadline   = request.form.get("deadline", "").strip() or None
 
     custom_fields = [k for k in request.form.keys() if k.startswith("custom_")]
     custom_set_sql = "".join([f", {k}=%s" for k in custom_fields])
@@ -1148,13 +1243,13 @@ def faculty_job_edit():
         cursor.execute(f"""
             UPDATE jobs SET company_name=%s, role=%s, ctc=%s, location=%s, bond=%s,
                 cgpa_cutoff=%s, active_backlogs=%s, backlog_history=%s, branches=%s,
-                tier=%s, description=%s, req_aadhar=%s, req_pan=%s, req_other=%s
+                tier=%s, description=%s, req_aadhar=%s, req_pan=%s, req_other=%s, deadline=%s
                 {pdf_update_sql}
                 {custom_set_sql}
             WHERE TRIM(job_id) = TRIM(%s)
         """, [company, role, ctc, location, bond,
                cgpa, act_bl, bl_hist, branches, tier,
-               desc, req_aadhar, req_pan, req_other] + pdf_args + custom_values + [db_job_id])
+               desc, req_aadhar, req_pan, req_other, deadline] + pdf_args + custom_values + [db_job_id])
         if cursor.rowcount == 0:
             raise Exception("No row found to update. Job ID may be mismatched.")
         db.commit()
@@ -1266,6 +1361,330 @@ def faculty_job_pdf(job_db_id):
         pdf_path = pdf_path[8:]
     from flask import send_from_directory
     return send_from_directory(app.static_folder, pdf_path)
+
+
+@app.route("/faculty/applications/update_status", methods=["POST"])
+def faculty_applications_update_status():
+    redir = faculty_required()
+    if redir: return jsonify({"success": False, "error": "Faculty authorization required"})
+
+    data = request.get_json() or {}
+    app_id = data.get("application_id")
+    status = data.get("status")
+
+    if not app_id or not status:
+        return jsonify({"success": False, "error": "Missing application_id or status"})
+
+    try:
+        # Fetch current details before updating
+        cursor.execute("SELECT student_id, job_id, status FROM applications WHERE application_id = %s", (app_id,))
+        app_record = cursor.fetchone()
+        if not app_record:
+            return jsonify({"success": False, "error": "Application not found"})
+
+        student_id = app_record["student_id"]
+        job_db_id = app_record["job_id"]
+        old_status = app_record["status"]
+
+        # Update applications table
+        cursor.execute("UPDATE applications SET status = %s WHERE application_id = %s", (status, app_id))
+
+        # Check the job company and role/tier
+        cursor.execute("SELECT company_name, role, tier FROM jobs WHERE job_id = %s", (job_db_id,))
+        job_details = cursor.fetchone()
+        company_name = job_details["company_name"] if job_details else "Company"
+        role_name = job_details["role"] if job_details else "Role"
+        job_tier_str = job_details["tier"] if job_details else "Tier 3"
+        job_tier_num = 1 if '1' in job_tier_str else (2 if '2' in job_tier_str else 3)
+
+        # Notify student if status changed
+        if old_status != status:
+            message = f"Your application status for {company_name} - {role_name} has been updated to {status}."
+            if status == "Selected":
+                message = f"Congratulations! You have been Selected by {company_name} for the {role_name} role (Tier {job_tier_str})!"
+            
+            cursor.execute("INSERT INTO notifications (student_id, message, link) VALUES (%s, %s, %s)", 
+                           (student_id, message, "/my_applications"))
+
+        # Re-evaluate the student selected_tier:
+        # Find the highest tier level among all 'Selected' applications for this student
+        cursor.execute("""
+            SELECT j.tier 
+            FROM applications a
+            JOIN jobs j ON a.job_id = j.job_id
+            WHERE a.student_id = %s AND a.status = 'Selected'
+        """, (student_id,))
+        selected_apps = cursor.fetchall()
+        
+        if selected_apps:
+            # Calculate highest tier selected (lower tier number is better, i.e., Tier 1 is better than Tier 2)
+            highest_tier_num = 3
+            for sa in selected_apps:
+                t_str = sa["tier"] or "Tier 3"
+                t_num = 1 if '1' in t_str else (2 if '2' in t_str else 3)
+                if t_num < highest_tier_num:
+                    highest_tier_num = t_num
+            cursor.execute("UPDATE students SET selected_tier = %s WHERE student_id = %s", (highest_tier_num, student_id))
+        else:
+            # Clear selected tier
+            cursor.execute("UPDATE students SET selected_tier = NULL WHERE student_id = %s", (student_id,))
+
+        db.commit()
+        return jsonify({"success": True})
+    except Exception as e:
+        db.rollback()
+        return jsonify({"success": False, "error": str(e)})
+
+
+@app.route("/faculty/selected_students")
+def faculty_selected_students():
+    redir = faculty_required()
+    if redir: return redir
+
+    # Query all students who are selected for any job
+    query = """
+        SELECT s.student_id, s.name, s.email, s.branch, s.roll_number, s.phone_number,
+               a.status, j.company_name, j.tier, j.job_id
+        FROM students s
+        JOIN applications a ON s.student_id = a.student_id
+        JOIN jobs j ON a.job_id = j.job_id
+        WHERE a.status = 'Selected'
+        ORDER BY s.student_id ASC
+    """
+    cursor.execute(query)
+    placed = cursor.fetchall()
+
+    return render_template("faculty/selected_students.html", placed_students=placed)
+
+
+@app.route("/faculty/applied_students")
+def faculty_applied_students():
+    redir = faculty_required()
+    if redir: return redir
+
+    # Fetch all jobs to show on dashboard
+    cursor.execute("SELECT * FROM jobs ORDER BY id DESC")
+    jobs = cursor.fetchall()
+
+    # Format deadlines and query applicants count
+    jobs_list = []
+    for job in jobs:
+        j = dict(job)
+        # Check if deadline passed
+        from datetime import datetime
+        is_passed = False
+        if j.get('deadline'):
+            deadline = j['deadline']
+            if isinstance(deadline, str):
+                try:
+                    deadline = datetime.strptime(deadline, "%Y-%m-%d %H:%M:%S")
+                except Exception:
+                    try:
+                        deadline = datetime.strptime(deadline, "%Y-%m-%dT%H:%M")
+                    except Exception:
+                        pass
+            if isinstance(deadline, datetime) and datetime.now() > deadline:
+                is_passed = True
+        
+        j['is_deadline_passed'] = is_passed
+        j['deadline_str'] = str(j.get('deadline')) if j.get('deadline') else 'Ongoing'
+
+        # Query applicants details
+        cursor.execute("""
+            SELECT s.student_id, s.name, s.branch, s.roll_number, s.phone_number, s.email, s.aadhar, s.pan, a.resume_path, a.applied_date
+            FROM applications a
+            JOIN students s ON a.student_id = s.student_id
+            WHERE a.job_id = %s
+            ORDER BY a.applied_date DESC
+        """, (j['job_id'],))
+        j['applicants'] = cursor.fetchall()
+        jobs_list.append(j)
+
+    return render_template("faculty/applied_students.html", jobs=jobs_list)
+
+
+@app.route("/faculty/download_applied_excel/<string:job_id>")
+def faculty_download_applied_excel(job_id):
+    redir = faculty_required()
+    if redir: return redir
+
+    # Fetch job company & role
+    cursor.execute("SELECT company_name, role FROM jobs WHERE job_id = %s", (job_id,))
+    job = cursor.fetchone()
+    if not job:
+        return "Job not found", 404
+
+    company_name = job["company_name"]
+    role_name = job["role"]
+
+    # Fetch applied students
+    cursor.execute("""
+        SELECT s.student_id, s.name, s.branch, s.roll_number, s.phone_number, s.email, s.aadhar, s.pan, a.resume_path
+        FROM applications a
+        JOIN students s ON a.student_id = s.student_id
+        WHERE a.job_id = %s
+        ORDER BY s.student_id ASC
+    """, (job_id,))
+    applicants = cursor.fetchall()
+
+    import openpyxl
+    from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
+    from openpyxl.utils import get_column_letter
+    import io
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Applied Students"
+
+    # Set grid lines visible
+    ws.views.sheetView[0].showGridLines = True
+
+    # Styling colors
+    amber_fill = PatternFill(start_color="F59E0B", end_color="F59E0B", fill_type="solid")
+    white_font = Font(name="Calibri", size=11, bold=True, color="FFFFFF")
+    title_font = Font(name="Calibri", size=14, bold=True, color="78350F")
+    regular_font = Font(name="Calibri", size=11, bold=False)
+    bold_font = Font(name="Calibri", size=11, bold=True)
+    center_align = Alignment(horizontal="center", vertical="center")
+    left_align = Alignment(horizontal="left", vertical="center")
+
+    thin_border = Border(
+        left=Side(style='thin', color='E5E7EB'),
+        right=Side(style='thin', color='E5E7EB'),
+        top=Side(style='thin', color='E5E7EB'),
+        bottom=Side(style='thin', color='E5E7EB')
+    )
+
+    # Title row
+    ws.merge_cells("A1:I1")
+    ws["A1"] = f"Applied Students - {company_name} ({role_name})"
+    ws["A1"].font = title_font
+    ws["A1"].alignment = left_align
+    ws.row_dimensions[1].height = 30
+
+    # Headers
+    headers = [
+        "S.No", 
+        "Student ID", 
+        "Roll Number", 
+        "Student Name", 
+        "Branch", 
+        "Aadhar Card", 
+        "PAN Card", 
+        "Email ID", 
+        "Phone Number", 
+        "Resume Drive Link"
+    ]
+    
+    # In openpyxl: A=1, B=2, C=3, etc. We will write to Row 3
+    for col_num, header in enumerate(headers, 1):
+        cell = ws.cell(row=3, column=col_num)
+        cell.value = header
+        cell.font = white_font
+        cell.fill = amber_fill
+        cell.alignment = center_align
+        cell.border = thin_border
+    
+    ws.row_dimensions[3].height = 24
+
+    # Data Rows
+    for r_idx, app in enumerate(applicants, 1):
+        row_num = r_idx + 3
+        ws.row_dimensions[row_num].height = 20
+
+        # S.No
+        c = ws.cell(row=row_num, column=1, value=r_idx)
+        c.font = regular_font
+        c.alignment = center_align
+        c.border = thin_border
+
+        # Student ID
+        c = ws.cell(row=row_num, column=2, value=app["student_id"])
+        c.font = bold_font
+        c.alignment = center_align
+        c.border = thin_border
+
+        # Roll Number
+        c = ws.cell(row=row_num, column=3, value=app["roll_number"] or "—")
+        c.font = regular_font
+        c.alignment = center_align
+        c.border = thin_border
+
+        # Name
+        c = ws.cell(row=row_num, column=4, value=app["name"])
+        c.font = regular_font
+        c.alignment = left_align
+        c.border = thin_border
+
+        # Branch
+        c = ws.cell(row=row_num, column=5, value=app["branch"])
+        c.font = regular_font
+        c.alignment = center_align
+        c.border = thin_border
+
+        # Aadhar
+        c = ws.cell(row=row_num, column=6, value=app["aadhar"] or "—")
+        c.font = regular_font
+        c.alignment = center_align
+        c.border = thin_border
+
+        # PAN
+        c = ws.cell(row=row_num, column=7, value=app["pan"] or "—")
+        c.font = regular_font
+        c.alignment = center_align
+        c.border = thin_border
+
+        # Email
+        c = ws.cell(row=row_num, column=8, value=app["email"])
+        c.font = regular_font
+        c.alignment = left_align
+        c.border = thin_border
+
+        # Phone
+        c = ws.cell(row=row_num, column=9, value=app["phone_number"] or "—")
+        c.font = regular_font
+        c.alignment = center_align
+        c.border = thin_border
+
+        # Resume Drive Link
+        resume_val = app["resume_path"] or "—"
+        c = ws.cell(row=row_num, column=10, value=resume_val)
+        c.font = regular_font
+        c.alignment = left_align
+        c.border = thin_border
+        if resume_val.startswith("http"):
+            c.hyperlink = resume_val
+            c.font = Font(name="Calibri", size=11, color="0000FF", underline="single")
+
+    # Autofit columns
+    for col in ws.columns:
+        max_len = 0
+        col_letter = get_column_letter(col[0].column)
+        for cell in col:
+            # Skip merged cells title length for autofit width calculation
+            if cell.row == 1:
+                continue
+            val_str = str(cell.value or '')
+            # If hyperlink, cap length calculation to avoid overly wide column
+            if len(val_str) > 30 and cell.column == 10:
+                val_str = "https://drive.google.com/..."
+            if len(val_str) > max_len:
+                max_len = len(val_str)
+        ws.column_dimensions[col_letter].width = max(max_len + 4, 10)
+
+    # Save to buffer and send
+    out = io.BytesIO()
+    wb.save(out)
+    out.seek(0)
+
+    from flask import send_file
+    clean_company = "".join([c for c in company_name if c.isalnum() or c in (' ', '_', '-')]).strip()
+    return send_file(
+        out,
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        as_attachment=True,
+        download_name=f"Applicants_{clean_company}_{job_id}.xlsx"
+    )
 
 
 # ─── FACULTY: STUDENTS ───────────────────────────────────────────────────────

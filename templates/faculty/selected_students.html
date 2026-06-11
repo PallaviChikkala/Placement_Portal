@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Selected Students — NIT AP Placement Portal</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+* { box-sizing:border-box; margin:0; padding:0; }
+body { min-height:100vh; font-family:'DM Sans',sans-serif; background:linear-gradient(145deg,#fffdf5 0%,#fff8e1 40%,#fef3c0 75%,#fffdf5 100%); }
+.blob { position:fixed; border-radius:50%; pointer-events:none; filter:blur(55px); z-index:0; }
+.blob-1 { width:280px; height:280px; background:rgba(230,180,40,0.22); top:-70px; left:-50px; }
+.blob-2 { width:220px; height:220px; background:rgba(255,220,80,0.18); bottom:-50px; right:-30px; }
+.global-header { position:fixed; top:0; left:0; right:0; z-index:100; background:rgba(255,255,255,0.95); backdrop-filter:blur(12px); border-bottom:1px solid rgba(253,230,138,0.6); padding:10px 28px; display:flex; align-items:center; justify-content:space-between; box-shadow:0 2px 12px rgba(0,0,0,0.02); }
+.logo-area { display:flex; align-items:center; gap:14px; }
+.logo-icon { width:44px; height:44px; background:linear-gradient(135deg,#f59e0b,#d97706); border-radius:14px; display:flex; align-items:center; justify-content:center; color:white; font-size:24px; font-weight:800; font-family:'Syne',sans-serif; }
+.logo-text h2 { font-family:'Syne',sans-serif; font-size:16px; font-weight:800; color:#78350f; line-height:1.2; }
+.logo-text p { font-size:9px; letter-spacing:0.5px; color:#b97f10; text-transform:uppercase; }
+.header-right { font-size: 11px; background: rgba(253,230,138,0.3); padding: 6px 14px; border-radius: 30px; color: #b45309; display: flex; align-items: center; gap: 6px; text-decoration: none; font-weight: 600; }
+
+.page-body { padding:100px 32px 40px; max-width:1400px; margin:0 auto; position:relative; z-index:2; }
+.page-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:32px; flex-wrap:wrap; gap:16px; }
+.page-header h1 { font-family:'Syne',sans-serif; font-size:32px; font-weight:800; color:#78350f; display:flex; align-items:center; gap:12px; }
+.back-home-btn { background:rgba(255,255,255,0.7); border:1px solid #fde68a; padding:8px 20px; border-radius:40px; cursor:pointer; color:#78350f; font-family:'DM Sans',sans-serif; font-size:13px; font-weight:600; display:inline-flex; align-items:center; gap:6px; text-decoration:none; transition:background 0.2s; }
+.back-home-btn:hover { background:rgba(255,255,255,0.95); }
+
+.student-table-panel { background:rgba(255,255,255,0.75); border-radius:32px; overflow:hidden; box-shadow:0 10px 30px rgba(120,53,15,0.05); }
+.table-header { display:flex; justify-content:space-between; align-items:center; padding:20px 28px; background:rgba(255,253,240,0.7); border-bottom:1px solid #fde68a; flex-wrap:wrap; gap:12px; }
+.table-header h3 { font-family:'Syne',sans-serif; font-size:18px; color:#78350f; font-weight:800; }
+.table-wrapper { overflow-x:auto; padding:16px 20px; }
+
+table { width:100%; border-collapse:collapse; }
+th { text-align:left; padding:14px 10px; color:#b45309; border-bottom:1px solid #fde68a; font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; white-space:nowrap; }
+td { padding:12px 10px; color:#5c3b1a; border-bottom:1px solid rgba(253,230,138,0.4); font-size:13px; vertical-align:middle; }
+tr:hover td { background-color:rgba(253,230,138,0.12); }
+
+.tick-mark { color: #10b981; font-weight: bold; font-size: 16px; display: inline-flex; align-items: center; gap: 4px; }
+.cross-mark { color: #ef4444; font-weight: bold; font-size: 16px; }
+.company-tag { background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 600; }
+.empty-state { text-align:center; padding:40px; color:#b97f10; font-weight:600; }
+</style>
+</head>
+<body>
+<div class="blob blob-1"></div><div class="blob blob-2"></div>
+
+<div class="global-header">
+  <div class="logo-area">
+    <div class="logo-icon">N</div>
+    <div class="logo-text"><h2>National Institute of Technology<br>Andhra Pradesh</h2><p>Placement &amp; Career Cell</p></div>
+  </div>
+  <div style="display:flex; align-items:center; gap:16px;">
+    <a href="/faculty_logout" class="header-right" style="margin:0;"><i class="ti ti-logout"></i> Logout</a>
+  </div>
+</div>
+
+<div class="page-body">
+  <div class="page-header">
+    <h1><i class="ti ti-trophy"></i> Selected Students</h1>
+    <a href="/faculty_dashboard" class="back-home-btn"><i class="ti ti-home"></i> Back to Dashboard</a>
+  </div>
+
+  <div class="student-table-panel">
+    <div class="table-header">
+      <h3>Placed Students Directory ({{ placed_students|length }})</h3>
+    </div>
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>S.No</th>
+            <th>Roll Number</th>
+            <th>Name</th>
+            <th>Phone Number</th>
+            <th>Email</th>
+            <th>Branch</th>
+            <th style="text-align: center;">Tier 1</th>
+            <th style="text-align: center;">Tier 2</th>
+            <th style="text-align: center;">Tier 3</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if placed_students %}
+            {% for s in placed_students %}
+            <tr>
+              <td>{{ loop.index }}</td>
+              <td><strong>{{ s.roll_number or s.student_id or '—' }}</strong></td>
+              <td><strong>{{ s.name }}</strong></td>
+              <td>{{ s.phone_number or '—' }}</td>
+              <td>{{ s.email }}</td>
+              <td><span style="background: rgba(217, 119, 6, 0.08); padding: 4px 10px; border-radius: 12px; font-weight: 600; font-size: 12px;">{{ s.branch }}</span></td>
+              
+              <!-- Tier 1 Selection -->
+              <td style="text-align: center;">
+                {% if '1' in s.tier %}
+                  <span class="tick-mark"><i class="ti ti-circle-check-filled"></i> <span class="company-tag">{{ s.company_name }}</span></span>
+                {% else %}
+                  <span class="cross-mark"><i class="ti ti-circle-x-filled"></i></span>
+                {% endif %}
+              </td>
+              
+              <!-- Tier 2 Selection -->
+              <td style="text-align: center;">
+                {% if '2' in s.tier %}
+                  <span class="tick-mark"><i class="ti ti-circle-check-filled"></i> <span class="company-tag">{{ s.company_name }}</span></span>
+                {% else %}
+                  <span class="cross-mark"><i class="ti ti-circle-x-filled"></i></span>
+                {% endif %}
+              </td>
+              
+              <!-- Tier 3 Selection -->
+              <td style="text-align: center;">
+                {% if '3' in s.tier or ('1' not in s.tier and '2' not in s.tier) %}
+                  <span class="tick-mark"><i class="ti ti-circle-check-filled"></i> <span class="company-tag">{{ s.company_name }}</span></span>
+                {% else %}
+                  <span class="cross-mark"><i class="ti ti-circle-x-filled"></i></span>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          {% else %}
+            <tr>
+              <td colspan="9" class="empty-state">
+                <i class="ti ti-mood-empty" style="font-size:32px;display:block;margin-bottom:8px;"></i>
+                No students selected yet. Move applicant status to "Selected" to see them here.
+              </td>
+            </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+</body>
+</html>
