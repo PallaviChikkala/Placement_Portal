@@ -6,6 +6,7 @@ import os
 from werkzeug.utils import secure_filename
 import json
 from datetime import timedelta
+import pandas as pd
 
 app = Flask(__name__)
 app.secret_key = "placement_portal_secret"
@@ -16,7 +17,7 @@ def get_connection():
     return mysql.connector.connect(
         host="localhost",
         user="root",
-        password="Hasini@1234",
+        password="Pallavi@2007",
         database="placement_portal",
         connection_timeout=30,
         autocommit=False
@@ -72,7 +73,8 @@ def init_database():
             "ALTER TABLE students ADD COLUMN roll_number VARCHAR(50) DEFAULT NULL",
             "ALTER TABLE students ADD COLUMN phone_number VARCHAR(20) DEFAULT NULL",
             "ALTER TABLE students ADD COLUMN aadhar VARCHAR(20) DEFAULT NULL",
-            "ALTER TABLE students ADD COLUMN pan VARCHAR(20) DEFAULT NULL"
+            "ALTER TABLE students ADD COLUMN pan VARCHAR(20) DEFAULT NULL",
+            "ALTER TABLE students ADD COLUMN backlog_history INT DEFAULT 0"
         ]:
             try:
                 cursor.execute(col_sql)
@@ -155,6 +157,12 @@ def init_database():
                 applied_date DATE
             )
         """)
+        
+        try:
+            cursor.execute("ALTER TABLE applications ADD COLUMN extra_details TEXT")
+        except Exception:
+            pass
+        
         
         # Create notifications table
         cursor.execute("""
@@ -805,18 +813,36 @@ def update_profile_details():
     pan = request.form.get("pan", "").strip()
     
     try:
-        cursor.execute("""
-            UPDATE students 
-            SET roll_number=%s, phone_number=%s, aadhar=%s, pan=%s 
-            WHERE student_id=%s
-        """, (roll_number, phone_number, aadhar, pan, student_id))
+        from flask import flash
+        flash("Profile edits are restricted to Faculty Master Sheet uploads.", "error")
+    except Exception as e:
+        pass
+        
+    return redirect("/student_profile")
+
+@app.route("/update_skills", methods=["POST"])
+def update_skills():
+    ensure_connection()
+    if "student_id" not in session:
+        return redirect("/student_login")
+        
+    student_id = session["student_id"]
+    skills = request.form.get("skills", "").strip()
+    
+    try:
+        # Clean up skills string (remove extra spaces around commas)
+        if skills:
+            skills_list = [s.strip() for s in skills.split(',') if s.strip()]
+            skills = ", ".join(skills_list)
+            
+        cursor.execute("UPDATE students SET skills = %s WHERE student_id = %s", (skills, student_id))
         db.commit()
         from flask import flash
-        flash("Profile details updated successfully!", "success")
+        flash("Skills updated successfully!", "success")
     except Exception as e:
         db.rollback()
         from flask import flash
-        flash(f"Error updating details: {str(e)}", "error")
+        flash("Failed to update skills.", "error")
         
     return redirect("/student_profile")
 
@@ -964,11 +990,24 @@ def apply_job():
     result = cursor.fetchone()
     next_id = result['next_id'] if result else 1
     
+    # Extract dynamic extra details if present
+    extra_data = {}
+    aadhar = request.form.get("aadhar_number")
+    pan = request.form.get("pan_number")
+    other_info = request.form.get("other_info")
+    
+    if aadhar: extra_data["aadhar_number"] = aadhar
+    if pan: extra_data["pan_number"] = pan
+    if other_info: extra_data["other_info"] = other_info
+    
+    import json
+    extra_details_json = json.dumps(extra_data) if extra_data else None
+    
     query = """
-        INSERT INTO applications (application_id, student_id, job_id, resume_path, status, applied_date) 
-        VALUES (%s, %s, %s, %s, %s, CURDATE())
+        INSERT INTO applications (application_id, student_id, job_id, resume_path, status, applied_date, extra_details) 
+        VALUES (%s, %s, %s, %s, %s, CURDATE(), %s)
     """
-    cursor.execute(query, (next_id, student_id, job_id, drive_link, "Pending"))
+    cursor.execute(query, (next_id, student_id, job_id, drive_link, "Pending", extra_details_json))
     db.commit()
     
     return """
@@ -1491,13 +1530,23 @@ def faculty_applied_students():
 
         # Query applicants details
         cursor.execute("""
-            SELECT s.student_id, s.name, s.branch, s.roll_number, s.phone_number, s.email, s.aadhar, s.pan, a.resume_path, a.applied_date
+            SELECT s.student_id, s.name, s.branch, s.roll_number, s.phone_number, s.email, s.aadhar, s.pan, a.resume_path, a.applied_date, a.extra_details
             FROM applications a
             JOIN students s ON a.student_id = s.student_id
             WHERE a.job_id = %s
             ORDER BY a.applied_date DESC
         """, (j['job_id'],))
-        j['applicants'] = cursor.fetchall()
+        applicants = cursor.fetchall()
+        for applicant in applicants:
+            if applicant.get('extra_details'):
+                try:
+                    applicant['extra_dict'] = json.loads(applicant['extra_details'])
+                except:
+                    applicant['extra_dict'] = {}
+            else:
+                applicant['extra_dict'] = {}
+                
+        j['applicants'] = applicants
         jobs_list.append(j)
 
     return render_template("faculty/applied_students.html", jobs=jobs_list)
@@ -1805,25 +1854,206 @@ def faculty_upload_master_sheet():
     os.makedirs(upload_dir, exist_ok=True)
 
     if filename.endswith(".pdf"):
-        # Remove old master sheet files
-        for old in ["master_sheet.pdf", "master_sheet.xlsx"]:
+        for old in ["master_sheet.pdf", "master_sheet.xlsx", "master_sheet.csv"]:
             old_path = os.path.join(upload_dir, old)
             if os.path.exists(old_path):
                 os.remove(old_path)
         save_path = os.path.join(upload_dir, "master_sheet.pdf")
         file.save(save_path)
         flash("Master Sheet PDF uploaded successfully!", "success")
-    elif filename.endswith(".xlsx"):
-        # Remove old master sheet files
-        for old in ["master_sheet.pdf", "master_sheet.xlsx"]:
+    elif filename.endswith(".xlsx") or filename.endswith(".csv"):
+        for old in ["master_sheet.pdf", "master_sheet.xlsx", "master_sheet.csv"]:
             old_path = os.path.join(upload_dir, old)
             if os.path.exists(old_path):
                 os.remove(old_path)
-        save_path = os.path.join(upload_dir, "master_sheet.xlsx")
+        
+        ext = "xlsx" if filename.endswith(".xlsx") else "csv"
+        save_path = os.path.join(upload_dir, f"master_sheet.{ext}")
         file.save(save_path)
-        flash("Master Sheet XLSX uploaded successfully!", "success")
+        
+        # Parse and update database
+        try:
+            # Robust header detection
+            def robust_read(path, is_excel):
+                # Read without headers to find the actual header row
+                if is_excel:
+                    temp_df = pd.read_excel(path, header=None, nrows=15)
+                else:
+                    temp_df = pd.read_csv(path, header=None, nrows=15)
+                
+                header_idx = 0
+                for idx, row in temp_df.iterrows():
+                    row_strs = [str(x).lower().strip() for x in row.values]
+                    if any('email' in x or 'roll' in x or 'cgpa' in x for x in row_strs):
+                        header_idx = idx
+                        break
+                        
+                if is_excel:
+                    return pd.read_excel(path, header=header_idx)
+                return pd.read_csv(path, header=header_idx)
+
+            df = robust_read(save_path, ext == "xlsx")
+            
+            # Normalize column names
+            df.columns = [str(c).strip().lower() for c in df.columns]
+            
+            updated_count = 0
+            created_count = 0
+            ensure_connection()
+            for index, row in df.iterrows():
+                raw_email = row.get('email')
+                raw_roll = row.get('roll_number') if 'roll_number' in row else (row.get('roll number') if 'roll number' in row else row.get('roll no'))
+                
+                email = str(raw_email).strip() if pd.notna(raw_email) and str(raw_email).strip() != "" and str(raw_email).lower() != "nan" else None
+                roll = str(raw_roll).strip() if pd.notna(raw_roll) and str(raw_roll).strip() != "" and str(raw_roll).lower() != "nan" else None
+                
+                if not email and not roll:
+                    continue
+                    
+                # Safely parse values
+                def safe_str(val):
+                    return str(val).strip() if pd.notna(val) and str(val).strip() != "" and str(val).lower() != "nan" else None
+                
+                def safe_float(val):
+                    try:
+                        return float(val) if pd.notna(val) and str(val).strip() != "" else None
+                    except:
+                        return None
+                        
+                def safe_int(val):
+                    try:
+                        return int(float(val)) if pd.notna(val) and str(val).strip() != "" else None
+                    except:
+                        return None
+
+                cgpa = safe_float(row.get('cgpa'))
+                branch = safe_str(row.get('branch'))
+                
+                # Active backlogs
+                b_val = row.get('active_backlogs') if 'active_backlogs' in row else (row.get('active backlogs') if 'active backlogs' in row else row.get('backlogs'))
+                active_backlogs = safe_int(b_val)
+                
+                # Backlog history
+                bh_val = row.get('backlog_history') if 'backlog_history' in row else row.get('backlog history')
+                backlog_history = safe_int(bh_val)
+                
+                phone_number = safe_str(row.get('phone_number')) or safe_str(row.get('phone number')) or safe_str(row.get('phone no'))
+                aadhar = safe_str(row.get('aadhar')) or safe_str(row.get('aadhar card'))
+                pan = safe_str(row.get('pan')) or safe_str(row.get('pan card'))
+                roll_clean = safe_str(roll)
+                
+                # Batch
+                batch_val = row.get('batch') if 'batch' in row else row.get('graduation batch')
+                batch = safe_int(batch_val)
+                
+                updates = []
+                params = []
+                
+                if roll_clean:
+                    updates.append("roll_number = %s")
+                    params.append(roll_clean)
+                
+                if cgpa is not None:
+                    updates.append("cgpa = %s")
+                    params.append(cgpa)
+                if branch is not None:
+                    updates.append("branch = %s")
+                    params.append(branch)
+                if active_backlogs is not None:
+                    updates.append("backlogs = %s")
+                    params.append(active_backlogs)
+                if backlog_history is not None:
+                    updates.append("backlog_history = %s")
+                    params.append(backlog_history)
+                if phone_number is not None:
+                    updates.append("phone_number = %s")
+                    params.append(phone_number)
+                if aadhar is not None:
+                    updates.append("aadhar = %s")
+                    params.append(aadhar)
+                if pan is not None:
+                    updates.append("pan = %s")
+                    params.append(pan)
+                if batch is not None:
+                    updates.append("batch = %s")
+                    params.append(batch)
+                    
+                if updates:
+                    # Check if student exists
+                    if email:
+                        cursor.execute("SELECT student_id FROM students WHERE email = %s", (email,))
+                    else:
+                        cursor.execute("SELECT student_id FROM students WHERE roll_number = %s", (roll,))
+                    
+                    existing = cursor.fetchone()
+                    
+                    if existing:
+                        query = f"UPDATE students SET {', '.join(updates)} WHERE "
+                        if email:
+                            query += "email = %s"
+                            params.append(email)
+                        else:
+                            query += "roll_number = %s"
+                            params.append(roll)
+                            
+                        cursor.execute(query, tuple(params))
+                        updated_count += 1
+                    else:
+                        # Auto-create new student
+                        name_raw = row.get('name') if 'name' in row else (row.get('student name') if 'student name' in row else '')
+                        name = str(name_raw).strip() if pd.notna(name_raw) else "Unknown Student"
+                        default_password = roll if roll else (email.split('@')[0] if email else "password123")
+                        
+                        insert_cols = ['password', 'name']
+                        insert_vals = [default_password, name]
+                        
+                        if email:
+                            insert_cols.append('email')
+                            insert_vals.append(email)
+                        if roll_clean:
+                            insert_cols.append('roll_number')
+                            insert_vals.append(roll_clean)
+                        if cgpa is not None:
+                            insert_cols.append('cgpa')
+                            insert_vals.append(cgpa)
+                        if branch is not None:
+                            insert_cols.append('branch')
+                            insert_vals.append(branch)
+                        if active_backlogs is not None:
+                            insert_cols.append('backlogs')
+                            insert_vals.append(active_backlogs)
+                        if backlog_history is not None:
+                            insert_cols.append('backlog_history')
+                            insert_vals.append(backlog_history)
+                        if phone_number is not None:
+                            insert_cols.append('phone_number')
+                            insert_vals.append(phone_number)
+                        if aadhar is not None:
+                            insert_cols.append('aadhar')
+                            insert_vals.append(aadhar)
+                        if pan is not None:
+                            insert_cols.append('pan')
+                            insert_vals.append(pan)
+                        if batch is not None:
+                            insert_cols.append('batch')
+                            insert_vals.append(batch)
+                            
+                        placeholders = ', '.join(['%s'] * len(insert_vals))
+                        query = f"INSERT INTO students ({', '.join(insert_cols)}) VALUES ({placeholders})"
+                        cursor.execute(query, tuple(insert_vals))
+                        created_count += 1
+                        
+            db.commit()
+            msg = f"Master Sheet uploaded! Updated {updated_count} existing profiles."
+            if created_count > 0:
+                msg += f" Auto-created {created_count} new student accounts (Default password is their Roll Number)."
+            flash(msg, "success")
+        except Exception as e:
+            db.rollback()
+            flash(f"Error processing Master Sheet: {str(e)}", "error")
+            
     else:
-        flash("Invalid file type. Please upload a PDF or XLSX file.", "error")
+        flash("Invalid file type. Please upload a PDF, CSV, or XLSX file.", "error")
 
     return redirect("/faculty/master_sheet")
 

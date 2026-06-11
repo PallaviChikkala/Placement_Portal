@@ -21,6 +21,7 @@ SET selected_tier = NULL
 WHERE email = 'pallavi123@gmail.com';
 
 SELECT * FROM students;
+
 SELECT student_id, name, email FROM students;
 INSERT INTO students(student_id, name, email, password, branch, cgpa, backlogs, skills, selected_tier, batch)
 VALUES
@@ -29,10 +30,13 @@ VALUES
 INSERT INTO students(student_id, name, email, password, branch, cgpa, backlogs, skills, selected_tier, batch)
 VALUES
 (2,"linda", "linda123@gmail.com", "linda123", "CSE", 9.1, 0, "C, CPP, HTML, CSS, MySQL",2, 2029);
+INSERT INTO students(student_id, name, email, password, branch, cgpa, backlogs, skills, selected_tier, batch)
+VALUES
+(3, 'Hasini', 'hasini123@gmail.com', 'hasini123', 'CSE', 9.5, 0, 'HTML, CSS, JS, Python, C, CPP', 1, 2029);
 
 INSERT INTO students(student_id, name, email, password, branch, cgpa, backlogs, skills, selected_tier, batch)
 VALUES
-(3,"Hasini", "hasini123@gmail.com", "hasini123", "CSE", 9.5, 0, "HTML, CSS, JS, Python, C, CPP", 1, 2029);
+(4,'elsa','elsa123@gmail.com','elsa123','mechanical',9.7,0,'CAD,Thermodynamic,Robotics',2,2029);
 
 CREATE TABLE faculty(
     faculty_id INT PRIMARY KEY,
@@ -77,3 +81,13 @@ CREATE TABLE applications(
     status TEXT,
     applied_date DATE
 );
+SELECT * FROM applications;
+
+DELETE FROM applications
+WHERE application_id IN (4, 5, 6);
+
+INSERT INTO applications(student_id, job_id, resume_path, status, applied_date)
+VALUES
+(1, 3, 'https://drive.google.com/file/d/1kChVucIoPUWM5I02XY7vr24zYct8XRlS/view?usp=sharing', 'Pending', '2026-06-10'),
+(3, 2, 'https://drive.google.com/file/d/1kChVucIoPUWM5I02XY7vr24zYct8XRlS/view?usp=sharing', 'Pending', '2026-06-10'),
+(3, 4, 'https://drive.google.com/file/d/1kChVucIoPUWM5I02XY7vr24zYct8XRlS/view?usp=sharing', 'Pending', '2026-06-10');

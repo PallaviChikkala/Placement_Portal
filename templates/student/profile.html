@@ -62,13 +62,13 @@
     
     </style>
 </head>
-<body>
+<body class="premium-animated-bg">
 
     <div class="dashboard-layout">
         <!-- Sidebar Navigation -->
         <div class="sidebar">
             <div class="sidebar-logo">
-                <img src="/static/StudentLogin.png" width="45" height="45" alt="NIT AP Logo">
+                <img src="/static/StudentLogin.png" width="45" height="45" alt="NIT AP Logo" class="premium-floating-element">
                 <div>
                     <h5 class="mb-0 fw-bold" style="font-family: var(--font-heading); color: var(--primary);">NIT AP</h5>
                     <small class="text-muted" style="font-size: 0.75rem;">Placement Cell</small>
@@ -109,9 +109,6 @@
                 <div class="d-flex gap-2">
                     <button type="button" class="btn btn-premium btn-sm" data-bs-toggle="modal" data-bs-target="#editProfileModal">
                         <i class="bi bi-camera me-2"></i> Add Profile Photo
-                    </button>
-                    <button type="button" class="btn btn-premium-outline btn-sm" data-bs-toggle="modal" data-bs-target="#editPersonalDetailsModal">
-                        <i class="bi bi-pencil me-2"></i> Edit Personal Details
                     </button>
                 </div>
             </div>
@@ -172,40 +169,35 @@
                                 </h5>
                             </div>
                         </div>
+                        <div class="col-md-3 col-sm-6">
+                            <div class="p-3 border rounded bg-white shadow-sm h-100">
+                                <span class="text-muted small fw-semibold text-uppercase d-block mb-1">Backlog History</span>
+                                <h5 class="mb-0 fw-bold {% if student.backlog_history and student.backlog_history > 0 %}text-warning{% else %}text-muted{% endif %}">
+                                    {{ student.backlog_history or '0' }}
+                                </h5>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Personal & Verification Information -->
                     <h5 class="text-primary mb-4" style="font-family: var(--font-heading);"><i class="bi bi-person-check text-warning me-2"></i> Personal & Verification Information</h5>
                     <div class="row g-3 text-center mb-5">
-                        <div class="col-md-3 col-sm-6">
+                        <div class="col-md-12 col-sm-12">
                             <div class="p-3 border rounded bg-white shadow-sm h-100">
                                 <span class="text-muted small fw-semibold text-uppercase d-block mb-1">Roll Number</span>
                                 <h5 class="text-primary mb-0 fw-bold">{{ student.roll_number or '—' }}</h5>
                             </div>
                         </div>
-                        <div class="col-md-3 col-sm-6">
-                            <div class="p-3 border rounded bg-white shadow-sm h-100">
-                                <span class="text-muted small fw-semibold text-uppercase d-block mb-1">Phone Number</span>
-                                <h5 class="text-primary mb-0 fw-bold">{{ student.phone_number or '—' }}</h5>
-                            </div>
-                        </div>
-                        <div class="col-md-3 col-sm-6">
-                            <div class="p-3 border rounded bg-white shadow-sm h-100">
-                                <span class="text-muted small fw-semibold text-uppercase d-block mb-1">Aadhar Card</span>
-                                <h5 class="text-primary mb-0 fw-bold text-success">{{ student.aadhar or '—' }}</h5>
-                            </div>
-                        </div>
-                        <div class="col-md-3 col-sm-6">
-                            <div class="p-3 border rounded bg-white shadow-sm h-100">
-                                <span class="text-muted small fw-semibold text-uppercase d-block mb-1">PAN Card</span>
-                                <h5 class="text-primary mb-0 fw-bold text-success">{{ student.pan or '—' }}</h5>
-                            </div>
-                        </div>
                     </div>
 
                     <!-- Skills Section -->
-                    <div class="mb-4">
-                        <h5 class="text-primary mb-3" style="font-family: var(--font-heading);"><i class="bi bi-code-slash text-warning me-2"></i> Skills & Expertise</h5>
+                    <div class="mb-4 position-relative">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="text-primary mb-0" style="font-family: var(--font-heading);"><i class="bi bi-code-slash text-warning me-2"></i> Skills & Expertise</h5>
+                            <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#editSkillsModal">
+                                <i class="bi bi-pencil-square me-1"></i> Edit Skills
+                            </button>
+                        </div>
                         <p class="text-muted small mb-3">These skills are used to match with recruiter job requirements and determine eligibility.</p>
                         <div class="d-flex flex-wrap gap-2">
                             {% if student.skills %}
@@ -218,7 +210,7 @@
                                 {% endfor %}
                             {% else %}
                                 <div class="text-muted small py-2">
-                                    <i class="bi bi-info-circle me-1"></i> No skills listed yet. Add skills by clicking "Edit Profile" or uploading a resume.
+                                    <i class="bi bi-info-circle me-1"></i> No skills listed yet. Add skills by clicking "Edit Skills" or uploading a resume.
                                 </div>
                             {% endif %}
                         </div>
@@ -254,36 +246,25 @@
         </div>
     </div>
 
-    <!-- Edit Personal Details Modal -->
-    <div class="modal fade" id="editPersonalDetailsModal" tabindex="-1" aria-labelledby="editPersonalDetailsModalLabel" aria-hidden="true">
+    <!-- Edit Skills Modal -->
+    <div class="modal fade" id="editSkillsModal" tabindex="-1" aria-labelledby="editSkillsModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content modal-content-custom p-4">
                 <div class="modal-header border-0 pb-0">
-                    <h4 class="modal-title fw-bold text-primary" id="editPersonalDetailsModalLabel" style="font-family: var(--font-heading);">Edit Personal Details</h4>
+                    <h4 class="modal-title fw-bold text-primary" id="editSkillsModalLabel" style="font-family: var(--font-heading);">Edit Skills</h4>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <form action="/update_profile_details" method="POST">
-                        <div class="mb-3">
-                            <label class="form-label text-muted small fw-semibold">Roll Number</label>
-                            <input type="text" name="roll_number" class="form-control form-premium" value="{{ student.roll_number or '' }}" placeholder="e.g. 211234">
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label text-muted small fw-semibold">Phone Number</label>
-                            <input type="text" name="phone_number" class="form-control form-premium" value="{{ student.phone_number or '' }}" placeholder="e.g. +91 9876543210">
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label text-muted small fw-semibold">Aadhar Card Number</label>
-                            <input type="text" name="aadhar" class="form-control form-premium" value="{{ student.aadhar or '' }}" placeholder="e.g. 1234-5678-9012">
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label text-muted small fw-semibold">PAN Card Number</label>
-                            <input type="text" name="pan" class="form-control form-premium" value="{{ student.pan or '' }}" placeholder="e.g. ABCDE1234F">
+                    <form action="/update_skills" method="POST">
+                        <div class="mb-4">
+                            <label class="form-label text-muted small fw-semibold">Your Skills (Comma separated)</label>
+                            <textarea name="skills" class="form-control form-premium" rows="3" placeholder="e.g. Java, Python, React, Communication">{{ student.skills or '' }}</textarea>
+                            <div class="form-text text-muted" style="font-size: 0.75rem;">Separate each skill with a comma.</div>
                         </div>
                         
-                        <div class="d-flex gap-2 justify-content-end mt-4">
+                        <div class="d-flex gap-2 justify-content-end">
                             <button type="button" class="btn btn-secondary rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
-                            <button type="submit" class="btn btn-premium px-4">Save Details</button>
+                            <button type="submit" class="btn btn-premium px-4">Save Skills</button>
                         </div>
                     </form>
                 </div>

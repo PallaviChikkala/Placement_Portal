@@ -3,315 +3,96 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Master Student Sheet — NIT AP Placement Portal</title>
+<title>Master Sheet — NIT AP Placement Portal</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
 <style>
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body { min-height: 100vh; font-family: 'DM Sans', sans-serif; background: linear-gradient(145deg, #fffdf5 0%, #fff8e1 40%, #fef3c0 75%, #fffdf5 100%); }
-.blob { position: fixed; border-radius: 50%; pointer-events: none; filter: blur(55px); z-index: 0; }
-.blob-1 { width: 280px; height: 280px; background: rgba(230,180,40,0.22); top: -70px; left: -50px; }
-.blob-2 { width: 220px; height: 220px; background: rgba(255,220,80,0.18); bottom: -50px; right: -30px; }
+* { box-sizing:border-box; margin:0; padding:0; }
+body { min-height:100vh; font-family:'DM Sans',sans-serif; background:linear-gradient(145deg,#fffdf5 0%,#fff8e1 40%,#fef3c0 75%,#fffdf5 100%); }
+.blob { position:fixed; border-radius:50%; pointer-events:none; filter:blur(55px); z-index:0; }
+.blob-1 { width:280px; height:280px; background:rgba(230,180,40,0.22); top:-70px; left:-50px; }
+.blob-2 { width:220px; height:220px; background:rgba(255,220,80,0.18); bottom:-50px; right:-30px; }
+.global-header { position:fixed; top:0; left:0; right:0; z-index:100; background:rgba(255,255,255,0.95); backdrop-filter:blur(12px); border-bottom:1px solid rgba(253,230,138,0.6); padding:10px 28px; display:flex; align-items:center; justify-content:space-between; box-shadow:0 2px 12px rgba(0,0,0,0.02); }
+.logo-area { display:flex; align-items:center; gap:14px; }
+.logo-icon { width:44px; height:44px; background:linear-gradient(135deg,#f59e0b,#d97706); border-radius:14px; display:flex; align-items:center; justify-content:center; color:white; font-size:24px; font-weight:800; font-family:'Syne',sans-serif; }
+.logo-text h2 { font-family:'Syne',sans-serif; font-size:16px; font-weight:800; color:#78350f; line-height:1.2; margin-bottom:0;}
+.logo-text p { font-size:9px; letter-spacing:0.5px; color:#b97f10; text-transform:uppercase; margin-bottom:0;}
+.header-right { font-size: 11px; background: rgba(253,230,138,0.3); padding: 6px 14px; border-radius: 30px; color: #b45309; display: flex; align-items: center; gap: 6px; text-decoration: none; font-weight: 600; }
 
-/* Header */
-.global-header {
-  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
-  background: rgba(255,255,255,0.95); backdrop-filter: blur(12px);
-  border-bottom: 1px solid rgba(253,230,138,0.6);
-  padding: 10px 28px; display: flex; align-items: center;
-  justify-content: space-between; box-shadow: 0 2px 12px rgba(0,0,0,0.02);
-}
-.logo-area { display: flex; align-items: center; gap: 14px; }
-.logo-icon { width: 44px; height: 44px; background: linear-gradient(135deg, #f59e0b, #d97706); border-radius: 14px; display: flex; align-items: center; justify-content: center; color: white; font-size: 24px; font-weight: 800; font-family: 'Syne', sans-serif; }
-.logo-text h2 { font-family: 'Syne', sans-serif; font-size: 16px; font-weight: 800; color: #78350f; line-height: 1.2; }
-.logo-text p { font-size: 9px; letter-spacing: 0.5px; color: #b97f10; text-transform: uppercase; }
-.header-right { font-size: 11px; background: rgba(253,230,138,0.3); padding: 6px 14px; border-radius: 30px; color: #b45309; }
+.page-body { padding:100px 32px 40px; max-width:1400px; margin:0 auto; position:relative; z-index:2; }
+.page-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:32px; flex-wrap:wrap; gap:16px; }
+.page-header h1 { font-family:'Syne',sans-serif; font-size:32px; font-weight:800; color:#78350f; display:flex; align-items:center; gap:12px; margin-bottom:0;}
+.back-home-btn { background:rgba(255,255,255,0.7); border:1px solid #fde68a; padding:8px 20px; border-radius:40px; cursor:pointer; color:#78350f; font-family:'DM Sans',sans-serif; font-size:13px; font-weight:600; display:inline-flex; align-items:center; gap:6px; text-decoration:none; transition:background 0.2s; }
+.back-home-btn:hover { background:rgba(255,255,255,0.95); }
+.edit-action-btn { background:linear-gradient(135deg,#f59e0b,#d97706); color:white; border:none; padding:10px 24px; border-radius:40px; cursor:pointer; font-weight:600; display:inline-flex; align-items:center; gap:8px; font-family:'DM Sans',sans-serif; font-size:14px; text-decoration:none; transition:opacity 0.2s; }
+.edit-action-btn:hover { opacity:0.9; }
 
-/* Page body */
-.page-body { padding: 100px 32px 40px; max-width: 860px; margin: 0 auto; position: relative; z-index: 2; }
-.page-header { text-align: center; margin-bottom: 10px; }
-.page-header h1 { font-family: 'Syne', sans-serif; font-size: 30px; font-weight: 800; color: #78350f; display: inline-flex; align-items: center; gap: 12px; }
-
-.back-btn {
-  display: inline-flex; align-items: center; gap: 6px;
-  background: rgba(255,255,255,0.7); border: 1px solid #fde68a;
-  padding: 6px 16px; border-radius: 40px; cursor: pointer;
-  color: #78350f; font-size: 12px; font-weight: 600; text-decoration: none;
-  transition: background 0.2s; margin-bottom: 24px;
-}
-.back-btn:hover { background: rgba(255,255,255,0.95); }
-
-/* Main card */
-.main-card {
-  background: rgba(255,255,255,0.82); backdrop-filter: blur(12px);
-  border-radius: 28px; padding: 32px 36px;
-  box-shadow: 0 8px 32px rgba(120,53,15,0.06);
-  border: 1px solid rgba(253,230,138,0.4);
-  margin-bottom: 24px;
-}
-.card-section-title {
-  font-family: 'Syne', sans-serif; font-size: 17px; font-weight: 800;
-  color: #78350f; margin-bottom: 24px;
-  display: flex; align-items: center; gap: 8px;
-}
-
-/* Drop zone */
-.drop-zone {
-  border: 2px dashed #f59e0b; border-radius: 16px;
-  background: rgba(254,243,199,0.3); padding: 48px 24px;
-  text-align: center; cursor: pointer;
-  transition: all 0.25s; margin-bottom: 28px;
-}
-.drop-zone:hover, .drop-zone.dragover {
-  background: rgba(254,243,199,0.6);
-  border-color: #d97706;
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(217,119,6,0.15);
-}
-.drop-icon { font-size: 52px; color: #d97706; margin-bottom: 16px; display: block; }
-.drop-zone h3 { font-family: 'Syne', sans-serif; font-size: 18px; color: #78350f; font-weight: 800; margin-bottom: 8px; }
-.drop-zone p { font-size: 13px; color: #b97f10; font-weight: 500; margin-bottom: 4px; }
-.drop-zone small { font-size: 11px; color: #d97706; font-weight: 600; }
-.drop-zone input[type="file"] { display: none; }
-
-/* Upload button */
-.upload-btn {
-  background: linear-gradient(135deg, #f59e0b, #d97706); color: white;
-  border: none; padding: 12px 32px; border-radius: 40px; cursor: pointer;
-  font-weight: 700; font-family: 'DM Sans', sans-serif; font-size: 14px;
-  display: inline-flex; align-items: center; gap: 8px;
-  transition: opacity 0.2s; margin-top: 16px;
-}
-.upload-btn:hover { opacity: 0.9; }
-.upload-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-
-/* Status section */
-.status-label { font-size: 15px; font-weight: 700; color: #5c3b1a; margin-bottom: 20px; }
-
-/* File status card */
-.file-status-card {
-  border-radius: 16px; padding: 28px;
-  text-align: center;
-  border: 1px solid rgba(253,230,138,0.5);
-}
-.file-status-card.empty {
-  background: rgba(254,243,199,0.2);
-}
-.file-status-card.has-file {
-  background: rgba(240,253,244,0.5);
-  border-color: rgba(134,239,172,0.4);
-}
-.file-status-icon { font-size: 42px; margin-bottom: 12px; display: block; }
-.file-status-card.empty .file-status-icon { color: #d97706; }
-.file-status-card.has-file .file-status-icon { color: #16a34a; }
-.file-status-card h4 { font-family: 'Syne', sans-serif; font-size: 16px; font-weight: 800; margin-bottom: 6px; }
-.file-status-card.empty h4 { color: #d97706; }
-.file-status-card.has-file h4 { color: #166534; }
-.file-status-card p { font-size: 12px; color: #92400e; font-weight: 500; }
-.file-status-card.has-file p { color: #15803d; }
-
-/* File actions row */
-.file-actions { display: flex; gap: 12px; justify-content: center; margin-top: 16px; flex-wrap: wrap; }
-.action-btn {
-  display: inline-flex; align-items: center; gap: 7px;
-  padding: 9px 22px; border-radius: 40px; font-size: 13px;
-  font-weight: 700; cursor: pointer; border: none; transition: all 0.2s;
-  text-decoration: none; font-family: 'DM Sans', sans-serif;
-}
-.action-btn.download {
-  background: linear-gradient(135deg, #10b981, #059669); color: white;
-}
-.action-btn.download:hover { opacity: 0.9; transform: translateY(-1px); }
-.action-btn.delete {
-  background: rgba(254,202,202,0.5); color: #dc2626;
-  border: 1px solid rgba(252,165,165,0.5);
-}
-.action-btn.delete:hover { background: rgba(254,202,202,0.85); }
-
-/* File info chip */
-.file-info-chips { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 12px; }
-.chip {
-  background: rgba(253,230,138,0.4); color: #78350f;
-  padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 700;
-  display: inline-flex; align-items: center; gap: 5px;
-}
-
-/* Selected file preview */
-#selectedFileInfo {
-  display: none; align-items: center; gap: 10px;
-  background: rgba(254,243,199,0.5); border: 1px solid #fde68a;
-  border-radius: 10px; padding: 10px 16px; margin-top: 12px;
-}
-#selectedFileInfo.visible { display: flex; }
-#selectedFileInfo span { font-size: 13px; font-weight: 600; color: #78350f; }
-#selectedFileInfo small { font-size: 11px; color: #b97f10; }
-
-/* Toast */
-#toastContainer { position: fixed; bottom: 24px; right: 24px; display: flex; flex-direction: column; gap: 10px; z-index: 2000; }
+.card-custom { background:rgba(255,255,255,0.8); backdrop-filter:blur(12px); border-radius:24px; padding:24px; border:1px solid rgba(253,230,138,0.4); margin-bottom:32px; transition: 0.3s; }
+.card-custom:hover { box-shadow:0 8px 25px rgba(120,53,15,0.06); }
 </style>
 </head>
 <body>
-<div class="blob blob-1"></div>
-<div class="blob blob-2"></div>
+<div class="blob blob-1"></div><div class="blob blob-2"></div>
 
-<!-- Header -->
 <div class="global-header">
   <div class="logo-area">
     <div class="logo-icon">N</div>
-    <div class="logo-text">
-      <h2>National Institute of Technology<br>Andhra Pradesh</h2>
-      <p>Placement &amp; Career Cell</p>
-    </div>
+    <div class="logo-text"><h2>National Institute of Technology<br>Andhra Pradesh</h2><p>Placement &amp; Career Cell</p></div>
   </div>
   <div style="display:flex; align-items:center; gap:16px;">
-    <span style="background:rgba(253,230,138,0.3); padding:6px 14px; border-radius:30px; color:#b45309; font-weight:600; display:flex; align-items:center; gap:6px; font-size:12px;">
-      <i class="ti ti-calendar-time"></i> Calendar
-    </span>
+    <a href="/faculty_logout" class="header-right" style="margin:0;"><i class="ti ti-logout"></i> Logout</a>
   </div>
 </div>
 
 <div class="page-body">
-  <!-- Page title -->
   <div class="page-header">
-    <h1><i class="ti ti-file-spreadsheet"></i> Master Student Sheet Manager</h1>
-  </div>
-  <div style="text-align:center; margin-bottom:28px;">
-    <a href="/faculty_dashboard" class="back-btn"><i class="ti ti-home"></i> Back to Dashboard</a>
+    <h1><i class="ti ti-file-spreadsheet"></i> Master Sheet Manager</h1>
+    <a href="/faculty_dashboard" class="back-home-btn"><i class="ti ti-home"></i> Back to Dashboard</a>
   </div>
 
-  <!-- Upload Card -->
-  <div class="main-card">
-    <div class="card-section-title"><i class="ti ti-shield-check"></i> Master Database Controls</div>
+  <div class="container-fluid px-0">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="mb-4">
+          {% for category, message in messages %}
+            <div class="alert alert-{{ 'success' if category == 'success' else 'danger' }} alert-dismissible fade show" role="alert" style="border-radius:12px;">
+              {{ message }}
+              <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
 
-    <form id="uploadForm" action="/faculty/upload_master_sheet" method="POST" enctype="multipart/form-data">
-
-      <!-- Drop Zone — file input is INSIDE so CSS hides the browser button -->
-      <div class="drop-zone" id="dropZone" onclick="document.getElementById('masterFileInput').click()">
-        <input type="file" name="master_file" id="masterFileInput" accept=".pdf" onchange="document.getElementById('uploadForm').submit()">
-        <i class="ti ti-cloud-upload drop-icon"></i>
-        <h3>Drag &amp; Drop or Click to Upload PDF</h3>
-        <p>Upload the Excel Master Sheet rendered as a PDF document</p>
-        <small>Allowed format: PDF files only</small>
-
-        <!-- Selected file preview (shown after choosing, briefly before auto-submit) -->
-        <div id="selectedFileInfo">
-          <i class="ti ti-file" style="font-size:22px;color:#d97706;"></i>
-          <div>
-            <span id="selectedFileName">No file chosen</span><br>
-            <small id="selectedFileSize"></small>
-          </div>
+    <div class="row g-4">
+      <!-- Upload Excel/CSV -->
+      <div class="col-md-12">
+        <div class="card-custom h-100 d-flex flex-column text-center align-items-center justify-content-center">
+          <i class="ti ti-file-spreadsheet mb-3" style="font-size: 48px; color: #d97706;"></i>
+          <h3 style="font-family:'Syne',sans-serif; font-size:20px; color:#78350f; font-weight:800; margin-bottom:12px;">Upload Master Sheet</h3>
+          <p style="font-size:13px; color:#b97f10; margin-bottom:24px;">Upload the student master sheet (.xlsx, .csv) to auto-update student profiles, or a .pdf for read-only viewing.</p>
+          <form action="{{ url_for('faculty_upload_master_sheet') }}" method="POST" enctype="multipart/form-data" class="w-100" style="max-width:300px;">
+            <input type="file" name="master_file" accept=".xlsx,.csv,.pdf" class="form-control mb-3" style="border-radius:10px; border-color:rgba(253,230,138,0.8);" required />
+            <button type="submit" class="edit-action-btn w-100 justify-content-center">Upload File</button>
+          </form>
         </div>
       </div>
-    </form>
-
-    <hr style="border:none;border-top:1px solid rgba(253,230,138,0.5);margin:32px 0 24px;">
-
-    <!-- Status Section -->
-    <div class="status-label">Current Database File Status:</div>
-
-    {% if current_file %}
-    <!-- File exists -->
-    <div class="file-status-card has-file">
-      <i class="ti ti-circle-check file-status-icon"></i>
-      <h4>{{ current_file }}</h4>
-      <p>Master sheet uploaded and available.</p>
-      <div class="file-info-chips">
-        <span class="chip"><i class="ti ti-tag"></i> {{ file_type }}</span>
-        <span class="chip"><i class="ti ti-database"></i> {{ file_size }} KB</span>
-      </div>
-      <div class="file-actions">
-        <a href="/faculty/download_master_sheet" class="action-btn download">
-          <i class="ti ti-download"></i> Download
-        </a>
-        <form action="/faculty/delete_master_sheet" method="POST" style="display:inline;" onsubmit="return confirm('Delete the master sheet? This cannot be undone.')">
-          <button type="submit" class="action-btn delete">
-            <i class="ti ti-trash"></i> Delete
-          </button>
-        </form>
-      </div>
     </div>
-    {% else %}
-    <!-- No file -->
-    <div class="file-status-card empty">
-      <i class="ti ti-file-sad file-status-icon"></i>
-      <h4>No Master Sheet PDF uploaded yet.</h4>
-      <p>Upload the excel spreadsheet in PDF format below to make it available.</p>
+    
+    {% if current_file %}
+    <div class="mt-4 card-custom text-center">
+      <h3 style="font-family:'Syne',sans-serif; font-size:18px; color:#78350f; font-weight:800; margin-bottom:12px;">Current Master Sheet Available</h3>
+      <p style="font-size:14px; color:#5c3b1a; margin-bottom:16px;"><strong>Type:</strong> {{ file_type }} | <strong>Size:</strong> {{ file_size }} KB</p>
+      <a href="{{ url_for('faculty_download_master_sheet') }}" class="back-home-btn" style="border-color:#d97706; color:#d97706;">
+        <i class="ti ti-download"></i> Download {{ current_file }}
+      </a>
     </div>
     {% endif %}
+
   </div>
 </div>
 
-<div id="toastContainer"></div>
-
-<script>
-const dropZone = document.getElementById('dropZone');
-const fileInput = document.getElementById('masterFileInput');
-const uploadBtn = document.getElementById('uploadBtn');
-const selectedFileInfo = document.getElementById('selectedFileInfo');
-const selectedFileName = document.getElementById('selectedFileName');
-const selectedFileSize = document.getElementById('selectedFileSize');
-
-// Drag & drop
-dropZone.addEventListener('dragover', (e) => {
-  e.preventDefault();
-  dropZone.classList.add('dragover');
-});
-dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
-dropZone.addEventListener('drop', (e) => {
-  e.preventDefault();
-  dropZone.classList.remove('dragover');
-  const files = e.dataTransfer.files;
-  if (files.length > 0) {
-    fileInput.files = files;
-    updateFilePreview(files[0]);
-  }
-});
-
-fileInput.addEventListener('change', () => {
-  if (fileInput.files.length > 0) {
-    updateFilePreview(fileInput.files[0]);
-  }
-});
-
-function updateFilePreview(file) {
-  const allowed = ['.pdf'];
-  const ext = '.' + file.name.split('.').pop().toLowerCase();
-  if (!allowed.includes(ext)) {
-    showToast('Invalid file type. Only PDF allowed.', 'error');
-    fileInput.value = '';
-    selectedFileInfo.classList.remove('visible');
-    return;
-  }
-  selectedFileName.textContent = file.name;
-  selectedFileSize.textContent = (file.size / 1024).toFixed(1) + ' KB';
-  selectedFileInfo.classList.add('visible');
-  document.getElementById('uploadForm').submit();
-}
-
-// Flash messages
-{% with messages = get_flashed_messages(with_categories=true) %}
-  {% if messages %}
-    {% for cat, msg in messages %}
-      showToast("{{ msg }}", "{{ cat if cat != 'message' else 'success' }}");
-    {% endfor %}
-  {% endif %}
-{% endwith %}
-
-function showToast(msg, type = 'success') {
-  let c = document.getElementById('toastContainer');
-  const t = document.createElement('div');
-  const bg = {
-    success: 'linear-gradient(135deg,#10b981,#059669)',
-    warning: 'linear-gradient(135deg,#f59e0b,#d97706)',
-    error:   'linear-gradient(135deg,#ef4444,#dc2626)',
-    info:    'linear-gradient(135deg,#3b82f6,#2563eb)'
-  };
-  t.style.cssText = `background:${bg[type]||bg.success};color:white;padding:14px 24px;border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,0.15);display:flex;align-items:center;gap:12px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;opacity:0;transform:translateY(20px);transition:all 0.3s;`;
-  t.innerHTML = `<i class="ti ti-circle-check" style="font-size:18px;"></i><span>${msg}</span>`;
-  c.appendChild(t);
-  setTimeout(() => { t.style.opacity = '1'; t.style.transform = 'translateY(0)'; }, 10);
-  setTimeout(() => { t.style.opacity = '0'; t.style.transform = 'translateY(-20px)'; setTimeout(() => t.remove(), 300); }, 3500);
-}
-</script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
