@@ -5,26 +5,93 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Faculty Login — NIT AP Placement Portal</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500;700&display=swap" rel="stylesheet">
+<script>
+  (function() {
+    const savedTheme = localStorage.getItem('faculty-theme') || 'light';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+  })();
+</script>
 <style>
+:root {
+  --bg-gradient: linear-gradient(145deg, #fffdf5 0%, #fff8e1 40%, #fef3c0 75%, #fffdf5 100%);
+  --header-bg: rgba(255, 255, 255, 0.95);
+  --header-border: rgba(253, 230, 138, 0.6);
+  --card-bg: rgba(255, 255, 255, 0.78);
+  --card-hover-bg: rgba(255, 255, 255, 0.94);
+  --card-border: rgba(253, 230, 138, 0.4);
+  --text-main: #78350f;
+  --text-muted: #b97f10;
+  --text-accent: #b45309;
+  --badge-bg: rgba(253, 230, 138, 0.4);
+  --input-bg: rgba(255, 255, 255, 0.85);
+  --input-border: rgba(253, 230, 138, 0.6);
+  --button-gradient: linear-gradient(135deg, #f59e0b, #d97706);
+  --logout-bg: rgba(255, 255, 240, 0.6);
+  --shadow-color: rgba(120, 53, 15, 0.04);
+  --shadow-hover: rgba(120, 53, 15, 0.12);
+  --blob1-color: rgba(230, 180, 40, 0.22);
+  --blob2-color: rgba(255, 220, 80, 0.18);
+  --blob3-color: rgba(255, 200, 50, 0.15);
+}
+
+[data-theme="dark"] {
+  --bg-gradient: linear-gradient(145deg, #0f172a 0%, #1e293b 40%, #0f172a 100%);
+  --header-bg: rgba(30, 41, 59, 0.95);
+  --header-border: rgba(245, 158, 11, 0.3);
+  --card-bg: rgba(30, 41, 59, 0.7);
+  --card-hover-bg: rgba(30, 41, 59, 0.9);
+  --card-border: rgba(245, 158, 11, 0.2);
+  --text-main: #f8fafc;
+  --text-muted: #fbbf24;
+  --text-accent: #fbbf24;
+  --badge-bg: rgba(245, 158, 11, 0.2);
+  --input-bg: rgba(15, 23, 42, 0.6);
+  --input-border: rgba(245, 158, 11, 0.3);
+  --button-gradient: linear-gradient(135deg, #fbbf24, #d97706);
+  --logout-bg: rgba(15, 23, 42, 0.4);
+  --shadow-color: rgba(0, 0, 0, 0.3);
+  --shadow-hover: rgba(0, 0, 0, 0.5);
+  --blob1-color: rgba(245, 158, 11, 0.12);
+  --blob2-color: rgba(217, 119, 6, 0.1);
+  --blob3-color: rgba(251, 191, 36, 0.08);
+}
+
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body {
   min-height: 100vh; display: flex; align-items: center; justify-content: center;
   padding: 32px 20px; font-family: 'DM Sans', sans-serif;
-  background: linear-gradient(145deg, #fffdf5 0%, #fff8e1 40%, #fef3c0 75%, #fffdf5 100%);
-  position: relative; overflow-x: hidden;
+  background: var(--bg-gradient); color: var(--text-main);
+  position: relative; overflow-x: hidden; transition: background 0.3s, color 0.3s;
 }
 .blob { position: fixed; border-radius: 50%; pointer-events: none; filter: blur(55px); z-index: 0; }
-.blob-1 { width: 280px; height: 280px; background: rgba(230,180,40,0.22); top: -70px; left: -50px; }
-.blob-2 { width: 220px; height: 220px; background: rgba(255,220,80,0.18); bottom: -50px; right: -30px; }
-.blob-3 { width: 160px; height: 160px; background: rgba(255,200,50,0.15); top: 40%; left: 55%; }
+.blob-1 { width: 280px; height: 280px; background: var(--blob1-color); top: -70px; left: -50px; animation: float-blob-1 12s infinite ease-in-out; }
+.blob-2 { width: 220px; height: 220px; background: var(--blob2-color); bottom: -50px; right: -30px; animation: float-blob-2 15s infinite ease-in-out; }
+.blob-3 { width: 160px; height: 160px; background: var(--blob3-color); top: 40%; left: 55%; animation: float-blob-3 18s infinite ease-in-out; }
+
+@keyframes float-blob-1 {
+  0% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(40px, 30px) scale(1.1); }
+  100% { transform: translate(0, 0) scale(1); }
+}
+@keyframes float-blob-2 {
+  0% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(-30px, -40px) scale(0.95); }
+  100% { transform: translate(0, 0) scale(1); }
+}
+@keyframes float-blob-3 {
+  0% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(25px, -25px) scale(1.05); }
+  100% { transform: translate(0, 0) scale(1); }
+}
+
 .global-header {
   position: fixed; top: 0; left: 0; right: 0; z-index: 100;
-  background: rgba(255,255,255,0.95); backdrop-filter: blur(12px);
-  border-bottom: 1px solid rgba(253,230,138,0.6);
+  background: var(--header-bg); backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--header-border);
   padding: 10px 28px; display: flex; align-items: center;
   justify-content: space-between; flex-wrap: wrap; gap: 12px;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.02);
+  box-shadow: 0 2px 12px rgba(0,0,0,0.02); transition: background 0.3s, border-color 0.3s;
 }
 .logo-area { display: flex; align-items: center; gap: 14px; }
 .logo-icon {
@@ -32,41 +99,48 @@ body {
   border-radius: 14px; display: flex; align-items: center; justify-content: center;
   color: white; font-size: 24px; font-weight: 800; font-family: 'Syne', sans-serif;
 }
-.logo-text h2 { font-family: 'Syne', sans-serif; font-size: 16px; font-weight: 800; color: #78350f; line-height: 1.2; }
-.logo-text p { font-size: 9px; letter-spacing: 0.5px; color: #b97f10; text-transform: uppercase; }
-.header-right { font-size: 11px; background: rgba(253,230,138,0.3); padding: 6px 14px; border-radius: 30px; color: #b45309; }
+.logo-text h2 { font-family: 'Syne', sans-serif; font-size: 16px; font-weight: 800; color: var(--text-main); line-height: 1.2; transition: color 0.3s; }
+.logo-text p { font-size: 9px; letter-spacing: 0.5px; color: var(--text-muted); text-transform: uppercase; transition: color 0.3s; }
+.header-right { font-size: 11px; background: var(--badge-bg); padding: 6px 14px; border-radius: 30px; color: var(--text-accent); transition: all 0.3s; }
 .main-wrapper { width: 100%; margin-top: 80px; display: flex; justify-content: center; }
-.layout { position: relative; z-index: 2; display: flex; gap: 18px; align-items: stretch; width: 100%; max-width: 580px; }
+.layout { position: relative; z-index: 2; display: flex; gap: 18px; align-items: stretch; width: 100%; max-width: 580px; opacity: 0; animation: fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 .side-cards { display: flex; flex-direction: column; gap: 12px; width: 180px; flex-shrink: 0; }
-.stat-card { border-radius: 14px; padding: 16px 14px; border: 1px solid rgba(255,255,255,0.9); position: relative; }
-.stat-card.c1 { background: linear-gradient(135deg, #fef9e7, #fde68a); }
+.stat-card { border-radius: 14px; padding: 16px 14px; border: 1px solid var(--card-border); position: relative; transition: all 0.3s; }
+.stat-card.c1 { background: linear-gradient(135deg, var(--card-bg), var(--badge-bg)); }
 .stat-card .icon-wrap { width: 34px; height: 34px; border-radius: 10px; background: rgba(255,255,255,0.7); display: flex; align-items: center; justify-content: center; margin-bottom: 10px; }
-.stat-num { font-family: 'Syne', sans-serif; font-size: 26px; font-weight: 800; color: #78350f; }
-.stat-label { font-size: 11px; color: #b97f10; font-weight: 500; margin-top: 2px; }
-.trend { position: absolute; top: 12px; right: 12px; font-size: 10px; background: rgba(255,255,255,0.65); padding: 2px 8px; border-radius: 20px; color: #78350f; font-weight: 600; }
-.info-card { background: rgba(255,255,255,0.7); border-radius: 14px; padding: 16px 14px; }
-.info-card-title { font-family: 'Syne', sans-serif; font-size: 12px; font-weight: 800; color: #78350f; margin-bottom: 6px; }
+[data-theme="dark"] .stat-card .icon-wrap { background: rgba(15, 23, 42, 0.6); }
+.stat-num { font-family: 'Syne', sans-serif; font-size: 26px; font-weight: 800; color: var(--text-main); transition: color 0.3s; }
+.stat-label { font-size: 11px; color: var(--text-muted); font-weight: 500; margin-top: 2px; transition: color 0.3s; }
+.trend { position: absolute; top: 12px; right: 12px; font-size: 10px; background: var(--badge-bg); padding: 2px 8px; border-radius: 20px; color: var(--text-accent); font-weight: 600; transition: all 0.3s; }
+.info-card { background: var(--card-bg); border-radius: 14px; padding: 16px 14px; border: 1px solid var(--card-border); transition: all 0.3s; }
+.info-card-title { font-family: 'Syne', sans-serif; font-size: 12px; font-weight: 800; color: var(--text-main); margin-bottom: 6px; transition: color 0.3s; }
 .info-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; }
-.info-icon { width: 30px; height: 30px; border-radius: 8px; background: rgba(253,230,138,0.5); display: flex; align-items: center; justify-content: center; color: #d97706; }
-.i-val { font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 800; color: #78350f; }
-.i-lbl { font-size: 10px; color: #b97f10; }
-.login-panel { flex: 1; background: rgba(255,255,255,0.82); border-radius: 16px; padding: 26px 22px; backdrop-filter: blur(16px); }
-.portal-tag { display: flex; align-items: center; gap: 8px; margin-bottom: 16px; font-size: 11px; font-weight: 700; color: #b45309; text-transform: uppercase; letter-spacing: 1px; }
+.info-icon { width: 30px; height: 30px; border-radius: 8px; background: var(--badge-bg); display: flex; align-items: center; justify-content: center; color: var(--text-accent); transition: all 0.3s; }
+.i-val { font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 800; color: var(--text-main); transition: color 0.3s; }
+.i-lbl { font-size: 10px; color: var(--text-muted); transition: color 0.3s; }
+.login-panel { flex: 1; background: var(--card-bg); border-radius: 16px; padding: 26px 22px; backdrop-filter: blur(16px); border: 1px solid var(--card-border); transition: all 0.3s; }
+.portal-tag { display: flex; align-items: center; gap: 8px; margin-bottom: 16px; font-size: 11px; font-weight: 700; color: var(--text-accent); text-transform: uppercase; letter-spacing: 1px; transition: color 0.3s; }
 .dot-live { width: 8px; height: 8px; border-radius: 50%; background: #16a34a; animation: pulse 2s infinite; }
 @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
-.panel-title { font-family: 'Syne', sans-serif; font-size: 24px; font-weight: 800; color: #78350f; margin-bottom: 4px; }
-.panel-sub { font-size: 13px; color: #b97f10; margin-bottom: 20px; font-weight: 500; }
-.field-label { font-size: 12px; font-weight: 700; color: #78350f; display: block; margin-bottom: 6px; margin-top: 12px; }
-.field-row { display: flex; align-items: center; gap: 8px; background: rgba(255,255,255,0.85); border: 1px solid rgba(253,230,138,0.6); border-radius: 9px; padding: 9px 12px; margin-bottom: 12px; transition: border-color 0.2s; }
-.field-row:focus-within { border-color: #d97706; box-shadow: 0 0 0 3px rgba(253,230,138,0.3); }
-.field-row i { color: #d97706; font-size: 16px; }
-.field-row input { background: transparent; border: none; outline: none; width: 100%; font-family: 'DM Sans', sans-serif; font-size: 14px; color: #5c3b1a; }
-.signin-btn { width: 100%; padding: 11px; background: linear-gradient(135deg, #f59e0b, #d97706); color: white; border: none; border-radius: 9px; cursor: pointer; font-weight: 700; font-family: 'DM Sans', sans-serif; font-size: 14px; margin-top: 4px; transition: opacity 0.2s; }
+.panel-title { font-family: 'Syne', sans-serif; font-size: 24px; font-weight: 800; color: var(--text-main); margin-bottom: 4px; transition: color 0.3s; }
+.panel-sub { font-size: 13px; color: var(--text-muted); margin-bottom: 20px; font-weight: 500; transition: color 0.3s; }
+.field-label { font-size: 12px; font-weight: 700; color: var(--text-main); display: block; margin-bottom: 6px; margin-top: 12px; transition: color 0.3s; }
+.field-row { display: flex; align-items: center; gap: 8px; background: var(--input-bg); border: 1px solid var(--input-border); border-radius: 9px; padding: 9px 12px; margin-bottom: 12px; transition: all 0.2s; }
+.field-row:focus-within { border-color: var(--text-accent); box-shadow: 0 0 0 3px var(--badge-bg); }
+.field-row i { color: var(--text-accent); font-size: 16px; transition: color 0.3s; }
+.field-row input { background: transparent; border: none; outline: none; width: 100%; font-family: 'DM Sans', sans-serif; font-size: 14px; color: var(--text-main); }
+.signin-btn { width: 100%; padding: 11px; background: var(--button-gradient); color: white; border: none; border-radius: 9px; cursor: pointer; font-weight: 700; font-family: 'DM Sans', sans-serif; font-size: 14px; margin-top: 4px; transition: opacity 0.2s; }
 .signin-btn:hover { opacity: 0.9; }
 .error-msg { font-size: 12px; text-align: center; margin-top: 10px; color: #dc2626; font-weight: 600; background: #fee2e2; border-radius: 8px; padding: 8px; }
-.divider { border: none; border-top: 1px solid rgba(253,230,138,0.5); margin: 16px 0 10px; }
-.footer-row { display: flex; justify-content: space-between; font-size: 11px; color: #b97f10; }
-.footer-row a { color: #d97706; text-decoration: none; font-weight: 600; }
+.divider { border: none; border-top: 1px solid var(--card-border); margin: 16px 0 10px; transition: border-color 0.3s; }
+.footer-row { display: flex; justify-content: space-between; font-size: 11px; color: var(--text-muted); transition: color 0.3s; }
+.footer-row a { color: var(--text-accent); text-decoration: none; font-weight: 600; }
 
 /* Hide default browser password eye icons */
 input[type="password"]::-ms-reveal,
@@ -92,7 +166,12 @@ input[type="password"]::-webkit-textfield-decoration-container {
       <p>Placement &amp; Career Cell</p>
     </div>
   </div>
-  <div class="header-right"><i class="ti ti-building"></i> NIT AP · Est. 2015</div>
+  <div style="display:flex; align-items:center; gap:16px;">
+    <button id="themeToggleBtn" style="background:var(--logout-bg); border:1px solid var(--card-border); padding:6px 10px; border-radius:30px; color:var(--text-main); font-weight:600; display:flex; align-items:center; justify-content:center; font-size:16px; cursor:pointer; transition:background 0.2s;">
+      <i class="ti ti-moon"></i>
+    </button>
+    <div class="header-right"><i class="ti ti-building"></i> NIT AP · Est. 2015</div>
+  </div>
 </div>
 
 <div class="main-wrapper">
@@ -169,6 +248,27 @@ function togglePassword() {
   } else {
     pwd.type = "password";
     icon.className = "ti ti-eye-off";
+  }
+}
+
+// Theme Toggle
+const themeToggle = document.getElementById('themeToggleBtn');
+if (themeToggle) {
+  themeToggle.addEventListener('click', () => {
+    const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
+    const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', newTheme);
+    localStorage.setItem('faculty-theme', newTheme);
+    const icon = themeToggle.querySelector('i');
+    if (icon) {
+      icon.className = newTheme === 'dark' ? 'ti ti-sun' : 'ti ti-moon';
+    }
+  });
+
+  const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
+  const icon = themeToggle.querySelector('i');
+  if (icon) {
+    icon.className = currentTheme === 'dark' ? 'ti ti-sun' : 'ti ti-moon';
   }
 }
 </script>
