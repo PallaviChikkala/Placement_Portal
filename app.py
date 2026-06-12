@@ -1,4 +1,4 @@
-from flask import Flask, request, render_template, redirect, session, jsonify
+from flask import Flask, request, render_template, redirect, session, jsonify, flash
 import pdfplumber
 import docx
 import mysql.connector
@@ -11,6 +11,14 @@ import pandas as pd
 app = Flask(__name__)
 app.secret_key = "placement_portal_secret"
 app.permanent_session_lifetime = timedelta(days=30)
+
+@app.after_request
+def add_header(r):
+    r.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    r.headers["Pragma"] = "no-cache"
+    r.headers["Expires"] = "0"
+    return r
+
 
 #MYSQL Connection
 def get_connection():
@@ -160,6 +168,11 @@ def init_database():
         
         try:
             cursor.execute("ALTER TABLE applications ADD COLUMN extra_details TEXT")
+        except Exception:
+            pass
+
+        try:
+            cursor.execute("ALTER TABLE applications MODIFY COLUMN job_id VARCHAR(30)")
         except Exception:
             pass
         
@@ -631,6 +644,37 @@ def google_login_check():
     except Exception as e:
         print("Google Auth Error:", e)
         return render_template("student/login.html", error="Google Sign-In verification failed.")
+    
+@app.route("/change_password", methods=["POST"])
+def change_password():
+    if "student_id" not in session:
+        return redirect("/student_login")
+
+    old_password = request.form.get("old_password", "").strip()
+    new_password = request.form.get("new_password", "").strip()
+    confirm_password = request.form.get("confirm_password", "").strip()
+
+    if new_password != confirm_password:
+        flash("New password and confirm password do not match", "danger")
+        return redirect("/student_profile")
+
+    cursor.execute(
+        "SELECT * FROM students WHERE student_id=%s AND password=%s",
+        (session["student_id"], old_password)
+    )
+    student = cursor.fetchone()
+
+    if student:
+        cursor.execute(
+            "UPDATE students SET password=%s WHERE student_id=%s",
+            (new_password, session["student_id"])
+        )
+        db.commit()
+        flash("Password changed successfully", "success")
+    else:
+        flash("Old password is incorrect", "danger")
+
+    return redirect("/student_profile")
 
 @app.route("/api/faculty_login", methods=["POST"])
 def api_faculty_login():
@@ -664,56 +708,32 @@ def clear_notifications():
 @app.route("/student_dashboard")
 def student_dashboard():
     ensure_connection()
+
     if "student_id" not in session:
         return redirect("/student_login")
-<<<<<<< HEAD
-    
-    # Fetch full student record
-    query = "SELECT * FROM students WHERE student_id = %s"
-    cursor.execute(query, (session["student_id"],))
-    student = cursor.fetchone()
-    
-    return render_template(
-        "student/dashboard.html",
-        name=session["student_name"],
-        student=student
-    )
-=======
-        
-    student_id = session["student_id"]
-    
-    # Fetch student data
-    cursor.execute("SELECT * FROM students WHERE student_id = %s", (student_id,))
-    student = cursor.fetchone()
-    if not student:
-        session.clear()
-        return redirect("/student_login")
-    
-    # Fetch all jobs to evaluate eligibility count
-    cursor.execute("SELECT * FROM jobs")
-    all_jobs = cursor.fetchall()
-    
-    eligible_count = 0
-    upcoming_drives = []
-    
-    for job in all_jobs:
-        # Determine job tier
-        job_tier_str = str(job.get('tier', 'Tier 3')).lower()
-        job_tier_num = 1 if '1' in job_tier_str else (2 if '2' in job_tier_str else 3)
 
-        # Eligibility logic
-        eligible_branches = [b.strip().lower() for b in job.get('branches', '').split(',')] if job.get('branches') else []
-        student_branch = student['branch'].strip().lower() if student['branch'] else ""
-        
-        cgpa_ok = student['cgpa'] >= float(job.get('cgpa_cutoff') or 0) if student['cgpa'] is not None else True
-        backlogs_ok = student['backlogs'] <= int(job.get('active_backlogs') or 0) if student['backlogs'] is not None else True
-        branch_ok = (student_branch in eligible_branches) or (not eligible_branches)
-        
-        # Tier check: 
-        # Tier 1 selected -> cannot apply to Tier 2, Tier 3.
-        # Tier 2 selected -> cannot apply to Tier 3.
-        student_selected_tier = student.get('selected_tier')
+    cursor.execute("SELECT * FROM students WHERE student_id = %s", (session["student_id"],))
+    student = cursor.fetchone()
+
+    cursor.execute("SELECT * FROM jobs ORDER BY id DESC")
+    all_jobs = cursor.fetchall()
+
+    upcoming_drives = []
+
+    for job in all_jobs:
+        job_tier_str = str(job.get("tier", "Tier 3")).lower()
+        job_tier_num = 1 if "1" in job_tier_str else (2 if "2" in job_tier_str else 3)
+
+        eligible_branches = [b.strip().lower() for b in job.get("branches", "").split(",")] if job.get("branches") else []
+        student_branch = student["branch"].strip().lower() if student["branch"] else ""
+
+        cgpa_ok = student["cgpa"] >= float(job.get("cgpa_cutoff") or 0)
+        backlogs_ok = student["backlogs"] <= int(job.get("active_backlogs") or 0)
+        branch_ok = student_branch in eligible_branches or not eligible_branches
+
+        student_selected_tier = student.get("selected_tier")
         tier_ok = True
+
         if student_selected_tier is not None and student_selected_tier > 0:
             if student_selected_tier == 1 and job_tier_num in [2, 3]:
                 tier_ok = False
@@ -721,64 +741,43 @@ def student_dashboard():
                 tier_ok = False
 
         is_eligible = cgpa_ok and backlogs_ok and branch_ok and tier_ok
-        if is_eligible:
-            eligible_count += 1
-        
-        # Attach eligibility flag to job for display
-        job_copy = dict(job)
-        job_copy['is_eligible'] = is_eligible
-        
-        # Also fix mapping for display
-        job_copy['package_lpa'] = job.get('ctc') or ''
-        job_copy['min_cgpa'] = job.get('cgpa_cutoff') or 0
-        job_copy['max_backlogs'] = job.get('active_backlogs') or 0
-        job_copy['eligible_branches'] = job.get('branches') or ''
-        job_copy['deadline'] = str(job.get('deadline')) if job.get('deadline') else 'Ongoing'
-        
-        upcoming_drives.append(job_copy)
-    
-    # Sort upcoming drives by deadline
-    upcoming_drives = sorted(upcoming_drives, key=lambda x: str(x['deadline']))[:5]
-    
-    # Fetch count of applied companies
-    cursor.execute("SELECT COUNT(*) as count FROM applications WHERE student_id = %s", (student_id,))
-    applied_count = cursor.fetchone()['count']
-    
-    # Fetch count of interview calls
-    cursor.execute("SELECT COUNT(*) as count FROM applications WHERE student_id = %s AND status = 'Interview'", (student_id,))
-    interview_count = cursor.fetchone()['count']
-    
-    # Fetch recent applications
-    cursor.execute("""
-        SELECT a.applied_date, a.status, j.company_name, j.role, j.ctc AS package_lpa 
-        FROM applications a 
-        JOIN jobs j ON a.job_id = j.job_id 
-        WHERE a.student_id = %s 
-        ORDER BY a.applied_date DESC LIMIT 5
-    """, (student_id,))
-    recent_applications = cursor.fetchall()
-    
-    # Fetch unread notifications
-    cursor.execute("SELECT * FROM notifications WHERE student_id = %s AND is_read = FALSE ORDER BY created_at DESC", (student_id,))
-    notifications = cursor.fetchall()
-    
-    # Resume score from session or default
+
+        job_item = dict(job)
+        job_item["is_eligible"] = is_eligible
+        job_item["package_lpa"] = job.get("ctc") or ""
+        job_item["deadline"] = str(job.get("deadline")) if job.get("deadline") else "Ongoing"
+
+        upcoming_drives.append(job_item)
+
+    eligible_count = sum(1 for job in upcoming_drives if job["is_eligible"])
+
+    cursor.execute("SELECT COUNT(*) AS count FROM applications WHERE student_id = %s", (session["student_id"],))
+    applied_count = cursor.fetchone()["count"]
+
+    cursor.execute("SELECT COUNT(*) AS count FROM applications WHERE student_id = %s AND status = 'Interview'", (session["student_id"],))
+    interview_count = cursor.fetchone()["count"]
+
     resume_score = session.get("resume_score", 0)
-    
+
+    cursor.execute("""
+        SELECT * FROM notifications
+        WHERE student_id = %s AND is_read = 0
+        ORDER BY created_at DESC
+        """, (session["student_id"],))
+
+    notifications = cursor.fetchall()
+
     return render_template(
         "student/dashboard.html",
-        name=student["name"],
+        name=session["student_name"],
         student=student,
+        upcoming_drives=upcoming_drives,
         eligible_count=eligible_count,
         applied_count=applied_count,
         interview_count=interview_count,
         resume_score=resume_score,
-        upcoming_drives=upcoming_drives,
-        recent_applications=recent_applications,
         notifications=notifications
     )
-
->>>>>>> 5044d12c87a2742a41ccaaf65bd6d89c6e52083d
 @app.route("/student_profile")
 def student_profile():
     ensure_connection()
@@ -870,7 +869,7 @@ def eligible_companies():
     cursor.execute("SELECT * FROM students WHERE student_id = %s", (student_id,))
     student = cursor.fetchone()
     
-    cursor.execute("SELECT * FROM jobs")
+    cursor.execute("SELECT * FROM jobs ORDER BY id DESC")
     all_jobs = cursor.fetchall()
     
     # Check eligibility for each job
@@ -1184,6 +1183,10 @@ def faculty_jobs():
         cursor.execute("SELECT * FROM jobs ORDER BY job_id DESC")
     jobs = cursor.fetchall()
     
+    for j in jobs:
+        cursor.execute("SELECT COUNT(*) as c FROM applications WHERE job_id=%s", (j["job_id"],))
+        j["applicant_count"] = cursor.fetchone()["c"]
+    
     # Get custom columns dynamically
     cursor.execute("SHOW COLUMNS FROM jobs")
     all_columns = cursor.fetchall()
@@ -1208,7 +1211,14 @@ def faculty_job_add():
     cgpa      = float(request.form.get("cgpa_cutoff", 0))
     act_bl    = int(request.form.get("active_backlogs", 0))
     bl_hist   = int(request.form.get("backlog_history", 0))
-    branches  = ", ".join(request.form.getlist("branches"))
+    branches_list = request.form.getlist("branches")
+
+    custom_branch = request.form.get("custom_branch", "").strip()
+    if custom_branch:
+        branches_list.append(custom_branch)
+
+    branches = ", ".join(branches_list)
+
     tier      = request.form.get("tier", "Tier 1")
     desc      = request.form.get("description", "").strip()
     req_aadhar = 1 if request.form.get("req_aadhar") else 0
@@ -1216,7 +1226,10 @@ def faculty_job_add():
     req_other  = request.form.get("req_other", "").strip()
     deadline   = request.form.get("deadline", "").strip() or None
 
-    custom_fields = [k for k in request.form.keys() if k.startswith("custom_")]
+    custom_fields = [
+        k for k in request.form.keys()
+        if k.startswith("custom_") and k != "custom_branch"
+    ]
     custom_cols_str = ", ".join(custom_fields)
     custom_placeholders = ", ".join(["%s"] * len(custom_fields))
     custom_values = [request.form.get(k, "").strip() for k in custom_fields]
@@ -1256,10 +1269,11 @@ def faculty_job_add():
 
 @app.route("/faculty/jobs/edit", methods=["POST"])
 def faculty_job_edit():
+    ensure_connection()
     redir = faculty_required()
     if redir: return redir
 
-    db_job_id = request.form.get("job_id_edit", "").strip()
+    db_job_id = request.form.get("job_id_edit", "").strip() or request.form.get("job_id", "").strip()
     company   = request.form.get("company_name", "").strip()
     role      = request.form.get("role", "").strip()
     ctc       = request.form.get("ctc", "").strip()
@@ -1268,7 +1282,14 @@ def faculty_job_edit():
     cgpa      = float(request.form.get("cgpa_cutoff", 0))
     act_bl    = int(request.form.get("active_backlogs", 0))
     bl_hist   = int(request.form.get("backlog_history", 0))
-    branches  = ", ".join(request.form.getlist("branches"))
+    branches_list = request.form.getlist("branches")
+
+    custom_branch = request.form.get("custom_branch", "").strip()
+    if custom_branch:
+        branches_list.append(custom_branch)
+
+    branches = ", ".join(branches_list)
+    
     tier      = request.form.get("tier", "Tier 1")
     desc      = request.form.get("description", "").strip()
     req_aadhar = 1 if request.form.get("req_aadhar") else 0
@@ -1276,7 +1297,10 @@ def faculty_job_edit():
     req_other  = request.form.get("req_other", "").strip()
     deadline   = request.form.get("deadline", "").strip() or None
 
-    custom_fields = [k for k in request.form.keys() if k.startswith("custom_")]
+    custom_fields = [
+    k for k in request.form.keys()
+    if k.startswith("custom_") and k != "custom_branch"
+]
     custom_set_sql = "".join([f", {k}=%s" for k in custom_fields])
     custom_values = [request.form.get(k, "").strip() for k in custom_fields]
 
@@ -1299,13 +1323,13 @@ def faculty_job_edit():
                 tier=%s, description=%s, req_aadhar=%s, req_pan=%s, req_other=%s, deadline=%s
                 {pdf_update_sql}
                 {custom_set_sql}
-            WHERE TRIM(job_id) = TRIM(%s)
+            WHERE job_id = %s
         """, [company, role, ctc, location, bond,
                cgpa, act_bl, bl_hist, branches, tier,
                desc, req_aadhar, req_pan, req_other, deadline] + pdf_args + custom_values + [db_job_id])
-        if cursor.rowcount == 0:
-            raise Exception("No row found to update. Job ID may be mismatched.")
+        
         db.commit()
+
         from flask import flash
         flash(f"Job for {company} updated successfully!", "success")
     except Exception as e:
@@ -1318,6 +1342,7 @@ def faculty_job_edit():
 
 @app.route("/faculty/jobs/add_column", methods=["POST"])
 def faculty_job_add_column():
+    ensure_connection()
     redir = faculty_required()
     if redir: return redir
     
@@ -1354,6 +1379,7 @@ def faculty_job_add_column():
 
 @app.route("/faculty/jobs/delete/<string:job_db_id>", methods=["POST"])
 def faculty_job_delete(job_db_id):
+    ensure_connection()
     redir = faculty_required()
     if redir: return jsonify({"success": False, "error": "Not logged in"})
     try:
@@ -1367,6 +1393,7 @@ def faculty_job_delete(job_db_id):
 
 @app.route("/faculty/jobs/delete_column/<string:col_name>", methods=["POST"])
 def faculty_job_delete_column(col_name):
+    ensure_connection()
     redir = faculty_required()
     if redir: return jsonify({"success": False, "error": "Not logged in"})
     try:
@@ -1383,6 +1410,7 @@ def faculty_job_delete_column(col_name):
 
 @app.route("/faculty/jobs/applicants/<string:job_db_id>")
 def faculty_job_applicants(job_db_id):
+    ensure_connection()
     redir = faculty_required()
     if redir: return jsonify({"applicants": []})
 
@@ -1398,6 +1426,7 @@ def faculty_job_applicants(job_db_id):
 
 @app.route("/faculty/job_pdf/<string:job_db_id>")
 def faculty_job_pdf(job_db_id):
+    ensure_connection()
     redir = faculty_required()
     if redir: return redir
 
@@ -1418,6 +1447,7 @@ def faculty_job_pdf(job_db_id):
 
 @app.route("/faculty/applications/update_status", methods=["POST"])
 def faculty_applications_update_status():
+    ensure_connection()
     redir = faculty_required()
     if redir: return jsonify({"success": False, "error": "Faculty authorization required"})
 
@@ -1491,6 +1521,7 @@ def faculty_applications_update_status():
 
 @app.route("/faculty/selected_students")
 def faculty_selected_students():
+    ensure_connection()
     redir = faculty_required()
     if redir: return redir
 
@@ -1512,6 +1543,7 @@ def faculty_selected_students():
 
 @app.route("/faculty/applied_students")
 def faculty_applied_students():
+    ensure_connection()
     redir = faculty_required()
     if redir: return redir
 
@@ -1568,6 +1600,7 @@ def faculty_applied_students():
 
 @app.route("/faculty/download_applied_excel/<string:job_id>")
 def faculty_download_applied_excel(job_id):
+    ensure_connection()
     redir = faculty_required()
     if redir: return redir
 
@@ -1762,6 +1795,7 @@ PREV_YEARS_STATS = {
 
 @app.route("/faculty/students")
 def faculty_students():
+    ensure_connection()
     redir = faculty_required()
     if redir: return redir
 
@@ -1787,6 +1821,7 @@ def faculty_students():
 
 @app.route("/faculty/students/<branch_name>")
 def faculty_branch_detail(branch_name):
+    ensure_connection()
     redir = faculty_required()
     if redir: return redir
 
@@ -1816,264 +1851,140 @@ def faculty_branch_detail(branch_name):
 
 
 # ─── FACULTY: MASTER SHEET ────────────────────────────────────────────────────
-
 @app.route("/faculty/master_sheet")
 def faculty_master_sheet():
+    ensure_connection()
     redir = faculty_required()
     if redir: return redir
 
-    upload_dir = os.path.join(app.static_folder, "uploads")
-    # Check for any master sheet file (pdf or xlsx)
-    pdf_path = os.path.join(upload_dir, "master_sheet.pdf")
-    xlsx_path = os.path.join(upload_dir, "master_sheet.xlsx")
-    
-    current_file = None
-    file_type = None
-    file_size = None
-    if os.path.exists(pdf_path):
-        current_file = "master_sheet.pdf"
-        file_type = "PDF"
-        file_size = round(os.path.getsize(pdf_path) / 1024, 1)
-    elif os.path.exists(xlsx_path):
-        current_file = "master_sheet.xlsx"
-        file_type = "XLSX"
-        file_size = round(os.path.getsize(xlsx_path) / 1024, 1)
-
-    return render_template(
-        "faculty/master_sheet.html",
-        current_file=current_file,
-        file_type=file_type,
-        file_size=file_size
-    )
-
-
+    return render_template("faculty/master_sheet.html")
 @app.route("/faculty/upload_master_sheet", methods=["POST"])
 def faculty_upload_master_sheet():
-    redir = faculty_required()
-    if redir: return redir
+    ensure_connection()
 
-    from flask import flash
+    if "faculty_email" not in session:
+        return redirect("/faculty_login")
 
-    if "master_file" not in request.files:
-        flash("No file selected.", "error")
-        return redirect("/faculty/master_sheet")
+    file = request.files.get("master_file")
 
-    file = request.files["master_file"]
-    if not file or not file.filename:
-        flash("No file selected.", "error")
-        return redirect("/faculty/master_sheet")
+    if not file or file.filename == "":
+        return "No file uploaded"
 
-    filename = file.filename.lower()
-    upload_dir = os.path.join(app.static_folder, "uploads")
-    os.makedirs(upload_dir, exist_ok=True)
+    filename = secure_filename(file.filename)
+    upload_folder = os.path.join(app.static_folder, "uploads")
+    os.makedirs(upload_folder, exist_ok=True)
 
-    if filename.endswith(".pdf"):
-        for old in ["master_sheet.pdf", "master_sheet.xlsx", "master_sheet.csv"]:
-            old_path = os.path.join(upload_dir, old)
-            if os.path.exists(old_path):
-                os.remove(old_path)
-        save_path = os.path.join(upload_dir, "master_sheet.pdf")
-        file.save(save_path)
-        flash("Master Sheet PDF uploaded successfully!", "success")
-    elif filename.endswith(".xlsx") or filename.endswith(".csv"):
-        for old in ["master_sheet.pdf", "master_sheet.xlsx", "master_sheet.csv"]:
-            old_path = os.path.join(upload_dir, old)
-            if os.path.exists(old_path):
-                os.remove(old_path)
-        
-        ext = "xlsx" if filename.endswith(".xlsx") else "csv"
-        save_path = os.path.join(upload_dir, f"master_sheet.{ext}")
-        file.save(save_path)
-        
-        # Parse and update database
-        try:
-            # Robust header detection
-            def robust_read(path, is_excel):
-                # Read without headers to find the actual header row
-                if is_excel:
-                    temp_df = pd.read_excel(path, header=None, nrows=15)
-                else:
-                    temp_df = pd.read_csv(path, header=None, nrows=15)
-                
-                header_idx = 0
-                for idx, row in temp_df.iterrows():
-                    row_strs = [str(x).lower().strip() for x in row.values]
-                    if any('email' in x or 'roll' in x or 'cgpa' in x for x in row_strs):
-                        header_idx = idx
-                        break
-                        
-                if is_excel:
-                    return pd.read_excel(path, header=header_idx)
-                return pd.read_csv(path, header=header_idx)
+    file_path = os.path.join(upload_folder, filename)
+    file.save(file_path)
 
-            df = robust_read(save_path, ext == "xlsx")
-            
-            # Normalize column names
-            df.columns = [str(c).strip().lower() for c in df.columns]
-            
-            updated_count = 0
-            created_count = 0
-            ensure_connection()
-            for index, row in df.iterrows():
-                raw_email = row.get('email')
-                raw_roll = row.get('roll_number') if 'roll_number' in row else (row.get('roll number') if 'roll number' in row else row.get('roll no'))
-                
-                email = str(raw_email).strip() if pd.notna(raw_email) and str(raw_email).strip() != "" and str(raw_email).lower() != "nan" else None
-                roll = str(raw_roll).strip() if pd.notna(raw_roll) and str(raw_roll).strip() != "" and str(raw_roll).lower() != "nan" else None
-                
-                if not email and not roll:
-                    continue
-                    
-                # Safely parse values
-                def safe_str(val):
-                    return str(val).strip() if pd.notna(val) and str(val).strip() != "" and str(val).lower() != "nan" else None
-                
-                def safe_float(val):
-                    try:
-                        return float(val) if pd.notna(val) and str(val).strip() != "" else None
-                    except:
-                        return None
-                        
-                def safe_int(val):
-                    try:
-                        return int(float(val)) if pd.notna(val) and str(val).strip() != "" else None
-                    except:
-                        return None
+    if filename.lower().endswith(".xlsx"):
+        df = pd.read_excel(file_path)
 
-                cgpa = safe_float(row.get('cgpa'))
-                branch = safe_str(row.get('branch'))
-                
-                # Active backlogs
-                b_val = row.get('active_backlogs') if 'active_backlogs' in row else (row.get('active backlogs') if 'active backlogs' in row else row.get('backlogs'))
-                active_backlogs = safe_int(b_val)
-                
-                # Backlog history
-                bh_val = row.get('backlog_history') if 'backlog_history' in row else row.get('backlog history')
-                backlog_history = safe_int(bh_val)
-                
-                phone_number = safe_str(row.get('phone_number')) or safe_str(row.get('phone number')) or safe_str(row.get('phone no'))
-                aadhar = safe_str(row.get('aadhar')) or safe_str(row.get('aadhar card'))
-                pan = safe_str(row.get('pan')) or safe_str(row.get('pan card'))
-                roll_clean = safe_str(roll)
-                
-                # Batch
-                batch_val = row.get('batch') if 'batch' in row else row.get('graduation batch')
-                batch = safe_int(batch_val)
-                
-                updates = []
-                params = []
-                
-                if roll_clean:
-                    updates.append("roll_number = %s")
-                    params.append(roll_clean)
-                
-                if cgpa is not None:
-                    updates.append("cgpa = %s")
-                    params.append(cgpa)
-                if branch is not None:
-                    updates.append("branch = %s")
-                    params.append(branch)
-                if active_backlogs is not None:
-                    updates.append("backlogs = %s")
-                    params.append(active_backlogs)
-                if backlog_history is not None:
-                    updates.append("backlog_history = %s")
-                    params.append(backlog_history)
-                if phone_number is not None:
-                    updates.append("phone_number = %s")
-                    params.append(phone_number)
-                if aadhar is not None:
-                    updates.append("aadhar = %s")
-                    params.append(aadhar)
-                if pan is not None:
-                    updates.append("pan = %s")
-                    params.append(pan)
-                if batch is not None:
-                    updates.append("batch = %s")
-                    params.append(batch)
-                    
-                if updates:
-                    # Check if student exists
-                    if email:
-                        cursor.execute("SELECT student_id FROM students WHERE email = %s", (email,))
-                    else:
-                        cursor.execute("SELECT student_id FROM students WHERE roll_number = %s", (roll,))
-                    
-                    existing = cursor.fetchone()
-                    
-                    if existing:
-                        query = f"UPDATE students SET {', '.join(updates)} WHERE "
-                        if email:
-                            query += "email = %s"
-                            params.append(email)
-                        else:
-                            query += "roll_number = %s"
-                            params.append(roll)
-                            
-                        cursor.execute(query, tuple(params))
-                        updated_count += 1
-                    else:
-                        # Auto-create new student
-                        name_raw = row.get('name') if 'name' in row else (row.get('student name') if 'student name' in row else '')
-                        name = str(name_raw).strip() if pd.notna(name_raw) else "Unknown Student"
-                        default_password = roll if roll else (email.split('@')[0] if email else "password123")
-                        
-                        insert_cols = ['password', 'name']
-                        insert_vals = [default_password, name]
-                        
-                        if email:
-                            insert_cols.append('email')
-                            insert_vals.append(email)
-                        if roll_clean:
-                            insert_cols.append('roll_number')
-                            insert_vals.append(roll_clean)
-                        if cgpa is not None:
-                            insert_cols.append('cgpa')
-                            insert_vals.append(cgpa)
-                        if branch is not None:
-                            insert_cols.append('branch')
-                            insert_vals.append(branch)
-                        if active_backlogs is not None:
-                            insert_cols.append('backlogs')
-                            insert_vals.append(active_backlogs)
-                        if backlog_history is not None:
-                            insert_cols.append('backlog_history')
-                            insert_vals.append(backlog_history)
-                        if phone_number is not None:
-                            insert_cols.append('phone_number')
-                            insert_vals.append(phone_number)
-                        if aadhar is not None:
-                            insert_cols.append('aadhar')
-                            insert_vals.append(aadhar)
-                        if pan is not None:
-                            insert_cols.append('pan')
-                            insert_vals.append(pan)
-                        if batch is not None:
-                            insert_cols.append('batch')
-                            insert_vals.append(batch)
-                            
-                        placeholders = ', '.join(['%s'] * len(insert_vals))
-                        query = f"INSERT INTO students ({', '.join(insert_cols)}) VALUES ({placeholders})"
-                        cursor.execute(query, tuple(insert_vals))
-                        created_count += 1
-                        
-            db.commit()
-            msg = f"Master Sheet uploaded! Updated {updated_count} existing profiles."
-            if created_count > 0:
-                msg += f" Auto-created {created_count} new student accounts (Default password is their Roll Number)."
-            flash(msg, "success")
-        except Exception as e:
-            db.rollback()
-            flash(f"Error processing Master Sheet: {str(e)}", "error")
-            
+    elif filename.lower().endswith(".csv"):
+        df = pd.read_csv(file_path)
+
+    elif filename.lower().endswith(".pdf"):
+        all_rows = []
+
+        with pdfplumber.open(file_path) as pdf:
+            for page in pdf.pages:
+                tables = page.extract_tables()
+
+                for table in tables:
+                    for row in table:
+                        all_rows.append(row)
+
+        if not all_rows:
+            return "No table found in PDF. Please upload a proper table PDF."
+
+        headers = all_rows[0]
+        data = all_rows[1:]
+
+        df = pd.DataFrame(data, columns=headers)
+
     else:
-        flash("Invalid file type. Please upload a PDF, CSV, or XLSX file.", "error")
+        return "Only Excel, CSV, or PDF files are allowed"
+
+    df.columns = (
+        df.columns
+        .astype(str)
+        .str.strip()
+        .str.lower()
+        .str.replace(".", "", regex=False)
+        .str.replace(" ", "_")
+    )
+
+    print("COLUMNS:", df.columns.tolist())
+
+    updated = 0
+    inserted = 0
+
+    for index, row in df.iterrows():
+        roll_no = str(row.get("roll_no", "")).strip()
+        name = str(row.get("name", "")).strip()
+        email = str(row.get("email", "")).strip().lower()
+        branch = str(row.get("branch", "")).strip()
+
+        if email == "" or email == "nan":
+            continue
+
+        cgpa = float(row.get("cgpa", 0) or 0)
+        active_backlogs = int(float(row.get("active_backlogs", 0) or 0))
+        backlog_history = int(float(row.get("backlog_history", 0) or 0))
+        batch = int(float(row.get("graduation_batch", 0) or 0))
+        tenth_score = float(row.get("10th_score", 0) or 0)
+        inter_score = float(row.get("inter_score", 0) or 0)
+
+        cursor.execute("SELECT * FROM students WHERE LOWER(email) = %s", (email,))
+        existing_student = cursor.fetchone()
+
+        if existing_student:
+            cursor.execute("""
+                UPDATE students
+                SET roll_number = %s,
+                    name = %s,
+                    cgpa = %s,
+                    branch = %s,
+                    backlogs = %s,
+                    backlog_history = %s,
+                    batch = %s,
+                    tenth_score = %s,
+                    inter_score = %s
+                WHERE LOWER(email) = %s
+            """, (
+                roll_no, name, cgpa, branch,
+                active_backlogs, backlog_history, batch,
+                tenth_score, inter_score, email
+            ))
+            updated += 1
+
+        else:
+            cursor.execute("SELECT COALESCE(MAX(student_id), 0) + 1 AS next_id FROM students")
+            next_id = cursor.fetchone()["next_id"]
+
+            cursor.execute("""
+                INSERT INTO students
+                (student_id, roll_number, name, email, password, branch, cgpa,
+                 backlogs, backlog_history, batch, tenth_score, inter_score, skills)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            """, (
+                next_id, roll_no, name, email, roll_no, branch, cgpa,
+                active_backlogs, backlog_history, batch,
+                tenth_score, inter_score, ""
+            ))
+            inserted += 1
+
+    db.commit()
+
+    print("UPDATED:", updated)
+    print("INSERTED:", inserted)
 
     return redirect("/faculty/master_sheet")
 
 
 @app.route("/faculty/download_master_sheet")
 def faculty_download_master_sheet():
+    ensure_connection()
     redir = faculty_required()
     if redir: return redir
 
@@ -2094,6 +2005,7 @@ def faculty_download_master_sheet():
 
 @app.route("/faculty/delete_master_sheet", methods=["POST"])
 def faculty_delete_master_sheet():
+    ensure_connection()
     redir = faculty_required()
     if redir: return redir
 
@@ -2114,6 +2026,7 @@ def faculty_delete_master_sheet():
 
 @app.route("/faculty/upload_students", methods=["POST"])
 def faculty_upload_students():
+    ensure_connection()
     redir = faculty_required()
     if redir: return redir
 

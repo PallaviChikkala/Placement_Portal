@@ -102,6 +102,19 @@ tr:hover td { background-color:rgba(253,230,138,0.12); }
 .pdf-label { font-size:12px; font-weight:600; color:#5c3b1a; display:flex; align-items:center; gap:8px; }
 .pdf-name { color:#dc2626; font-size:13px; }
 .empty-state { text-align:center; padding:40px; color:#b97f10; font-weight:600; }
+.action-btns {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  justify-content: center;
+  min-width: 120px;
+}
+
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
 </style>
 </head>
 <body>
@@ -164,8 +177,9 @@ tr:hover td { background-color:rgba(253,230,138,0.12); }
             <th data-col="11">Job Description</th>
             <th data-col="12">Attachment</th>
             <th data-col="13">Deadline</th>
+            <th data-col="14">Applicants</th>
             {% for col in custom_cols %}
-              <th data-col="{{ 14 + loop.index0 }}">{{ col.label }}</th>
+              <th data-col="{{ 15 + loop.index0 }}">{{ col.label }}</th>
             {% endfor %}
             <th style="text-align:center;">Actions</th>
           </tr>
@@ -211,15 +225,24 @@ tr:hover td { background-color:rgba(253,230,138,0.12); }
                 {% endif %}
               </td>
               <td data-col="13">{{ job.deadline or 'Ongoing' }}</td>
+              <td data-col="14"><strong>{{ job.applicant_count }}</strong></td>
               {% for col in custom_cols %}
-                <td data-col="{{ 14 + loop.index0 }}">{{ job[col.db_name] or '—' }}</td>
+                <td data-col="{{ 15 + loop.index0 }}">{{ job[col.db_name] or '—' }}</td>
               {% endfor %}
               <td style="text-align:center;">
                 <div class="action-btns">
-                  <button class="icon-btn" onclick="viewApplicants('{{ job.job_id }}')" title="View Applicants" style="color:#3b82f6;"><i class="ti ti-users"></i></button>
-                  <button class="icon-btn" onclick="openEditModal('{{ job.job_id }}')" title="Edit" style="color:#d97706;"><i class="ti ti-edit"></i></button>
-                  <button class="icon-btn" onclick="deleteJob('{{ job.job_id }}', '{{ job.company_name }}')" title="Delete" style="color:#ef4444;"><i class="ti ti-trash"></i></button>
-                </div>
+  <button class="icon-btn" onclick="viewApplicants('{{ job.job_id }}')" title="View Applicants" style="color:#3b82f6;">
+  <i class="ti ti-users" style="font-size:24px;"></i>
+</button>
+
+  <button class="icon-btn" onclick="openEditModal('{{ job.job_id }}')" title="Edit" style="color:#d97706;">
+    <i class="ti ti-edit"></i>
+  </button>
+
+  <button class="icon-btn" onclick="deleteJob('{{ job.job_id }}', '{{ job.company_name }}')" title="Delete" style="color:#ef4444;">
+    <i class="ti ti-trash"></i>
+  </button>
+</div>
               </td>
             </tr>
             {% endfor %}
@@ -285,13 +308,26 @@ tr:hover td { background-color:rgba(253,230,138,0.12); }
         <div class="form-group full-width">
           <label>Select Eligible Branches *</label>
           <div class="branches-checkbox-grid">
-            {% for branch in ['CSE', 'ECE', 'Mechanical', 'Chemical', 'Bio-Technology'] %}
-            <label class="branch-check-label">
-              <input type="checkbox" name="branches" value="{{ branch }}" class="branch-cb"> {{ branch }}
-            </label>
-            {% endfor %}
-          </div>
-        </div>
+
+{% for branch in ['CSE', 'ECE', 'Mechanical', 'Chemical', 'Bio-Technology', 'AI', 'AIML', 'IT', 'Civil', 'EEE'] %}
+<label class="branch-check-label">
+    <input type="checkbox" name="branches" value="{{ branch }}" class="branch-cb">
+    {{ branch }}
+</label>
+{% endfor %}
+
+<label class="branch-check-label" style="grid-column: span 2;">
+    <input type="checkbox" id="customBranchCheck" onchange="toggleCustomBranch()">
+    Other Branch
+</label>
+
+<input type="text"
+       name="custom_branch"
+       id="customBranchInput"
+       placeholder="Enter branch name"
+       style="display:none; padding:10px; border-radius:10px; border:1px solid #fde68a;">
+
+</div>
         <div class="form-group full-width">
           <label>Select Job Tier *</label>
           <div class="tier-selector">
@@ -384,20 +420,31 @@ tr:hover td { background-color:rgba(253,230,138,0.12); }
 
 <!-- Applicants Modal -->
 <div class="modal-overlay" id="applicantsModal">
-  <div class="modal-content" style="max-width:700px;">
+  <div class="modal-content" style="max-width:850px;border-radius:28px;padding:34px;">
     <div class="modal-header">
-      <h2 id="applicantsTitle"><i class="ti ti-users"></i> Applicants</h2>
       <button class="modal-close-btn" onclick="closeModal('applicantsModal')">&times;</button>
     </div>
-    <div class="table-wrapper" style="max-height:400px;overflow-y:auto;" id="applicantsBody">
-      <p style="text-align:center;color:#b97f10;font-weight:600;">Loading...</p>
+
+    <div style="overflow-x:auto;">
+      <table style="min-width:720px;">
+        <thead>
+          <tr>
+            <th>Student ID</th>
+            <th>Name</th>
+            <th>Branch</th>
+            <th>Resume</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="applicantsBody"></tbody>
+      </table>
     </div>
-    <div style="display:flex;justify-content:flex-end;border-top:1px solid #fde68a;padding-top:18px;margin-top:16px;">
-      <button class="edit-action-btn" onclick="closeModal('applicantsModal')" style="margin-bottom:0;">Close</button>
+
+    <div style="display:flex;justify-content:flex-end;border-top:1px solid #fde68a;padding-top:22px;margin-top:24px;">
+      <button class="edit-action-btn" onclick="closeModal('applicantsModal')">Close</button>
     </div>
   </div>
 </div>
-
 <!-- Job data for JS modals -->
 <script>
 const jobsData = {{ jobs_json | safe }};
@@ -409,7 +456,7 @@ const columnsMenu = document.getElementById('columnsMenu');
 const defaultColumns = [
   "Job ID", "Company", "CTC", "Location", "Bond", "CGPA Cutoff",
   "Branch Eligible", "Active Backlogs", "Backlog History",
-  "Extra Requirements", "Tier", "Job Description", "Attachment", "Deadline"
+  "Extra Requirements", "Tier", "Job Description", "Attachment", "Deadline", "Applicants"
 ];
 
 // Initialize dropdown checkboxes
@@ -579,42 +626,49 @@ function viewDesc(jobIdStr) {
 }
 
 function viewApplicants(jobIdStr) {
-  document.getElementById("applicantsBody").innerHTML = "<p style='text-align:center;color:#b97f10;font-weight:600;padding:20px;'>Loading...</p>";
+  const job = jobsData.find(j => String(j.job_id).trim() === String(jobIdStr).trim());
+
+  document.getElementById("applicantsTitle").innerHTML =
+    `<i class="ti ti-users"></i> Applicants – ${job ? job.company_name : ""}`;
+
+  document.getElementById("applicantsBody").innerHTML =
+    `<tr><td colspan="5" style="text-align:center;padding:24px;color:#b97f10;font-weight:600;">Loading...</td></tr>`;
+
   openModal("applicantsModal");
+
   fetch(`/faculty/jobs/applicants/${jobIdStr}`)
     .then(r => r.json())
     .then(data => {
-      const job = jobsData.find(j => j.job_id === jobIdStr);
-      document.getElementById("applicantsTitle").innerHTML = `<i class="ti ti-users"></i> Applicants — ${job ? job.company_name : ''}`;
-      if (!data.applicants || data.applicants.length === 0) {
-        document.getElementById("applicantsBody").innerHTML = "<p style='text-align:center;color:#b97f10;font-weight:500;padding:24px;'>No applications received yet.</p>";
-        return;
-      }
-      
-      let rows = data.applicants.map(a => {
-        const statuses = ["Pending", "Shortlisted", "Selected", "Rejected"];
-        let selectOptions = statuses.map(s => `
-          <option value="${s}" ${a.status === s ? 'selected' : ''}>${s}</option>
-        `).join("");
-        
-        return `<tr>
-          <td><strong>${a.student_id}</strong></td>
-          <td>${a.name}</td><td>${a.branch}</td>
-          <td>${a.resume_path ? `<a href="${a.resume_path}" target="_blank" style="color:#d97706;font-weight:600;"><i class="ti ti-external-link"></i> View</a>` : '<span style="color:#a1a1aa;">—</span>'}</td>
-          <td>
-            <select onchange="updateApplicantStatus(this, '${a.application_id}', '${a.student_id}', '${jobIdStr}')" 
-                    style="padding:6px 12px; border-radius:12px; border:1px solid #d97706; background:white; font-size:12px; font-weight:600; color:#78350f; outline:none; cursor:pointer;">
-              ${selectOptions}
-            </select>
-          </td>
-        </tr>`;
-      }).join("");
+      let rows = "";
 
-      document.getElementById("applicantsBody").innerHTML = `<table style="min-width: 600px;">
-        <thead><tr><th>STUDENT ID</th><th>NAME</th><th>BRANCH</th><th>RESUME</th><th>STATUS</th></tr></thead>
-        <tbody>${rows}</tbody></table>`;
+      if (!data.applicants || data.applicants.length === 0) {
+        rows = `<tr><td colspan="5" style="text-align:center;padding:24px;color:#b97f10;font-weight:600;">No applications received yet.</td></tr>`;
+      } else {
+        rows = data.applicants.map(a => `
+          <tr>
+            <td><strong>${a.student_id}</strong></td>
+            <td>${a.name}</td>
+            <td>${a.branch}</td>
+            <td>
+              ${a.resume_path ? `<a href="${a.resume_path}" target="_blank" style="color:#d97706;font-weight:700;">View</a>` : "—"}
+            </td>
+            <td>
+              <select onchange="updateApplicantStatus(this, '${a.application_id}', '${a.student_id}', '${jobIdStr}')"
+                style="padding:8px 14px;border-radius:18px;border:1px solid #d97706;background:white;color:#78350f;font-weight:700;">
+                <option value="Pending" ${a.status === "Pending" ? "selected" : ""}>Pending</option>
+                <option value="Shortlisted" ${a.status === "Shortlisted" ? "selected" : ""}>Shortlisted</option>
+                <option value="Selected" ${a.status === "Selected" ? "selected" : ""}>Selected</option>
+                <option value="Rejected" ${a.status === "Rejected" ? "selected" : ""}>Rejected</option>
+              </select>
+            </td>
+          </tr>
+        `).join("");
+      }
+
+      document.getElementById("applicantsBody").innerHTML = rows;
     });
 }
+
 
 function updateApplicantStatus(selectEl, appId, studentId, jobId) {
   const status = selectEl.value;
@@ -681,6 +735,19 @@ function showToast(msg, type="success") {
   c.appendChild(t);setTimeout(()=>{t.style.opacity="1";t.style.transform="translateY(0)";},10);
   setTimeout(()=>{t.style.opacity="0";t.style.transform="translateY(-20px)";setTimeout(()=>t.remove(),300);},3200);
 }
+
+function toggleCustomBranch() {
+    let check = document.getElementById("customBranchCheck");
+    let input = document.getElementById("customBranchInput");
+
+    if (check.checked) {
+        input.style.display = "block";
+    } else {
+        input.style.display = "none";
+        input.value = "";
+    }
+}
+
 </script>
 </body>
 </html>

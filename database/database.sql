@@ -16,6 +16,9 @@ CREATE TABLE students(
 ALTER TABLE students 
 ADD batch INT;
 
+ALTER TABLE students ADD COLUMN tenth_score FLOAT;
+ALTER TABLE students ADD COLUMN inter_score FLOAT;
+
 UPDATE students
 SET selected_tier = NULL
 WHERE email = 'pallavi123@gmail.com';
