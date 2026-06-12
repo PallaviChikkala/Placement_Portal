@@ -1598,6 +1598,67 @@ def faculty_applied_students():
     return render_template("faculty/applied_students.html", jobs=jobs_list)
 
 
+@app.route("/faculty/job_results")
+def faculty_job_results():
+    ensure_connection()
+    redir = faculty_required()
+    if redir: return redir
+
+    cursor.execute("SELECT * FROM jobs ORDER BY id DESC")
+    jobs = cursor.fetchall()
+
+    return render_template("faculty/job_results.html", jobs=jobs)
+
+@app.route("/faculty/job_results/<string:job_id>")
+def faculty_job_results_api(job_id):
+    ensure_connection()
+    if "faculty_email" not in session:
+        return jsonify({"error": "Unauthorized"}), 401
+
+    # Get selected
+    cursor.execute("""
+        SELECT s.student_id, s.name, s.email, s.branch, s.roll_number, s.phone_number
+        FROM students s
+        JOIN applications a ON s.student_id = a.student_id
+        WHERE a.job_id = %s AND a.status = 'Selected'
+        ORDER BY s.name ASC
+    """, (job_id,))
+    selected = cursor.fetchall()
+
+    # Get rejected
+    cursor.execute("""
+        SELECT s.student_id, s.name, s.email, s.branch, s.roll_number, s.phone_number
+        FROM students s
+        JOIN applications a ON s.student_id = a.student_id
+        WHERE a.job_id = %s AND a.status = 'Rejected'
+        ORDER BY s.name ASC
+    """, (job_id,))
+    rejected = cursor.fetchall()
+
+    return jsonify({"selected": selected, "rejected": rejected})
+
+@app.route("/faculty/rejected_students")
+def faculty_rejected_students():
+    ensure_connection()
+    redir = faculty_required()
+    if redir: return redir
+
+    # Query all students who are rejected for any job
+    query = """
+        SELECT s.student_id, s.name, s.email, s.branch, s.roll_number, s.phone_number,
+               a.status, j.company_name, j.role, j.job_id
+        FROM students s
+        JOIN applications a ON s.student_id = a.student_id
+        JOIN jobs j ON a.job_id = j.job_id
+        WHERE a.status = 'Rejected'
+        ORDER BY s.name ASC
+    """
+    cursor.execute(query)
+    rejected = cursor.fetchall()
+
+    return render_template("faculty/rejected_students.html", rejected_students=rejected)
+
+
 @app.route("/faculty/download_applied_excel/<string:job_id>")
 def faculty_download_applied_excel(job_id):
     ensure_connection()

@@ -380,12 +380,28 @@ tr:hover td { background-color:rgba(253,230,138,0.12); }
         <div class="form-group full-width">
           <label>Select Eligible Branches *</label>
           <div class="branches-checkbox-grid">
-            {% for branch in ['CSE', 'ECE', 'Mechanical', 'Chemical', 'Bio-Technology'] %}
-            <label class="branch-check-label">
-              <input type="checkbox" name="branches" value="{{ branch }}" class="branch-cb"> {{ branch }}
-            </label>
-            {% endfor %}
-          </div>
+
+  {% for branch in ['CSE', 'ECE', 'Mechanical', 'Chemical', 'Bio-Technology', 'AI', 'AIML', 'IT', 'Civil', 'EEE'] %}
+  <label class="branch-check-label">
+    <input type="checkbox" name="branches" value="{{ branch }}" class="branch-cb">
+    {{ branch }}
+  </label>
+  {% endfor %}
+
+  <label class="branch-check-label">
+    <input type="checkbox" id="customBranchCheck" onchange="toggleCustomBranch()">
+    Other Branch
+  </label>
+
+  <input
+      type="text"
+      name="custom_branch"
+      id="customBranchInput"
+      placeholder="Enter branch name"
+      style="display:none;padding:10px;border-radius:10px;border:1px solid #fde68a;"
+  >
+
+</div>
         </div>
         <div class="form-group full-width">
           <label>Select Job Tier *</label>
@@ -795,6 +811,17 @@ if (themeToggle) {
   const icon = themeToggle.querySelector('i');
   if (icon) {
     icon.className = currentTheme === 'dark' ? 'ti ti-sun' : 'ti ti-moon';
+  }
+}
+function toggleCustomBranch() {
+  const check = document.getElementById("customBranchCheck");
+  const input = document.getElementById("customBranchInput");
+
+  if (check.checked) {
+    input.style.display = "block";
+  } else {
+    input.style.display = "none";
+    input.value = "";
   }
 }
 </script>
