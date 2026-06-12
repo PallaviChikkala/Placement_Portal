@@ -12,12 +12,13 @@ app = Flask(__name__)
 app.secret_key = "placement_portal_secret"
 app.permanent_session_lifetime = timedelta(days=30)
 
+
 #MYSQL Connection
 def get_connection():
     return mysql.connector.connect(
         host="localhost",
         user="root",
-        password="Pallavi@2007",
+        password="Hasini@1234",
         database="placement_portal",
         connection_timeout=30,
         autocommit=False
@@ -63,12 +64,12 @@ def init_database():
                 pan VARCHAR(20) DEFAULT NULL
             )
         """)
-        
+       
         try:
             cursor.execute("ALTER TABLE students ADD COLUMN profile_photo VARCHAR(255) DEFAULT '/static/default_avatar.png'")
         except Exception:
             pass
-            
+           
         for col_sql in [
             "ALTER TABLE students ADD COLUMN roll_number VARCHAR(50) DEFAULT NULL",
             "ALTER TABLE students ADD COLUMN phone_number VARCHAR(20) DEFAULT NULL",
@@ -80,7 +81,7 @@ def init_database():
                 cursor.execute(col_sql)
             except Exception:
                 pass
-        
+       
         # Create faculty table
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS faculty (
@@ -90,7 +91,7 @@ def init_database():
                 password VARCHAR(50)
             )
         """)
-        
+       
         # Create recruiters table
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS recruiters (
@@ -100,7 +101,7 @@ def init_database():
                 password VARCHAR(50)
             )
         """)
-        
+       
         # Create jobs table
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS jobs (
@@ -124,7 +125,7 @@ def init_database():
                 deadline DATETIME DEFAULT NULL
             )
         """)
-        
+       
         # Add missing columns for existing installs (including 'id' for older schemas)
         for col_sql in [
             "ALTER TABLE jobs ADD COLUMN id INT AUTO_INCREMENT PRIMARY KEY",
@@ -145,7 +146,7 @@ def init_database():
                 cursor.execute(col_sql)
             except Exception:
                 pass
-        
+       
         # Create applications table
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS applications (
@@ -157,13 +158,13 @@ def init_database():
                 applied_date DATE
             )
         """)
-        
+       
         try:
             cursor.execute("ALTER TABLE applications ADD COLUMN extra_details TEXT")
         except Exception:
             pass
-        
-        
+       
+       
         # Create notifications table
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS notifications (
@@ -175,7 +176,7 @@ def init_database():
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
-        
+       
         # Create faculty table
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS faculty (
@@ -185,7 +186,7 @@ def init_database():
                 password VARCHAR(50)
             )
         """)
-        
+       
         # Insert Dr. Shankar if not exists
         cursor.execute("SELECT COUNT(*) as count FROM faculty")
         if cursor.fetchone()["count"] == 0:
@@ -193,34 +194,35 @@ def init_database():
                 INSERT INTO faculty (name, email, password)
                 VALUES ('Dr. Shankar', 'drshankar@gmail.com', 'shankar123')
             """)
-        
+       
         # Check and insert default students if missing
         cursor.execute("SELECT COUNT(*) as count FROM students")
         if cursor.fetchone()["count"] == 0:
             cursor.execute("""
                 INSERT INTO students (student_id, name, email, password, branch, cgpa, backlogs, skills, selected_tier, batch)
-                VALUES 
+                VALUES
                 (1, 'Pallavi', 'pallavi123@gmail.com', 'pallavi123', 'AI', 9.2, 0, 'Java, DSA, Full Stack Development', 1, 2028),
                 (2, 'linda', 'linda123@gmail.com', 'linda123', 'CSE', 9.1, 0, 'C, CPP, HTML, CSS, MySQL', 2, 2029)
             """)
-            
+           
         # Check and insert default jobs if missing
         cursor.execute("SELECT COUNT(*) as count FROM jobs")
         if cursor.fetchone()["count"] == 0:
             cursor.execute("""
                 INSERT INTO jobs (job_id, company_name, role, ctc, location, bond, cgpa_cutoff, active_backlogs, branches, tier, description)
-                VALUES 
+                VALUES
                 ('1', 'TCS', 'Software Developer', '7.00 LPA', 'Pune', 'None', 7.00, 0, 'AI, CSE, ECE, EEE', 'Tier 2', 'Join the TCS digital developer team to work on next-generation cloud architectures.'),
                 ('2', 'Infosys', 'Specialist Programmer', '20.00 LPA', 'Bangalore', 'None', 9.50, 0, 'CSE, IT', 'Tier 1', 'High performance developer role working on core software products and algorithmic scaling.'),
                 ('3', 'Wipro', 'Full Stack Developer', '8.00 LPA', 'Hyderabad', 'None', 6.50, 1, 'AI, CSE, ECE', 'Tier 2', 'Design and implement web interfaces and microservice endpoints in our digital unit.')
             """)
-            
+           
         db.commit()
         print("Database tables and mock data initialized successfully.")
     except Exception as e:
         print("Warning: Database initialization failed. Details:", e)
 
 init_database()
+
 
 def notify_students_new_job(company_name, role):
     """
@@ -230,7 +232,7 @@ def notify_students_new_job(company_name, role):
     try:
         message = f"New Job Posted: {company_name} is hiring for {role}!"
         link = "/eligible_companies"
-        
+       
         # Insert a notification for every student in the database
         cursor.execute("""
             INSERT INTO notifications (student_id, message, link)
@@ -302,25 +304,25 @@ def upload():
     filename = file.filename.lower() if file else ""
     role = request.form.get("role")
     custom_jd = request.form.get("custom_jd", "")
-    
+   
     if not role or role == "Select a job profile...":
         return "Please select a role."
-    
+   
     text = ""
-    
+   
     if filename.endswith(".pdf"):
         with pdfplumber.open(file) as pdf:
             for page in pdf.pages:
                 text += page.extract_text() or ""
-    
+   
     elif filename.endswith(".docx"):
         document = docx.Document(file)
         for para in document.paragraphs:
             text += para.text + "\n"
-    
-    else : 
+   
+    else :
         return "Only PDF and DOCX files are allowed."
-    
+   
 
     role_skills = {
 
@@ -354,7 +356,7 @@ def upload():
         "optional": ["Machine Learning", "Spacy", "NLTK", "Flask"]
     }
     }
-    
+   
     if role == "Custom":
         custom_text = ""
         jd_file = request.files.get("jd_file")
@@ -435,24 +437,24 @@ def upload():
 
     if "b.tech" in text.lower() or "bachelor" in text.lower() or "education" in text.lower():
         genome_score += 15
-    
+   
     if "certificate" in text.lower() or "certificates" in text.lower() or "certification" in text.lower():
         genome_score += 10
-    
+   
     if "internship" in text.lower() or "experience" in text.lower():
         genome_score += 10
-    
+   
     if "award" in text.lower() or "achievement" in text.lower():
         genome_score += 5
 
 
     final_score = int((score + genome_score) / 2)
-    
+   
     # Update student's skills and save score if logged in
     if "student_id" in session:
         student_id = session["student_id"]
         session["resume_score"] = final_score
-        
+       
         # Combine found skills
         found_skills = list(set(found_required + found_optional))
         if found_skills:
@@ -461,7 +463,7 @@ def upload():
             existing_skills = [s.strip() for s in current_skills_row["skills"].split(",")] if current_skills_row and current_skills_row["skills"] else []
             combined_skills = list(set(existing_skills + found_skills))
             skills_str = ", ".join(combined_skills)
-            
+           
             cursor.execute("UPDATE students SET skills = %s WHERE student_id = %s", (skills_str, student_id))
             db.commit()
 
@@ -521,7 +523,7 @@ def upload():
         <div class="results-card text-center animated-fade-in-up">
             <h2 class="mb-4 text-warning" style="font-family: var(--font-heading);">Resume Analysis Report</h2>
             <p class="text-muted mb-4">Role: <strong>{role}</strong></p>
-            
+           
             <div class="row g-3 text-start mb-4">
                 <div class="col-md-6">
                     <div class="skill-box">
@@ -585,7 +587,7 @@ def student_login_check():
     cursor.execute(query, (email,password))
     student = cursor.fetchone()
 
-    if student: 
+    if student:
         session["student_id"] = student["student_id"]
         session["student_name"] = student["name"]
         if remember:
@@ -601,24 +603,24 @@ def google_login_check():
     remember = request.form.get("rememberMe")
     if not credential:
         return render_template("student/login.html", error="Google Sign-In failed.")
-        
+       
     try:
         parts = credential.split(".")
         if len(parts) != 3:
             raise ValueError("Invalid JWT format")
-            
+           
         payload = parts[1]
         payload += "=" * ((4 - len(payload) % 4) % 4)
         decoded_payload = base64.urlsafe_b64decode(payload).decode('utf-8')
         user_info = json.loads(decoded_payload)
-        
+       
         email = user_info.get("email")
         if not email:
             raise ValueError("Email not found in Google token")
-            
+           
         cursor.execute("SELECT * FROM students WHERE email = %s", (email,))
         student = cursor.fetchone()
-        
+       
         if student:
             session["student_id"] = student["student_id"]
             session["student_name"] = student["name"]
@@ -627,7 +629,7 @@ def google_login_check():
             return redirect("/student_dashboard")
         else:
             return render_template("student/login.html", error=f"Email {email} is not registered. Please contact faculty.")
-            
+           
     except Exception as e:
         print("Google Auth Error:", e)
         return render_template("student/login.html", error="Google Sign-In verification failed.")
@@ -637,10 +639,10 @@ def api_faculty_login():
     data = request.get_json()
     email = data.get("email")
     password = data.get("password")
-    
+   
     cursor.execute("SELECT * FROM faculty WHERE email = %s AND password = %s", (email, password))
     faculty = cursor.fetchone()
-    
+   
     if faculty:
         session["faculty_id"] = faculty["faculty_id"]
         session["faculty_name"] = faculty["name"]
@@ -666,119 +668,17 @@ def student_dashboard():
     ensure_connection()
     if "student_id" not in session:
         return redirect("/student_login")
-<<<<<<< HEAD
-    
+   
     # Fetch full student record
     query = "SELECT * FROM students WHERE student_id = %s"
     cursor.execute(query, (session["student_id"],))
     student = cursor.fetchone()
-    
+   
     return render_template(
         "student/dashboard.html",
         name=session["student_name"],
         student=student
     )
-=======
-        
-    student_id = session["student_id"]
-    
-    # Fetch student data
-    cursor.execute("SELECT * FROM students WHERE student_id = %s", (student_id,))
-    student = cursor.fetchone()
-    if not student:
-        session.clear()
-        return redirect("/student_login")
-    
-    # Fetch all jobs to evaluate eligibility count
-    cursor.execute("SELECT * FROM jobs")
-    all_jobs = cursor.fetchall()
-    
-    eligible_count = 0
-    upcoming_drives = []
-    
-    for job in all_jobs:
-        # Determine job tier
-        job_tier_str = str(job.get('tier', 'Tier 3')).lower()
-        job_tier_num = 1 if '1' in job_tier_str else (2 if '2' in job_tier_str else 3)
-
-        # Eligibility logic
-        eligible_branches = [b.strip().lower() for b in job.get('branches', '').split(',')] if job.get('branches') else []
-        student_branch = student['branch'].strip().lower() if student['branch'] else ""
-        
-        cgpa_ok = student['cgpa'] >= float(job.get('cgpa_cutoff') or 0) if student['cgpa'] is not None else True
-        backlogs_ok = student['backlogs'] <= int(job.get('active_backlogs') or 0) if student['backlogs'] is not None else True
-        branch_ok = (student_branch in eligible_branches) or (not eligible_branches)
-        
-        # Tier check: 
-        # Tier 1 selected -> cannot apply to Tier 2, Tier 3.
-        # Tier 2 selected -> cannot apply to Tier 3.
-        student_selected_tier = student.get('selected_tier')
-        tier_ok = True
-        if student_selected_tier is not None and student_selected_tier > 0:
-            if student_selected_tier == 1 and job_tier_num in [2, 3]:
-                tier_ok = False
-            elif student_selected_tier == 2 and job_tier_num == 3:
-                tier_ok = False
-
-        is_eligible = cgpa_ok and backlogs_ok and branch_ok and tier_ok
-        if is_eligible:
-            eligible_count += 1
-        
-        # Attach eligibility flag to job for display
-        job_copy = dict(job)
-        job_copy['is_eligible'] = is_eligible
-        
-        # Also fix mapping for display
-        job_copy['package_lpa'] = job.get('ctc') or ''
-        job_copy['min_cgpa'] = job.get('cgpa_cutoff') or 0
-        job_copy['max_backlogs'] = job.get('active_backlogs') or 0
-        job_copy['eligible_branches'] = job.get('branches') or ''
-        job_copy['deadline'] = str(job.get('deadline')) if job.get('deadline') else 'Ongoing'
-        
-        upcoming_drives.append(job_copy)
-    
-    # Sort upcoming drives by deadline
-    upcoming_drives = sorted(upcoming_drives, key=lambda x: str(x['deadline']))[:5]
-    
-    # Fetch count of applied companies
-    cursor.execute("SELECT COUNT(*) as count FROM applications WHERE student_id = %s", (student_id,))
-    applied_count = cursor.fetchone()['count']
-    
-    # Fetch count of interview calls
-    cursor.execute("SELECT COUNT(*) as count FROM applications WHERE student_id = %s AND status = 'Interview'", (student_id,))
-    interview_count = cursor.fetchone()['count']
-    
-    # Fetch recent applications
-    cursor.execute("""
-        SELECT a.applied_date, a.status, j.company_name, j.role, j.ctc AS package_lpa 
-        FROM applications a 
-        JOIN jobs j ON a.job_id = j.job_id 
-        WHERE a.student_id = %s 
-        ORDER BY a.applied_date DESC LIMIT 5
-    """, (student_id,))
-    recent_applications = cursor.fetchall()
-    
-    # Fetch unread notifications
-    cursor.execute("SELECT * FROM notifications WHERE student_id = %s AND is_read = FALSE ORDER BY created_at DESC", (student_id,))
-    notifications = cursor.fetchall()
-    
-    # Resume score from session or default
-    resume_score = session.get("resume_score", 0)
-    
-    return render_template(
-        "student/dashboard.html",
-        name=student["name"],
-        student=student,
-        eligible_count=eligible_count,
-        applied_count=applied_count,
-        interview_count=interview_count,
-        resume_score=resume_score,
-        upcoming_drives=upcoming_drives,
-        recent_applications=recent_applications,
-        notifications=notifications
-    )
-
->>>>>>> 5044d12c87a2742a41ccaaf65bd6d89c6e52083d
 @app.route("/student_profile")
 def student_profile():
     ensure_connection()
@@ -797,9 +697,9 @@ def student_profile():
 def update_profile():
     if "student_id" not in session:
         return redirect("/student_login")
-        
+       
     student_id = session["student_id"]
-    
+   
     if "profile_photo" in request.files:
         photo = request.files["profile_photo"]
         if photo.filename != "":
@@ -808,30 +708,30 @@ def update_profile():
             os.makedirs(upload_folder, exist_ok=True)
             filepath = os.path.join(upload_folder, f"student_{student_id}_{filename}")
             photo.save(filepath)
-            
+           
             db_path = f"/static/uploads/student_{student_id}_{filename}"
             cursor.execute("UPDATE students SET profile_photo = %s WHERE student_id = %s", (db_path, student_id))
             db.commit()
-            
+           
     return redirect("/student_profile")
 
 @app.route("/update_profile_details", methods=["POST"])
 def update_profile_details():
     if "student_id" not in session:
         return redirect("/student_login")
-        
+       
     student_id = session["student_id"]
     roll_number = request.form.get("roll_number", "").strip()
     phone_number = request.form.get("phone_number", "").strip()
     aadhar = request.form.get("aadhar", "").strip()
     pan = request.form.get("pan", "").strip()
-    
+   
     try:
         from flask import flash
         flash("Profile edits are restricted to Faculty Master Sheet uploads.", "error")
     except Exception as e:
         pass
-        
+       
     return redirect("/student_profile")
 
 @app.route("/update_skills", methods=["POST"])
@@ -839,16 +739,16 @@ def update_skills():
     ensure_connection()
     if "student_id" not in session:
         return redirect("/student_login")
-        
+       
     student_id = session["student_id"]
     skills = request.form.get("skills", "").strip()
-    
+   
     try:
         # Clean up skills string (remove extra spaces around commas)
         if skills:
             skills_list = [s.strip() for s in skills.split(',') if s.strip()]
             skills = ", ".join(skills_list)
-            
+           
         cursor.execute("UPDATE students SET skills = %s WHERE student_id = %s", (skills, student_id))
         db.commit()
         from flask import flash
@@ -857,7 +757,7 @@ def update_skills():
         db.rollback()
         from flask import flash
         flash("Failed to update skills.", "error")
-        
+       
     return redirect("/student_profile")
 
 @app.route("/eligible_companies")
@@ -865,14 +765,14 @@ def eligible_companies():
     ensure_connection()
     if "student_id" not in session:
         return redirect("/student_login")
-    
+   
     student_id = session["student_id"]
     cursor.execute("SELECT * FROM students WHERE student_id = %s", (student_id,))
     student = cursor.fetchone()
-    
+   
     cursor.execute("SELECT * FROM jobs")
     all_jobs = cursor.fetchall()
-    
+   
     # Check eligibility for each job
     jobs_list = []
     for job in all_jobs:
@@ -881,11 +781,11 @@ def eligible_companies():
 
         eligible_branches = [b.strip().lower() for b in job.get('branches', '').split(',')] if job.get('branches') else []
         student_branch = student['branch'].strip().lower() if student['branch'] else ""
-        
+       
         cgpa_ok = student['cgpa'] >= float(job.get('cgpa_cutoff') or 0) if student['cgpa'] is not None else True
         backlogs_ok = student['backlogs'] <= int(job.get('active_backlogs') or 0) if student['backlogs'] is not None else True
         branch_ok = (student_branch in eligible_branches) or (not eligible_branches)
-        
+       
         # Tier check
         student_selected_tier = student.get('selected_tier')
         tier_ok = True
@@ -904,21 +804,21 @@ def eligible_companies():
             reasons.append(f"Branch not eligible (Your branch: {student['branch'].upper()}, Eligible: {job.get('branches')})")
         if not tier_ok:
             reasons.append(f"Tier Policy restriction: Selected in Tier {student_selected_tier}, cannot apply for Tier {job_tier_num}")
-            
+           
         is_eligible = cgpa_ok and backlogs_ok and branch_ok and tier_ok
-        
+       
         # Check if already applied
         cursor.execute("SELECT * FROM applications WHERE student_id = %s AND job_id = %s", (student_id, job['job_id']))
         application = cursor.fetchone()
         applied = True if application else False
         status = application['status'] if application else None
-        
+       
         job_item = dict(job)
         job_item['is_eligible'] = is_eligible
         job_item['reasons'] = reasons
         job_item['applied'] = applied
         job_item['application_status'] = status
-        
+       
         job_item['package_lpa'] = job.get('ctc') or ''
         job_item['min_cgpa'] = job.get('cgpa_cutoff') or 0
         job_item['max_backlogs'] = job.get('active_backlogs') or 0
@@ -926,7 +826,7 @@ def eligible_companies():
         job_item['deadline'] = str(job.get('deadline')) if job.get('deadline') else 'Ongoing'
 
         jobs_list.append(job_item)
-        
+       
     return render_template("student/eligible_companies.html", jobs=jobs_list, student=student)
 
 @app.route("/apply_job", methods=["POST"])
@@ -934,20 +834,20 @@ def apply_job():
     ensure_connection()
     if "student_id" not in session:
         return redirect("/student_login")
-    
+   
     student_id = session["student_id"]
     job_id = request.form.get("job_id")
     drive_link = request.form.get("drive_link")
-    
+   
     # Fetch student and job details to verify tier restrictions in backend
     cursor.execute("SELECT * FROM students WHERE student_id = %s", (student_id,))
     student = cursor.fetchone()
     cursor.execute("SELECT * FROM jobs WHERE job_id = %s", (job_id,))
     job = cursor.fetchone()
-    
+   
     if not student or not job:
         return "Invalid request."
-        
+       
     # Check if deadline has passed
     from datetime import datetime
     if job.get('deadline'):
@@ -967,11 +867,11 @@ def apply_job():
                 window.location.href = "/eligible_companies";
             </script>
             """
-        
+       
     # Tier calculation
     job_tier_str = str(job.get('tier', 'Tier 3')).lower()
     job_tier_num = 1 if '1' in job_tier_str else (2 if '2' in job_tier_str else 3)
-        
+       
     student_selected_tier = student.get('selected_tier')
     tier_ok = True
     if student_selected_tier is not None and student_selected_tier > 0:
@@ -979,7 +879,7 @@ def apply_job():
             tier_ok = False
         elif student_selected_tier == 2 and job_tier_num == 3:
             tier_ok = False
-            
+           
     if not tier_ok:
         return """
         <script>
@@ -987,7 +887,7 @@ def apply_job():
             window.location.href = "/eligible_companies";
         </script>
         """
-    
+   
     # Check if already applied
     cursor.execute("SELECT * FROM applications WHERE student_id = %s AND job_id = %s", (student_id, job_id))
     existing = cursor.fetchone()
@@ -998,32 +898,32 @@ def apply_job():
             window.location.href = "/eligible_companies";
         </script>
         """
-    
+   
     # Generate new application_id safely
     cursor.execute("SELECT COALESCE(MAX(application_id), 0) + 1 as next_id FROM applications")
     result = cursor.fetchone()
     next_id = result['next_id'] if result else 1
-    
+   
     # Extract dynamic extra details if present
     extra_data = {}
     aadhar = request.form.get("aadhar_number")
     pan = request.form.get("pan_number")
     other_info = request.form.get("other_info")
-    
+   
     if aadhar: extra_data["aadhar_number"] = aadhar
     if pan: extra_data["pan_number"] = pan
     if other_info: extra_data["other_info"] = other_info
-    
+   
     import json
     extra_details_json = json.dumps(extra_data) if extra_data else None
-    
+   
     query = """
-        INSERT INTO applications (application_id, student_id, job_id, resume_path, status, applied_date, extra_details) 
+        INSERT INTO applications (application_id, student_id, job_id, resume_path, status, applied_date, extra_details)
         VALUES (%s, %s, %s, %s, %s, CURDATE(), %s)
     """
     cursor.execute(query, (next_id, student_id, job_id, drive_link, "Pending", extra_details_json))
     db.commit()
-    
+   
     return """
     <script>
         alert("Application submitted successfully!");
@@ -1036,13 +936,13 @@ def my_applications():
     ensure_connection()
     if "student_id" not in session:
         return redirect("/student_login")
-        
+       
     student_id = session["student_id"]
     cursor.execute("SELECT * FROM students WHERE student_id = %s", (student_id,))
     student = cursor.fetchone()
-    
+   
     query = """
-        SELECT a.applied_date, a.status, a.resume_path, 
+        SELECT a.applied_date, a.status, a.resume_path,
                j.company_name, j.role, j.ctc as package_lpa, j.tier, j.deadline
         FROM applications a
         JOIN jobs j ON a.job_id = j.job_id
@@ -1051,7 +951,7 @@ def my_applications():
     """
     cursor.execute(query, (student_id,))
     apps = cursor.fetchall()
-    
+   
     return render_template("student/my_applications.html", applications=apps, student=student)
 
 @app.route("/student_logout")
@@ -1183,7 +1083,7 @@ def faculty_jobs():
         # Fallback if 'id' column doesn't exist in older schema
         cursor.execute("SELECT * FROM jobs ORDER BY job_id DESC")
     jobs = cursor.fetchall()
-    
+   
     # Get custom columns dynamically
     cursor.execute("SHOW COLUMNS FROM jobs")
     all_columns = cursor.fetchall()
@@ -1320,25 +1220,25 @@ def faculty_job_edit():
 def faculty_job_add_column():
     redir = faculty_required()
     if redir: return redir
-    
+   
     name = request.form.get("name", "").strip()
     col_type = request.form.get("type", "").strip()
-    
+   
     if not name:
         from flask import flash
         flash("Column name cannot be empty.", "error")
         return redirect("/faculty/jobs")
-        
+       
     import re
     sanitized = re.sub(r'[^a-zA-Z0-9_]', '_', name.lower())
     col_name = f"custom_{sanitized}"
-    
+   
     sql_type = "VARCHAR(255)"
     if col_type == "number":
         sql_type = "DECIMAL(10,2)"
     elif col_type == "boolean":
         sql_type = "TINYINT(1)"
-        
+       
     try:
         cursor.execute(f"ALTER TABLE jobs ADD COLUMN {col_name} {sql_type}")
         db.commit()
@@ -1348,7 +1248,7 @@ def faculty_job_add_column():
         db.rollback()
         from flask import flash
         flash(f"Error adding column: {str(e)}", "error")
-        
+       
     return redirect("/faculty/jobs")
 
 
@@ -1407,7 +1307,7 @@ def faculty_job_pdf(job_db_id):
         from flask import flash
         flash("No PDF attached to this job.", "error")
         return redirect("/faculty/jobs")
-    
+   
     # Strip the leading '/static/' to get the true relative path in the static folder
     pdf_path = job["pdf_path"]
     if pdf_path.startswith("/static/"):
@@ -1455,20 +1355,20 @@ def faculty_applications_update_status():
             message = f"Your application status for {company_name} - {role_name} has been updated to {status}."
             if status == "Selected":
                 message = f"Congratulations! You have been Selected by {company_name} for the {role_name} role (Tier {job_tier_str})!"
-            
-            cursor.execute("INSERT INTO notifications (student_id, message, link) VALUES (%s, %s, %s)", 
+           
+            cursor.execute("INSERT INTO notifications (student_id, message, link) VALUES (%s, %s, %s)",
                            (student_id, message, "/my_applications"))
 
         # Re-evaluate the student selected_tier:
         # Find the highest tier level among all 'Selected' applications for this student
         cursor.execute("""
-            SELECT j.tier 
+            SELECT j.tier
             FROM applications a
             JOIN jobs j ON a.job_id = j.job_id
             WHERE a.student_id = %s AND a.status = 'Selected'
         """, (student_id,))
         selected_apps = cursor.fetchall()
-        
+       
         if selected_apps:
             # Calculate highest tier selected (lower tier number is better, i.e., Tier 1 is better than Tier 2)
             highest_tier_num = 3
@@ -1510,6 +1410,76 @@ def faculty_selected_students():
     return render_template("faculty/selected_students.html", placed_students=placed)
 
 
+@app.route("/faculty/job_results")
+def faculty_job_results():
+    ensure_connection()
+    redir = faculty_required()
+    if redir: return redir
+
+    # Fetch all jobs to show in selector/cards
+    cursor.execute("SELECT * FROM jobs ORDER BY id DESC")
+    jobs = cursor.fetchall()
+
+    return render_template("faculty/job_results.html", jobs=jobs)
+
+
+@app.route("/faculty/job_results/<job_id>")
+def faculty_job_results_data(job_id):
+    ensure_connection()
+    redir = faculty_required()
+    if redir: 
+        return jsonify({"error": "Unauthorized"}), 401
+
+    # Fetch selected students for this job
+    select_query = """
+        SELECT s.student_id, s.name, s.email, s.branch, s.roll_number, s.phone_number
+        FROM students s
+        JOIN applications a ON s.student_id = a.student_id
+        WHERE a.job_id = %s AND a.status = 'Selected'
+        ORDER BY s.student_id ASC
+    """
+    cursor.execute(select_query, (job_id,))
+    selected = cursor.fetchall()
+
+    # Fetch rejected students for this job
+    reject_query = """
+        SELECT s.student_id, s.name, s.email, s.branch, s.roll_number, s.phone_number
+        FROM students s
+        JOIN applications a ON s.student_id = a.student_id
+        WHERE a.job_id = %s AND a.status = 'Rejected'
+        ORDER BY s.student_id ASC
+    """
+    cursor.execute(reject_query, (job_id,))
+    rejected = cursor.fetchall()
+
+    return jsonify({
+        "selected": selected,
+        "rejected": rejected
+    })
+
+
+@app.route("/faculty/rejected_students")
+def faculty_rejected_students():
+    ensure_connection()
+    redir = faculty_required()
+    if redir: return redir
+
+    # Query all students who are rejected for any job
+    query = """
+        SELECT s.student_id, s.name, s.email, s.branch, s.roll_number, s.phone_number,
+               a.status, j.company_name, j.role, j.tier, j.job_id
+        FROM students s
+        JOIN applications a ON s.student_id = a.student_id
+        JOIN jobs j ON a.job_id = j.job_id
+        WHERE a.status = 'Rejected'
+        ORDER BY s.student_id ASC
+    """
+    cursor.execute(query)
+    rejected = cursor.fetchall()
+
+    return render_template("faculty/rejected_students.html", rejected_students=rejected)
+
+
 @app.route("/faculty/applied_students")
 def faculty_applied_students():
     redir = faculty_required()
@@ -1538,7 +1508,7 @@ def faculty_applied_students():
                         pass
             if isinstance(deadline, datetime) and datetime.now() > deadline:
                 is_passed = True
-        
+       
         j['is_deadline_passed'] = is_passed
         j['deadline_str'] = str(j.get('deadline')) if j.get('deadline') else 'Ongoing'
 
@@ -1559,7 +1529,7 @@ def faculty_applied_students():
                     applicant['extra_dict'] = {}
             else:
                 applicant['extra_dict'] = {}
-                
+               
         j['applicants'] = applicants
         jobs_list.append(j)
 
@@ -1627,18 +1597,18 @@ def faculty_download_applied_excel(job_id):
 
     # Headers
     headers = [
-        "S.No", 
-        "Student ID", 
-        "Roll Number", 
-        "Student Name", 
-        "Branch", 
-        "Aadhar Card", 
-        "PAN Card", 
-        "Email ID", 
-        "Phone Number", 
+        "S.No",
+        "Student ID",
+        "Roll Number",
+        "Student Name",
+        "Branch",
+        "Aadhar Card",
+        "PAN Card",
+        "Email ID",
+        "Phone Number",
         "Resume Drive Link"
     ]
-    
+   
     # In openpyxl: A=1, B=2, C=3, etc. We will write to Row 3
     for col_num, header in enumerate(headers, 1):
         cell = ws.cell(row=3, column=col_num)
@@ -1647,7 +1617,7 @@ def faculty_download_applied_excel(job_id):
         cell.fill = amber_fill
         cell.alignment = center_align
         cell.border = thin_border
-    
+   
     ws.row_dimensions[3].height = 24
 
     # Data Rows
@@ -1826,7 +1796,7 @@ def faculty_master_sheet():
     # Check for any master sheet file (pdf or xlsx)
     pdf_path = os.path.join(upload_dir, "master_sheet.pdf")
     xlsx_path = os.path.join(upload_dir, "master_sheet.xlsx")
-    
+   
     current_file = None
     file_type = None
     file_size = None
@@ -1880,11 +1850,11 @@ def faculty_upload_master_sheet():
             old_path = os.path.join(upload_dir, old)
             if os.path.exists(old_path):
                 os.remove(old_path)
-        
+       
         ext = "xlsx" if filename.endswith(".xlsx") else "csv"
         save_path = os.path.join(upload_dir, f"master_sheet.{ext}")
         file.save(save_path)
-        
+       
         # Parse and update database
         try:
             # Robust header detection
@@ -1894,46 +1864,47 @@ def faculty_upload_master_sheet():
                     temp_df = pd.read_excel(path, header=None, nrows=15)
                 else:
                     temp_df = pd.read_csv(path, header=None, nrows=15)
-                
+               
                 header_idx = 0
                 for idx, row in temp_df.iterrows():
                     row_strs = [str(x).lower().strip() for x in row.values]
                     if any('email' in x or 'roll' in x or 'cgpa' in x for x in row_strs):
                         header_idx = idx
                         break
-                        
+                       
                 if is_excel:
                     return pd.read_excel(path, header=header_idx)
                 return pd.read_csv(path, header=header_idx)
 
             df = robust_read(save_path, ext == "xlsx")
-            
+           
             # Normalize column names
             df.columns = [str(c).strip().lower() for c in df.columns]
-            
+           
             updated_count = 0
             created_count = 0
+            email_queue = []   # Collect email payloads; sent after db.commit()
             ensure_connection()
             for index, row in df.iterrows():
                 raw_email = row.get('email')
                 raw_roll = row.get('roll_number') if 'roll_number' in row else (row.get('roll number') if 'roll number' in row else row.get('roll no'))
-                
+               
                 email = str(raw_email).strip() if pd.notna(raw_email) and str(raw_email).strip() != "" and str(raw_email).lower() != "nan" else None
                 roll = str(raw_roll).strip() if pd.notna(raw_roll) and str(raw_roll).strip() != "" and str(raw_roll).lower() != "nan" else None
-                
+               
                 if not email and not roll:
                     continue
-                    
+                   
                 # Safely parse values
                 def safe_str(val):
                     return str(val).strip() if pd.notna(val) and str(val).strip() != "" and str(val).lower() != "nan" else None
-                
+               
                 def safe_float(val):
                     try:
                         return float(val) if pd.notna(val) and str(val).strip() != "" else None
                     except:
                         return None
-                        
+                       
                 def safe_int(val):
                     try:
                         return int(float(val)) if pd.notna(val) and str(val).strip() != "" else None
@@ -1942,31 +1913,31 @@ def faculty_upload_master_sheet():
 
                 cgpa = safe_float(row.get('cgpa'))
                 branch = safe_str(row.get('branch'))
-                
+               
                 # Active backlogs
                 b_val = row.get('active_backlogs') if 'active_backlogs' in row else (row.get('active backlogs') if 'active backlogs' in row else row.get('backlogs'))
                 active_backlogs = safe_int(b_val)
-                
+               
                 # Backlog history
                 bh_val = row.get('backlog_history') if 'backlog_history' in row else row.get('backlog history')
                 backlog_history = safe_int(bh_val)
-                
+               
                 phone_number = safe_str(row.get('phone_number')) or safe_str(row.get('phone number')) or safe_str(row.get('phone no'))
                 aadhar = safe_str(row.get('aadhar')) or safe_str(row.get('aadhar card'))
                 pan = safe_str(row.get('pan')) or safe_str(row.get('pan card'))
                 roll_clean = safe_str(roll)
-                
+               
                 # Batch
                 batch_val = row.get('batch') if 'batch' in row else row.get('graduation batch')
                 batch = safe_int(batch_val)
-                
+               
                 updates = []
                 params = []
-                
+               
                 if roll_clean:
                     updates.append("roll_number = %s")
                     params.append(roll_clean)
-                
+               
                 if cgpa is not None:
                     updates.append("cgpa = %s")
                     params.append(cgpa)
@@ -1991,16 +1962,16 @@ def faculty_upload_master_sheet():
                 if batch is not None:
                     updates.append("batch = %s")
                     params.append(batch)
-                    
+                   
                 if updates:
                     # Check if student exists
                     if email:
                         cursor.execute("SELECT student_id FROM students WHERE email = %s", (email,))
                     else:
                         cursor.execute("SELECT student_id FROM students WHERE roll_number = %s", (roll,))
-                    
+                   
                     existing = cursor.fetchone()
-                    
+                   
                     if existing:
                         query = f"UPDATE students SET {', '.join(updates)} WHERE "
                         if email:
@@ -2009,18 +1980,47 @@ def faculty_upload_master_sheet():
                         else:
                             query += "roll_number = %s"
                             params.append(roll)
-                            
+                           
                         cursor.execute(query, tuple(params))
                         updated_count += 1
+                        # Queue profile-update email for this student
+                        if email:
+                            # Describe what changed for the email body
+                            field_labels = {
+                                'roll_number': 'Roll Number',
+                                'cgpa': 'CGPA',
+                                'branch': 'Branch',
+                                'backlogs': 'Active Backlogs',
+                                'backlog_history': 'Backlog History',
+                                'phone_number': 'Phone Number',
+                                'aadhar': 'Aadhar Card',
+                                'pan': 'PAN Card',
+                                'batch': 'Graduation Batch',
+                            }
+                            changed_fields = []
+                            for upd_expr, val in zip(updates, params[:-1]):
+                                col = upd_expr.split('=')[0].strip()
+                                label = field_labels.get(col, col.replace('_', ' ').title())
+                                changed_fields.append((label, val))
+                            # Fetch student name for personalization
+                            cursor.execute("SELECT name FROM students WHERE email = %s", (email,))
+                            srow = cursor.fetchone()
+                            sname = srow['name'] if srow else 'Student'
+                            email_queue.append({
+                                'type': 'update',
+                                'to': email,
+                                'name': sname,
+                                'changed_fields': changed_fields,
+                            })
                     else:
                         # Auto-create new student
                         name_raw = row.get('name') if 'name' in row else (row.get('student name') if 'student name' in row else '')
                         name = str(name_raw).strip() if pd.notna(name_raw) else "Unknown Student"
                         default_password = roll if roll else (email.split('@')[0] if email else "password123")
-                        
+                       
                         insert_cols = ['password', 'name']
                         insert_vals = [default_password, name]
-                        
+                       
                         if email:
                             insert_cols.append('email')
                             insert_vals.append(email)
@@ -2051,21 +2051,38 @@ def faculty_upload_master_sheet():
                         if batch is not None:
                             insert_cols.append('batch')
                             insert_vals.append(batch)
-                            
+                           
                         placeholders = ', '.join(['%s'] * len(insert_vals))
                         query = f"INSERT INTO students ({', '.join(insert_cols)}) VALUES ({placeholders})"
                         cursor.execute(query, tuple(insert_vals))
                         created_count += 1
-                        
+                        # Queue welcome email for the newly created student
+                        if email:
+                            email_queue.append({
+                                'type': 'new',
+                                'to': email,
+                                'name': name,
+                                'password': default_password,
+                            })
+                       
             db.commit()
+
+            # ── Send emails after successful DB commit ──────────────────────
+            sent_count, email_errors = send_master_sheet_emails(email_queue)
+            # ───────────────────────────────────────────────────────────────
+
             msg = f"Master Sheet uploaded! Updated {updated_count} existing profiles."
             if created_count > 0:
                 msg += f" Auto-created {created_count} new student accounts (Default password is their Roll Number)."
+            if sent_count > 0:
+                msg += f" ✉️ {sent_count} email notification(s) sent successfully."
+            if email_errors:
+                msg += f" ⚠️ {len(email_errors)} email(s) failed to send (check SMTP config)."
             flash(msg, "success")
         except Exception as e:
             db.rollback()
             flash(f"Error processing Master Sheet: {str(e)}", "error")
-            
+           
     else:
         flash("Invalid file type. Please upload a PDF, CSV, or XLSX file.", "error")
 
@@ -2175,41 +2192,41 @@ def forgot_password():
             from flask import flash
             flash("Please enter an email address.", "error")
             return redirect("/forgot_password")
-        
+       
         # Check students table
         cursor.execute("SELECT * FROM students WHERE email=%s", (email,))
         student = cursor.fetchone()
-        
+       
         # Check faculty table
         cursor.execute("SELECT * FROM faculty WHERE email=%s", (email,))
         faculty = cursor.fetchone()
-        
+       
         if not student and not faculty:
             from flask import flash
             flash("No account found with that email address.", "error")
             return redirect("/forgot_password")
-            
+           
         role = "student" if student else "faculty"
-        
+       
         # Generate 6 digit OTP
         import random
         otp = str(random.randint(100000, 999999))
         session['reset_email'] = email
         session['reset_role'] = role
         session['reset_otp'] = otp
-        
+       
         # Mocking email send by flashing it directly
         from flask import flash
         flash(f"MOCK EMAIL SEND: Your OTP is {otp}", "info")
         return redirect("/verify_otp")
-        
+       
     return render_template("forgot_password.html")
 
 @app.route("/verify_otp", methods=["GET", "POST"])
 def verify_otp():
     if 'reset_email' not in session:
         return redirect("/forgot_password")
-        
+       
     if request.method == "POST":
         entered_otp = request.form.get("otp", "").strip()
         if entered_otp == session.get('reset_otp'):
@@ -2218,44 +2235,44 @@ def verify_otp():
         else:
             from flask import flash
             flash("Invalid OTP. Please try again.", "error")
-            
+           
     return render_template("verify_otp.html", email=session.get('reset_email'))
 
 @app.route("/reset_password", methods=["GET", "POST"])
 def reset_password():
     if not session.get('reset_verified') or 'reset_email' not in session:
         return redirect("/forgot_password")
-        
+       
     if request.method == "POST":
         new_password = request.form.get("new_password", "").strip()
         confirm_password = request.form.get("confirm_password", "").strip()
-        
+       
         if len(new_password) < 6:
             from flask import flash
             flash("Password must be at least 6 characters long.", "error")
             return redirect("/reset_password")
-            
+           
         if new_password != confirm_password:
             from flask import flash
             flash("Passwords do not match.", "error")
             return redirect("/reset_password")
-            
+           
         email = session['reset_email']
         role = session['reset_role']
-        
+       
         try:
             if role == "student":
                 cursor.execute("UPDATE students SET password=%s WHERE email=%s", (new_password, email))
             else:
                 cursor.execute("UPDATE faculty SET password=%s WHERE email=%s", (new_password, email))
             db.commit()
-            
+           
             # Clear session
             session.pop('reset_email', None)
             session.pop('reset_role', None)
             session.pop('reset_otp', None)
             session.pop('reset_verified', None)
-            
+           
             from flask import flash
             flash("Password has been reset successfully! You can now log in.", "success")
             return redirect("/")
@@ -2263,7 +2280,7 @@ def reset_password():
             db.rollback()
             from flask import flash
             flash(f"An error occurred: {str(e)}", "error")
-            
+           
     return render_template("reset_password.html")
 
 if __name__ == "__main__":

@@ -6,48 +6,126 @@
 <title>Applied Students — NIT AP Placement Portal</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script>
+  (function() {
+    const savedTheme = localStorage.getItem('faculty-theme') || 'light';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+  })();
+</script>
 <style>
+:root {
+  --bg-gradient: linear-gradient(145deg, #fffdf5 0%, #fff8e1 40%, #fef3c0 75%, #fffdf5 100%);
+  --header-bg: rgba(255, 255, 255, 0.95);
+  --header-border: rgba(253, 230, 138, 0.6);
+  --card-bg: rgba(255, 255, 255, 0.78);
+  --card-hover-bg: rgba(255, 255, 255, 0.94);
+  --card-border: rgba(253, 230, 138, 0.4);
+  --text-main: #78350f;
+  --text-muted: #b97f10;
+  --text-accent: #b45309;
+  --badge-bg: rgba(253, 230, 138, 0.4);
+  --input-bg: rgba(255, 255, 255, 0.85);
+  --input-border: rgba(253, 230, 138, 0.6);
+  --button-gradient: linear-gradient(135deg, #f59e0b, #d97706);
+  --logout-bg: rgba(255, 255, 240, 0.6);
+  --table-hdr-bg: rgba(253, 230, 138, 0.35);
+  --table-border: rgba(253, 230, 138, 0.4);
+  --shadow-color: rgba(120, 53, 15, 0.04);
+  --shadow-hover: rgba(120, 53, 15, 0.12);
+  --blob1-color: rgba(230, 180, 40, 0.22);
+  --blob2-color: rgba(255, 220, 80, 0.18);
+  --blob3-color: rgba(255, 200, 50, 0.15);
+}
+
+[data-theme="dark"] {
+  --bg-gradient: linear-gradient(145deg, #0f172a 0%, #1e293b 40%, #0f172a 100%);
+  --header-bg: rgba(30, 41, 59, 0.95);
+  --header-border: rgba(245, 158, 11, 0.3);
+  --card-bg: rgba(30, 41, 59, 0.7);
+  --card-hover-bg: rgba(30, 41, 59, 0.9);
+  --card-border: rgba(245, 158, 11, 0.2);
+  --text-main: #f8fafc;
+  --text-muted: #fbbf24;
+  --text-accent: #fbbf24;
+  --badge-bg: rgba(245, 158, 11, 0.2);
+  --input-bg: rgba(15, 23, 42, 0.6);
+  --input-border: rgba(245, 158, 11, 0.3);
+  --button-gradient: linear-gradient(135deg, #fbbf24, #d97706);
+  --logout-bg: rgba(15, 23, 42, 0.4);
+  --table-hdr-bg: rgba(245, 158, 11, 0.15);
+  --table-border: rgba(245, 158, 11, 0.2);
+  --shadow-color: rgba(0, 0, 0, 0.3);
+  --shadow-hover: rgba(0, 0, 0, 0.5);
+  --blob1-color: rgba(245, 158, 11, 0.12);
+  --blob2-color: rgba(217, 119, 6, 0.1);
+  --blob3-color: rgba(251, 191, 36, 0.08);
+}
+
 * { box-sizing:border-box; margin:0; padding:0; }
-body { min-height:100vh; font-family:'DM Sans',sans-serif; background:linear-gradient(145deg,#fffdf5 0%,#fff8e1 40%,#fef3c0 75%,#fffdf5 100%); }
+body { min-height:100vh; font-family:'DM Sans',sans-serif; background:var(--bg-gradient); color:var(--text-main); transition: background 0.3s, color 0.3s; }
 .blob { position:fixed; border-radius:50%; pointer-events:none; filter:blur(55px); z-index:0; }
-.blob-1 { width:280px; height:280px; background:rgba(230,180,40,0.22); top:-70px; left:-50px; }
-.blob-2 { width:220px; height:220px; background:rgba(255,220,80,0.18); bottom:-50px; right:-30px; }
-.global-header { position:fixed; top:0; left:0; right:0; z-index:100; background:rgba(255,255,255,0.95); backdrop-filter:blur(12px); border-bottom:1px solid rgba(253,230,138,0.6); padding:10px 28px; display:flex; align-items:center; justify-content:space-between; box-shadow:0 2px 12px rgba(0,0,0,0.02); }
+.blob-1 { width:280px; height:280px; background:var(--blob1-color); top:-70px; left:-50px; animation: float-blob-1 12s infinite ease-in-out; }
+.blob-2 { width:220px; height:220px; background:var(--blob2-color); bottom:-50px; right:-30px; animation: float-blob-2 15s infinite ease-in-out; }
+
+@keyframes float-blob-1 {
+  0% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(50px, 30px) scale(1.1); }
+  100% { transform: translate(0, 0) scale(1); }
+}
+@keyframes float-blob-2 {
+  0% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(-40px, -50px) scale(0.95); }
+  100% { transform: translate(0, 0) scale(1); }
+}
+
+.global-header {
+  position:fixed; top:0; left:0; right:0; z-index:100;
+  background:var(--header-bg); backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--header-border); padding:10px 28px;
+  display:flex; align-items:center; justify-content:space-between;
+  box-shadow:0 2px 12px rgba(0,0,0,0.02); transition: background 0.3s, border-color 0.3s;
+}
 .logo-area { display:flex; align-items:center; gap:14px; }
 .logo-icon { width:44px; height:44px; background:linear-gradient(135deg,#f59e0b,#d97706); border-radius:14px; display:flex; align-items:center; justify-content:center; color:white; font-size:24px; font-weight:800; font-family:'Syne',sans-serif; }
-.logo-text h2 { font-family:'Syne',sans-serif; font-size:16px; font-weight:800; color:#78350f; line-height:1.2; }
-.logo-text p { font-size:9px; letter-spacing:0.5px; color:#b97f10; text-transform:uppercase; }
-.header-right { font-size: 11px; background: rgba(253,230,138,0.3); padding: 6px 14px; border-radius: 30px; color: #b45309; display: flex; align-items: center; gap: 6px; text-decoration: none; font-weight: 600; }
+.logo-text h2 { font-family:'Syne',sans-serif; font-size:16px; font-weight:800; color:var(--text-main); line-height:1.2; transition: color 0.3s; }
+.logo-text p { font-size:9px; letter-spacing:0.5px; color:var(--text-muted); text-transform:uppercase; transition: color 0.3s; }
+.header-right { font-size: 11px; background: var(--badge-bg); padding: 6px 14px; border-radius: 30px; color: var(--text-accent); display: flex; align-items: center; gap: 6px; text-decoration: none; font-weight: 600; transition: all 0.3s; }
 
-.page-body { padding:100px 32px 40px; max-width:1200px; margin: 0 auto; position:relative; z-index:2; }
+.page-body { padding:100px 32px 40px; max-width:1200px; margin: 0 auto; position:relative; z-index:2; opacity: 0; animation: fadeInUp 0.8s ease forwards; }
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 .page-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:32px; flex-wrap:wrap; gap:16px; }
-.page-header h1 { font-family:'Syne',sans-serif; font-size:32px; font-weight:800; color:#78350f; display:flex; align-items:center; gap:12px; }
-.back-home-btn { background:rgba(255,255,255,0.7); border:1px solid #fde68a; padding:8px 20px; border-radius:40px; cursor:pointer; color:#78350f; font-family:'DM Sans',sans-serif; font-size:13px; font-weight:600; display:inline-flex; align-items:center; gap:6px; text-decoration:none; transition:background 0.2s; }
-.back-home-btn:hover { background:rgba(255,255,255,0.95); }
+.page-header h1 { font-family:'Syne',sans-serif; font-size:32px; font-weight:800; color:var(--text-main); display:flex; align-items:center; gap:12px; transition: color 0.3s; }
+.back-home-btn { background:var(--logout-bg); border:1px solid var(--card-border); padding:8px 20px; border-radius:40px; cursor:pointer; color:var(--text-main); font-family:'DM Sans',sans-serif; font-size:13px; font-weight:600; display:inline-flex; align-items:center; gap:6px; text-decoration:none; transition:all 0.2s; }
+.back-home-btn:hover { background:var(--badge-bg); border-color:var(--text-accent); }
 
-.job-card { background:rgba(255,255,255,0.8); backdrop-filter:blur(12px); border-radius:24px; padding:24px; border:1px solid rgba(253,230,138,0.4); margin-bottom:32px; transition: 0.3s; }
-.job-card:hover { box-shadow:0 8px 25px rgba(120,53,15,0.06); }
-.job-header { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:16px; border-bottom:1px solid rgba(253,230,138,0.3); padding-bottom:14px; }
-.job-title h3 { font-family:'Syne',sans-serif; font-size:20px; color:#78350f; font-weight:800; }
-.job-title p { font-size:12px; color:#b97f10; margin-top:2px; font-weight:600; }
+.job-card { background:var(--card-bg); backdrop-filter:blur(12px); border-radius:24px; padding:24px; border:1px solid var(--card-border); margin-bottom:32px; transition: 0.3s; }
+.job-card:hover { box-shadow:0 8px 25px var(--shadow-hover); }
+.job-header { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:16px; border-bottom:1px solid var(--card-border); padding-bottom:14px; transition: border-color 0.3s; }
+.job-title h3 { font-family:'Syne',sans-serif; font-size:20px; color:var(--text-main); font-weight:800; transition: color 0.3s; }
+.job-title p { font-size:12px; color:var(--text-muted); margin-top:2px; font-weight:600; transition: color 0.3s; }
 .job-status-badges { display:flex; align-items:center; gap:10px; }
 .status-badge { padding:6px 14px; border-radius:20px; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; }
 .status-badge.active { background:#fef3c7; color:#d97706; border:1px solid #fde68a; }
 .status-badge.closed { background:#fee2e2; color:#ef4444; border:1px solid #fca5a5; }
 
-.countdown-timer { font-weight:700; color:#b45309; font-size:12px; display:inline-flex; align-items:center; gap:4px; background:rgba(253,230,138,0.25); padding:4px 10px; border-radius:12px; }
+.countdown-timer { font-weight:700; color:var(--text-accent); font-size:12px; display:inline-flex; align-items:center; gap:4px; background:var(--badge-bg); padding:4px 10px; border-radius:12px; transition: all 0.3s; }
 
 .download-excel-btn { background:linear-gradient(135deg, #10b981, #059669); color:white; border:none; padding:8px 18px; border-radius:30px; cursor:pointer; font-weight:600; font-family:'DM Sans',sans-serif; font-size:12px; text-decoration:none; display:inline-flex; align-items:center; gap:6px; transition:opacity 0.2s; }
 .download-excel-btn:hover { opacity:0.9; }
 
-.table-wrapper { overflow-x:auto; margin-top:16px; border-radius:16px; border:1px solid rgba(253,230,138,0.3); }
-table { width:100%; border-collapse:collapse; background:rgba(255,255,255,0.4); }
-th { text-align:left; padding:12px 10px; color:#b45309; border-bottom:1px solid #fde68a; font-size:11px; font-weight:700; text-transform:uppercase; background:rgba(255,253,240,0.5); }
-td { padding:10px 10px; color:#5c3b1a; border-bottom:1px solid rgba(253,230,138,0.2); font-size:12px; vertical-align:middle; }
-.resume-btn { color:#d97706; text-decoration:none; font-weight:600; display:inline-flex; align-items:center; gap:4px; }
+.table-wrapper { overflow-x:auto; margin-top:16px; border-radius:16px; border:1px solid var(--table-border); transition: border-color 0.3s; }
+table { width:100%; border-collapse:collapse; background:transparent; }
+th { text-align:left; padding:12px 10px; color:var(--text-accent); border-bottom:1px solid var(--table-border); font-size:11px; font-weight:700; text-transform:uppercase; background:var(--table-hdr-bg); transition: all 0.3s; }
+td { padding:10px 10px; color:var(--text-main); border-bottom:1px solid var(--table-border); font-size:12px; vertical-align:middle; transition: all 0.3s; }
+.resume-btn { color:var(--text-accent); text-decoration:none; font-weight:600; display:inline-flex; align-items:center; gap:4px; }
 .resume-btn:hover { text-decoration:underline; }
 
-.empty-state { text-align:center; padding:30px; color:#b97f10; font-weight:600; font-size:13px; }
+.empty-state { text-align:center; padding:30px; color:var(--text-muted); font-weight:600; font-size:13px; transition: color 0.3s; }
 </style>
 </head>
 <body>
@@ -59,6 +137,9 @@ td { padding:10px 10px; color:#5c3b1a; border-bottom:1px solid rgba(253,230,138,
     <div class="logo-text"><h2>National Institute of Technology<br>Andhra Pradesh</h2><p>Placement &amp; Career Cell</p></div>
   </div>
   <div style="display:flex; align-items:center; gap:16px;">
+    <button id="themeToggleBtn" style="background:var(--logout-bg); border:1px solid var(--card-border); padding:6px 10px; border-radius:30px; color:var(--text-main); font-weight:600; display:flex; align-items:center; justify-content:center; font-size:16px; cursor:pointer; transition:background 0.2s;">
+      <i class="ti ti-moon"></i>
+    </button>
     <a href="/faculty_logout" class="header-right" style="margin:0;"><i class="ti ti-logout"></i> Logout</a>
   </div>
 </div>
@@ -269,6 +350,27 @@ function updateCountdowns() {
 
 setInterval(updateCountdowns, 1000);
 updateCountdowns();
+
+// Theme Toggle
+const themeToggle = document.getElementById('themeToggleBtn');
+if (themeToggle) {
+  themeToggle.addEventListener('click', () => {
+    const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
+    const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', newTheme);
+    localStorage.setItem('faculty-theme', newTheme);
+    const icon = themeToggle.querySelector('i');
+    if (icon) {
+      icon.className = newTheme === 'dark' ? 'ti ti-sun' : 'ti ti-moon';
+    }
+  });
+
+  const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
+  const icon = themeToggle.querySelector('i');
+  if (icon) {
+    icon.className = currentTheme === 'dark' ? 'ti ti-sun' : 'ti ti-moon';
+  }
+}
 </script>
 </body>
 </html>

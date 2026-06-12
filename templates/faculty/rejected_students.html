@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>All Rejected Students — Placement Portal</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500;700&display=swap" rel="stylesheet">
+<script>
+  (function() {
+    const savedTheme = localStorage.getItem('faculty-theme') || 'light';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+  })();
+</script>
+<style>
+:root {
+  --bg-gradient: linear-gradient(145deg, #fffdf5 0%, #fff8e1 40%, #fef3c0 75%, #fffdf5 100%);
+  --header-bg: rgba(255, 255, 255, 0.95);
+  --header-border: rgba(253, 230, 138, 0.6);
+  --card-bg: rgba(255, 255, 255, 0.78);
+  --card-hover-bg: rgba(255, 255, 255, 0.94);
+  --card-border: rgba(253, 230, 138, 0.4);
+  --text-main: #78350f;
+  --text-muted: #b97f10;
+  --text-accent: #b45309;
+  --badge-bg: rgba(253, 230, 138, 0.4);
+  --input-bg: rgba(255, 255, 255, 0.85);
+  --input-border: rgba(253, 230, 138, 0.6);
+  --button-gradient: linear-gradient(135deg, #f59e0b, #d97706);
+  --logout-bg: rgba(255, 255, 240, 0.6);
+  --table-hdr-bg: rgba(253, 230, 138, 0.35);
+  --table-border: rgba(253, 230, 138, 0.4);
+  --shadow-color: rgba(120, 53, 15, 0.04);
+  --shadow-hover: rgba(120, 53, 15, 0.12);
+  --blob1-color: rgba(230, 180, 40, 0.22);
+  --blob2-color: rgba(255, 220, 80, 0.18);
+  --blob3-color: rgba(255, 200, 50, 0.15);
+  --danger-color: #ef4444;
+}
+
+[data-theme="dark"] {
+  --bg-gradient: linear-gradient(145deg, #0f172a 0%, #1e293b 40%, #0f172a 100%);
+  --header-bg: rgba(30, 41, 59, 0.95);
+  --header-border: rgba(245, 158, 11, 0.3);
+  --card-bg: rgba(30, 41, 59, 0.7);
+  --card-hover-bg: rgba(30, 41, 59, 0.9);
+  --card-border: rgba(245, 158, 11, 0.2);
+  --text-main: #f8fafc;
+  --text-muted: #fbbf24;
+  --text-accent: #fbbf24;
+  --badge-bg: rgba(245, 158, 11, 0.2);
+  --input-bg: rgba(15, 23, 42, 0.6);
+  --input-border: rgba(245, 158, 11, 0.3);
+  --button-gradient: linear-gradient(135deg, #fbbf24, #d97706);
+  --logout-bg: rgba(15, 23, 42, 0.4);
+  --table-hdr-bg: rgba(245, 158, 11, 0.15);
+  --table-border: rgba(245, 158, 11, 0.2);
+  --shadow-color: rgba(0, 0, 0, 0.3);
+  --shadow-hover: rgba(0, 0, 0, 0.5);
+  --blob1-color: rgba(245, 158, 11, 0.12);
+  --blob2-color: rgba(217, 119, 6, 0.1);
+  --blob3-color: rgba(251, 191, 36, 0.08);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { min-height: 100vh; font-family: 'DM Sans', sans-serif; background: var(--bg-gradient); color: var(--text-main); transition: background 0.3s, color 0.3s; }
+.blob { position: fixed; border-radius: 50%; pointer-events: none; filter: blur(55px); z-index: 0; }
+.blob-1 { width: 280px; height: 280px; background: var(--blob1-color); top:-70px; left:-50px; animation: float-blob-1 12s infinite ease-in-out; }
+.blob-2 { width: 220px; height: 220px; background: var(--blob2-color); bottom:-50px; right:-30px; animation: float-blob-2 15s infinite ease-in-out; }
+
+@keyframes float-blob-1 {
+  0% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(50px, 30px) scale(1.1); }
+  100% { transform: translate(0, 0) scale(1); }
+}
+@keyframes float-blob-2 {
+  0% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(-40px, -50px) scale(0.95); }
+  100% { transform: translate(0, 0) scale(1); }
+}
+
+.global-header {
+  position: fixed; top:0; left:0; right:0; z-index:100;
+  background: var(--header-bg); backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--header-border);
+  padding: 10px 28px; display: flex; align-items: center;
+  justify-content: space-between; box-shadow: 0 2px 12px rgba(0,0,0,0.02);
+  transition: background 0.3s, border-color 0.3s;
+}
+.logo-area { display: flex; align-items: center; gap: 14px; }
+.logo-icon { width:44px; height:44px; background: linear-gradient(135deg, #f59e0b, #d97706); border-radius:14px; display:flex; align-items:center; justify-content:center; color:white; font-size:24px; font-weight:800; font-family:'Syne',sans-serif; }
+.logo-text h2 { font-family:'Syne',sans-serif; font-size:16px; font-weight:800; color:var(--text-main); line-height:1.2; transition: color 0.3s; }
+.logo-text p { font-size:9px; letter-spacing:0.5px; color:var(--text-muted); text-transform:uppercase; transition: color 0.3s; }
+
+.page-body { padding: 100px 32px 40px; max-width: 1200px; margin: 0 auto; position: relative; z-index:2; }
+.page-header { display:flex; justify-content:space-between; flex-wrap:wrap; margin-bottom:32px; gap:16px; align-items: center; }
+.page-header h1 { font-family:'Syne',sans-serif; font-size:28px; font-weight:800; color:var(--text-main); transition: color 0.3s; display: flex; align-items: center; gap: 10px; }
+.back-home-btn { background: var(--logout-bg); border:1px solid var(--card-border); padding:6px 14px; border-radius:40px; cursor:pointer; color:var(--text-main); font-family:'DM Sans',sans-serif; font-size:12px; display:flex; align-items:center; gap:6px; transition: all 0.2s; text-decoration: none; font-weight: 500; }
+.back-home-btn:hover { background: var(--badge-bg); border-color: var(--text-accent); }
+
+/* Controls card */
+.controls-card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 24px; padding: 20px 24px; margin-bottom: 28px; backdrop-filter: blur(12px); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; box-shadow: 0 4px 16px var(--shadow-color); opacity: 0; animation: fadeInUp 0.6s ease forwards; }
+.search-box-container { position: relative; }
+.search-input { background: var(--input-bg); border: 1px solid var(--input-border); border-radius: 30px; padding: 10px 16px 10px 36px; font-family: 'DM Sans', sans-serif; color: var(--text-main); font-size: 14px; width: 300px; outline: none; transition: border-color 0.2s; }
+.search-input:focus { border-color: var(--text-accent); }
+.search-icon { position: absolute; left: 12px; top: 12px; color: var(--text-muted); font-size: 16px; }
+
+/* Table Section */
+.table-wrapper { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 24px; overflow: hidden; box-shadow: 0 6px 20px var(--shadow-color); backdrop-filter: blur(12px); opacity: 0; animation: fadeInUp 0.6s ease forwards; animation-delay: 0.15s; }
+.table-header { padding: 20px 24px; border-bottom: 1px solid var(--card-border); display: flex; justify-content: space-between; align-items: center; }
+.table-header h3 { font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 800; display: flex; align-items: center; gap: 8px; color: var(--danger-color); }
+.count-badge { font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: 20px; color: white; background: var(--danger-color); }
+
+.table-responsive { overflow-x: auto; width: 100%; }
+table { width: 100%; border-collapse: collapse; text-align: left; font-size: 13px; }
+th { background: var(--table-hdr-bg); padding: 14px 20px; font-weight: 700; color: var(--text-accent); border-bottom: 1px solid var(--table-border); text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px; }
+td { padding: 14px 20px; border-bottom: 1px solid var(--table-border); color: var(--text-main); font-weight: 500; }
+tr:last-child td { border-bottom: none; }
+tr { transition: background-color 0.2s; }
+tr:hover { background-color: rgba(253, 230, 138, 0.08); }
+.row-index { font-weight: 700; opacity: 0.7; }
+.roll-no { font-weight: 700; }
+
+.empty-state { text-align: center; padding: 60px; color: var(--text-muted); font-weight: 600; font-size: 14px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.empty-state i { font-size: 36px; }
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+</style>
+</head>
+<body>
+<div class="blob blob-1"></div>
+<div class="blob blob-2"></div>
+
+<div class="global-header">
+  <div class="logo-area">
+    <div class="logo-icon">N</div>
+    <div class="logo-text">
+      <h2>National Institute of Technology<br>Andhra Pradesh</h2>
+      <p>Placement &amp; Career Cell</p>
+    </div>
+  </div>
+  <div style="display:flex; align-items:center; gap:16px;">
+    <button id="themeToggleBtn" style="background:var(--logout-bg); border:1px solid var(--card-border); padding:6px 10px; border-radius:30px; color:var(--text-main); font-weight:600; display:flex; align-items:center; justify-content:center; font-size:16px; cursor:pointer; transition:background 0.2s;">
+      <i class="ti ti-moon"></i>
+    </button>
+    <a href="/faculty_logout" class="back-home-btn" style="margin:0;"><i class="ti ti-logout"></i> Logout</a>
+  </div>
+</div>
+
+<div class="page-body">
+  <div class="page-header">
+    <h1><i class="ti ti-user-x"></i> Rejected Students Registry</h1>
+    <a href="/faculty_dashboard" class="back-home-btn"><i class="ti ti-home"></i> Back to Dashboard</a>
+  </div>
+
+  <!-- Search and Stats -->
+  <div class="controls-card">
+    <div class="search-box-container">
+      <i class="ti ti-search search-icon"></i>
+      <input type="text" id="registrySearch" class="search-input" placeholder="Search by name, roll no, branch, company...">
+    </div>
+    <div style="font-weight: 600; font-size: 14px; display: flex; align-items: center; gap: 8px;">
+      <span style="color: var(--text-muted);">Total Rejected Students:</span>
+      <span id="registryTotalCount" style="background: var(--badge-bg); color: var(--text-accent); padding: 4px 12px; border-radius: 20px; font-weight: 700;">{{ rejected_students|length }}</span>
+    </div>
+  </div>
+
+  <!-- Comprehensive Table -->
+  <div class="table-wrapper">
+    <div class="table-header">
+      <h3><i class="ti ti-users-minus"></i> All Rejected Applicants</h3>
+      <span id="filteredCountBadge" class="count-badge">{{ rejected_students|length }}</span>
+    </div>
+    <div class="table-responsive">
+      <table id="rejectedRegistryTable">
+        <thead>
+          <tr>
+            <th>S.No</th>
+            <th>Roll Number</th>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Branch</th>
+            <th>Phone</th>
+            <th>Company</th>
+            <th>Role</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if rejected_students %}
+            {% for s in rejected_students %}
+            <tr class="registry-row" data-search="{{ s.name|lower }} {{ s.roll_number|lower }} {{ s.branch|lower }} {{ s.company_name|lower }} {{ s.role|lower }}">
+              <td class="row-index">{{ loop.index }}</td>
+              <td class="roll-no">{{ s.roll_number or 'N/A' }}</td>
+              <td>{{ s.name }}</td>
+              <td>{{ s.email }}</td>
+              <td><span style="background:var(--badge-bg); padding:4px 8px; border-radius:10px; font-size:11px; color:var(--text-accent); font-weight:700;">{{ s.branch }}</span></td>
+              <td>{{ s.phone_number or 'N/A' }}</td>
+              <td style="font-weight: 700; color: var(--text-accent);">{{ s.company_name }}</td>
+              <td>{{ s.role }}</td>
+            </tr>
+            {% endfor %}
+          {% else %}
+            <tr id="noDataRow">
+              <td colspan="8" style="text-align:center; padding: 40px; color:var(--text-muted);">
+                <div class="empty-state">
+                  <i class="ti ti-info-circle"></i>
+                  <span>No rejected records found.</span>
+                </div>
+              </td>
+            </tr>
+          {% endif %}
+          <tr id="noResultsRow" style="display: none;">
+            <td colspan="8" style="text-align:center; padding: 40px; color:var(--text-muted);">
+              <div class="empty-state">
+                <i class="ti ti-search-off"></i>
+                <span>No matching records found.</span>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+// Live registry search/filter
+const registrySearch = document.getElementById('registrySearch');
+const rows = document.querySelectorAll('.registry-row');
+const noResultsRow = document.getElementById('noResultsRow');
+const noDataRow = document.getElementById('noDataRow');
+const filteredCountBadge = document.getElementById('filteredCountBadge');
+const registryTotalCount = document.getElementById('registryTotalCount');
+
+if (registrySearch) {
+  registrySearch.addEventListener('input', function() {
+    const query = this.value.toLowerCase().trim();
+    let visibleCount = 0;
+
+    if (!rows || rows.length === 0) return;
+
+    rows.forEach((row, index) => {
+      const searchText = row.getAttribute('data-search');
+      if (searchText.includes(query)) {
+        row.style.display = '';
+        visibleCount++;
+        // Update index number on matching rows dynamically for clean list numbering
+        row.querySelector('.row-index').textContent = visibleCount;
+      } else {
+        row.style.display = 'none';
+      }
+    });
+
+    filteredCountBadge.textContent = visibleCount;
+
+    if (visibleCount === 0) {
+      noResultsRow.style.display = '';
+    } else {
+      noResultsRow.style.display = 'none';
+    }
+  });
+}
+
+// Theme Toggle
+const themeToggle = document.getElementById('themeToggleBtn');
+if (themeToggle) {
+  themeToggle.addEventListener('click', () => {
+    const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
+    const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', newTheme);
+    localStorage.setItem('faculty-theme', newTheme);
+    const icon = themeToggle.querySelector('i');
+    if (icon) {
+      icon.className = newTheme === 'dark' ? 'ti ti-sun' : 'ti ti-moon';
+    }
+  });
+
+  const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
+  const icon = themeToggle.querySelector('i');
+  if (icon) {
+    icon.className = currentTheme === 'dark' ? 'ti ti-sun' : 'ti ti-moon';
+  }
+}
+</script>
+</body>
+</html>
