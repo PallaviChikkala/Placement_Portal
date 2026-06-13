@@ -65,6 +65,22 @@ body.dark-mode h3.profile-name {
     color: rgb(242, 197, 72) !important;
 }
     
+.profile-avatar-default {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    border: 4px solid white;
+    background: #f8f9fa;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: var(--glass-shadow);
+}
+
+.profile-avatar-default i {
+    font-size: 70px;
+    color: #6c757d;
+}
     </style>
 </head>
 <body class="premium-animated-bg">
@@ -182,7 +198,9 @@ body.dark-mode h3.profile-name {
                 <div class="p-4 text-center text-sm-start">
                     <div class="d-sm-flex justify-content-between align-items-end gap-4 profile-avatar-container pe-4">
                         <div class="d-sm-flex align-items-end gap-4">
-                            <img src="{{ student.profile_photo or ('https://ui-avatars.com/api/?name=' ~ student.name|urlencode ~ '&background=random&size=128') }}" class="profile-avatar" alt="Student Profile Picture">
+                           <img src="{{ student.profile_photo if student.profile_photo and student.profile_photo != '/static/default_avatar.png' and student.profile_photo != '/static/StudentLogin.png' else '/static/default_profile.png' }}"
+     class="profile-avatar"
+     alt="Profile Photo">
                             <div class="mb-3">
                                 <h3 class="mb-1 profile-name fw-bold">
                                     {{ student.name }}
@@ -357,6 +375,19 @@ window.onload = function() {
         document.body.classList.add("dark-mode");
     }
 }
+{% if must_change_password == 1 %}
+
+document.addEventListener("DOMContentLoaded", function() {
+    alert("Welcome! This is your first login. Please change your password.");
+
+    const passwordModal = new bootstrap.Modal(
+        document.getElementById('changePasswordModal')
+    );
+    passwordModal.show();
+});
+
+{% endif %}
 </script>
+
 </body>
 </html>

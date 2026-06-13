@@ -194,6 +194,26 @@ tr:hover td { background-color:rgba(253,230,138,0.12); }
 [data-theme="dark"] .branches-checkbox-grid { background: var(--input-bg); border-color: var(--input-border); }
 [data-theme="dark"] .branch-check-label { color: var(--text-main); }
 [data-theme="dark"] .column-option input[type="checkbox"], [data-theme="dark"] .branch-check-label input[type="checkbox"] { background-color: var(--input-bg); }
+.delete-all-btn {
+  background: #fee2e2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+  padding: 8px 16px;
+  border-radius: 30px;
+  font-weight: 600;
+  font-size: 13px;
+  font-family: 'DM Sans', sans-serif;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.delete-all-btn:hover {
+  background: #fecaca;
+  color: #991b1b;
+}
 </style>
 </head>
 <body>
@@ -222,6 +242,13 @@ tr:hover td { background-color:rgba(253,230,138,0.12); }
     <div style="display:flex;gap:12px;flex-wrap:wrap;">
       <button class="edit-action-btn" onclick="openAddModal()"><i class="ti ti-plus"></i> Add Job Opening</button>
       <button class="back-home-btn" onclick="openCriteriaModal()" style="border-color:#fde68a;"><i class="ti ti-adjustments"></i> Add Criteria Column</button>
+      <form action="/faculty/jobs/delete_all" method="POST"
+      style="display:inline-block; margin-left:12px;"
+      onsubmit="return confirm('Are you sure you want to delete all job openings? This action cannot be undone.');">
+    <button type="submit" class="delete-all-btn">
+        <i class="ti ti-trash"></i> Delete All Job Openings
+    </button>
+</form>
     </div>
     <div style="display:flex;gap:16px;align-items:center;">
       <div style="font-size:13px;font-weight:700;color:#b45309;"><i class="ti ti-shield-check"></i> Complete Faculty Authorization</div>

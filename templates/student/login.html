@@ -4,184 +4,476 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Student Login - Placement Portal</title>
-    <!-- Bootstrap & Icons -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    <!-- Custom Style System -->
-    <link rel="stylesheet" href="/static/css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --primary: #d97706; /* Amber-600 */
+            --primary-hover: #b45309; /* Amber-700 */
+            --accent: #f59e0b; /* Amber-500 */
+            --bg-color: #fdfbf7;
+            --panel-bg: rgba(255, 255, 255, 0.9);
+            --form-bg: #ffffff;
+            --border: rgba(217, 119, 6, 0.15);
+            --text-main: #271c19;
+            --text-muted: #78716c;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         body {
-            background: linear-gradient(135deg, #faf8f5 0%, #fef8e6 50%, #f5eada 100%);
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
             padding: 20px;
-        }
-        .login-container {
-            width: 100%;
-            max-width: 950px;
-            min-height: 550px;
+            background-image: 
+                radial-gradient(circle at 0% 0%, rgba(245, 158, 11, 0.1), transparent 40%),
+                radial-gradient(circle at 100% 100%, rgba(217, 119, 6, 0.1), transparent 40%),
+                linear-gradient(135deg, #fffdfa 0%, #fef8e6 50%, #f5eada 100%);
             overflow: hidden;
-            border-radius: var(--radius-lg);
-            border: 1px solid rgba(217, 119, 6, 0.15);
-            box-shadow: 0 24px 60px rgba(120, 53, 15, 0.08);
-            background-color: white;
         }
-        .login-info-panel {
-            background: linear-gradient(135deg, #fdfbf7 0%, #fef8e6 100%);
-            border-right: 1px solid var(--border-color);
+
+        .back-link {
+            position: absolute;
+            top: 2rem;
+            left: 2rem;
+            color: var(--text-muted);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 600;
+            transition: color 0.3s;
+            z-index: 10;
+        }
+        
+        .back-link:hover {
+            color: var(--primary);
+        }
+
+        .login-wrapper {
+            width: 100%;
+            max-width: 1000px;
+            display: flex;
+            border-radius: 24px;
+            overflow: hidden;
+            background: var(--panel-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--border);
+            box-shadow: 0 25px 60px -12px rgba(120, 53, 15, 0.15);
+            animation: slideUp 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        /* Left Branding Panel */
+        .brand-panel {
+            flex: 1;
+            padding: 4rem;
             display: flex;
             flex-direction: column;
             justify-content: center;
-            align-items: center;
-            padding: 40px;
+            background: linear-gradient(135deg, rgba(254, 243, 199, 0.5) 0%, rgba(255, 255, 255, 0.8) 100%);
+            border-right: 1px solid var(--border);
             position: relative;
+            overflow: hidden;
         }
-        .login-info-panel::before {
+
+        @media (max-width: 868px) {
+            .brand-panel {
+                display: none;
+            }
+        }
+
+        .brand-panel::before {
             content: '';
             position: absolute;
             top: -50%;
             left: -50%;
             width: 200%;
             height: 200%;
-            background: radial-gradient(circle, rgba(245, 158, 11, 0.05) 0%, transparent 60%);
-            pointer-events: none;
+            background: radial-gradient(circle, rgba(245, 158, 11, 0.08) 0%, transparent 50%);
+            animation: rotate 20s linear infinite;
         }
-        .login-form-panel {
-            background-color: #ffffff;
-            padding: 50px 45px;
+
+        .brand-content {
+            position: relative;
+            z-index: 1;
+        }
+
+        .brand-logo {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 72px;
+            height: 72px;
+            background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+            border: 1px solid rgba(245, 158, 11, 0.2);
+            border-radius: 20px;
+            margin-bottom: 2rem;
+            color: var(--primary);
+            box-shadow: 0 10px 20px rgba(217, 119, 6, 0.15);
+        }
+
+        .brand-panel h1 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 2.5rem;
+            font-weight: 800;
+            line-height: 1.2;
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, #b45309 0%, #f59e0b 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .brand-panel p {
+            color: var(--text-muted);
+            line-height: 1.6;
+            font-size: 1.1rem;
+        }
+
+        /* Right Form Panel */
+        .form-panel {
+            flex: 1;
+            padding: 4rem;
+            background: var(--form-bg);
             display: flex;
             flex-direction: column;
             justify-content: center;
         }
-        .logo-img {
-            width: 80px;
-            height: 80px;
-            object-fit: contain;
-            border-radius: 50%;
-            border: 2px solid var(--accent);
-            box-shadow: 0 0 15px rgba(245, 158, 11, 0.25);
-            margin-bottom: 20px;
-        }
-        .glow-btn {
-            background: linear-gradient(135deg, var(--accent) 0%, #d97706 100%);
-            border: none;
-            color: white;
-            font-weight: 700;
-            letter-spacing: 0.5px;
-            padding: 14px;
-            border-radius: var(--radius-full);
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: 0 4px 20px rgba(245, 158, 11, 0.25);
-        }
-        .glow-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 30px rgba(245, 158, 11, 0.4);
-            color: white;
-        }
-        .glow-btn:active {
-            transform: translateY(0);
-        }
-        input[type="password"]::-ms-reveal,
-input[type="password"]::-ms-clear {
-    display: none;
-}
 
-input[type="password"]::-webkit-credentials-auto-fill-button,
-input[type="password"]::-webkit-textfield-decoration-container {
+        .form-header {
+            margin-bottom: 2.5rem;
+        }
+
+        .form-header h2 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 2.2rem;
+            font-weight: 800;
+            margin-bottom: 0.5rem;
+            color: #1c1917;
+        }
+
+        .form-header p {
+            color: var(--text-muted);
+            font-size: 1rem;
+        }
+
+        .error-alert {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            color: #b91c1c;
+            padding: 1rem;
+            border-radius: 12px;
+            margin-bottom: 1.5rem;
+            font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 500;
+        }
+
+        /* Input Styles */
+        .input-group {
+            margin-bottom: 1.5rem;
+            position: relative;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: #44403c;
+            transition: color 0.3s;
+        }
+
+        .input-field {
+            width: 100%;
+            background: #fdfaf6;
+            border: 1.5px solid #e7e5e4;
+            border-radius: 12px;
+            padding: 1rem 1.25rem;
+            color: var(--text-main);
+            font-family: 'Inter', sans-serif;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            outline: none;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+        }
+
+        .input-field:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.15), inset 0 2px 4px rgba(0,0,0,0.02);
+            background: #ffffff;
+        }
+
+        .input-field:focus + label,
+        .input-group:focus-within label {
+            color: var(--primary);
+        }
+
+        .password-toggle {
+    position: absolute;
+    right: 1.25rem;
+    top: 2.6rem;
+    background: none;
+    border: none;
+    color: #a8a29e;
+    cursor: pointer;
+    padding: 0;
+}
+     
+input::-ms-reveal,
+input::-ms-clear {
     display: none !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
 }
 #password {
-    padding-right: 50px;
+    padding-right: 3.5rem;
 }
+        .password-toggle:hover {
+            color: var(--primary);
+        }
+
+        /* Form Actions */
+        .form-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2.5rem;
+            font-size: 0.95rem;
+        }
+
+        .checkbox-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #57534e;
+            cursor: pointer;
+            font-weight: 500;
+        }
+
+        .checkbox-wrapper input[type="checkbox"] {
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border: 2px solid #d6d3d1;
+            border-radius: 6px;
+            background: transparent;
+            cursor: pointer;
+            position: relative;
+            transition: all 0.2s;
+        }
+
+        .checkbox-wrapper input[type="checkbox"]:checked {
+            background: var(--primary);
+            border-color: var(--primary);
+        }
+
+        .checkbox-wrapper input[type="checkbox"]:checked::after {
+            content: '';
+            position: absolute;
+            left: 4px;
+            top: 1px;
+            width: 4px;
+            height: 8px;
+            border: solid white;
+            border-width: 0 2px 2px 0;
+            transform: rotate(45deg);
+        }
+
+        .forgot-link {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 600;
+            transition: color 0.3s;
+        }
+
+        .forgot-link:hover {
+            color: var(--primary-hover);
+            text-decoration: underline;
+        }
+
+        .submit-btn {
+            width: 100%;
+            background: linear-gradient(135deg, var(--accent) 0%, var(--primary) 100%);
+            color: white;
+            border: none;
+            padding: 1.1rem;
+            border-radius: 12px;
+            font-family: 'Inter', sans-serif;
+            font-size: 1.05rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            box-shadow: 0 8px 20px rgba(217, 119, 6, 0.3);
+            position: relative;
+            overflow: hidden;
+            letter-spacing: 0.5px;
+        }
+
+        .submit-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            transition: left 0.6s ease;
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 25px rgba(217, 119, 6, 0.4);
+        }
+
+        .submit-btn:hover::before {
+            left: 100%;
+        }
+
+        .submit-btn:active {
+            transform: translateY(0);
+        }
+
+        /* Shapes */
+        .ambient-shape {
+            position: absolute;
+            filter: blur(100px);
+            border-radius: 50%;
+            z-index: -1;
+            opacity: 0.5;
+        }
+
+        .shape-top {
+            width: 400px;
+            height: 400px;
+            background: #fbbf24;
+            top: -100px;
+            left: -100px;
+            animation: pulse 8s infinite alternate ease-in-out;
+        }
+
+        .shape-bottom {
+            width: 300px;
+            height: 300px;
+            background: #f59e0b;
+            bottom: -50px;
+            right: -50px;
+            animation: pulse 10s infinite alternate-reverse ease-in-out;
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(40px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 0.4; }
+            100% { transform: scale(1.2); opacity: 0.7; }
+        }
+
     </style>
 </head>
 <body>
 
-    <div class="card login-container border-0 animated-fade-in-up">
-        <div class="row g-0 h-100">
-            <!-- Left Info Panel -->
-            <div class="col-lg-6 login-info-panel text-center d-none d-lg-flex">
-                <div class="mb-4">
-                    <h3 class="text-primary fw-bold mb-2" style="font-family: var(--font-heading);">Placement Portal</h3>
-                    <p class="text-muted px-4">Your single platform to prepare, apply, and secure your dream career.</p>
+    <a href="/" class="back-link">
+        <svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" height="1.2em" width="1.2em" xmlns="http://www.w3.org/2000/svg"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+        Back to Home
+    </a>
+
+    <div class="ambient-shape shape-top"></div>
+    <div class="ambient-shape shape-bottom"></div>
+
+    <div class="login-wrapper">
+        <!-- Left Branding Panel -->
+        <div class="brand-panel">
+            <div class="brand-content">
+                <div class="brand-logo">
+                    <svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" height="2.5em" width="2.5em" xmlns="http://www.w3.org/2000/svg"><path d="M22 10v6M2 10l10-5 10 5-10 5z"></path><path d="M6 12v5c3 3 9 3 12 0v-5"></path></svg>
                 </div>
-                <img src="/static/ChatGPT Image Jun 4, 2026, 10_48_06 AM.png"
-                     class="img-fluid animated-fade-in delay-200"
-                     style="max-width: 80%; max-height: 280px; object-fit: contain; filter: drop-shadow(0 15px 25px rgba(120, 53, 15, 0.08));"
-                     alt="Portal Illustration">
-                <div class="mt-4 text-muted small">
-                    <i class="bi bi-shield-lock-fill text-warning me-2"></i> Secured Student Authentication Portal
-                </div>
+                <h1>Welcome to<br>Student Portal</h1>
+                <p>Unlock your career potential. Access exclusive opportunities, track your applications, and prepare for your future.</p>
+            </div>
+        </div>
+
+        <!-- Right Form Panel -->
+        <div class="form-panel">
+            <div class="form-header">
+                <h2>Sign In</h2>
+                <p>Enter your credentials to access your account</p>
             </div>
 
-            <!-- Right Form Panel -->
-            <div class="col-lg-6 col-md-12 login-form-panel">
-                <div class="text-center text-lg-start mb-4">
-                    <img src="/static/StudentLogin.png" class="logo-img" alt="NIT AP Logo">
-                    <h2 class="text-primary fw-extrabold mb-1" style="font-family: var(--font-heading); font-size: 2rem;">Welcome Back</h2>
-                    
-                    <p class="text-muted">Log in to check your eligibility and manage applications.</p>
+            <form action="/student_login_check" method="POST" id="normalLoginForm">
+                {% if error %}
+                <div class="error-alert">
+                    <svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" height="1.2em" width="1.2em" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                    {{ error }}
                 </div>
-                
+                {% endif %}
 
-                <form action="/student_login_check" method="POST" class="mt-2" id="normalLoginForm">
-                    {% if error %}
-                    <div class="alert alert-danger py-2 px-3 mb-3 small text-center" style="border-radius: var(--radius-sm); border: 1px solid rgba(239, 68, 68, 0.3);">
-                        <i class="bi bi-exclamation-circle me-1"></i> {{ error }}
-                    </div>
-                    {% endif %}
-                    
-                    <!-- Email Input -->
-                    <div class="floating-group">
-                        <input type="email" name="email" class="form-premium floating-input" placeholder=" " required id="email">
-                        <label for="email" class="floating-label">Student Email Address</label>
-                    </div>
-
-                    <!-- Password Input -->
-                    <div class="floating-group position-relative">
-                        <input type="password" name="password" id="password" class="form-premium floating-input" placeholder=" " required>
-                        <label for="password" class="floating-label">Password</label>
-                        <button type="button" class="btn position-absolute end-0 top-50 translate-middle-y border-0 bg-transparent text-muted" onclick="togglePasswordVisibility()" style="padding-right: 16px;">
-                            <i id="eyeIcon" class="bi bi-eye-slash fs-5"></i>
-                        </button>
-                    </div>
-
-                    <div class="d-flex justify-content-between align-items-center mb-4 text-muted">
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" id="rememberMe" name="rememberMe" style="border-color: var(--border-color);">
-                            <label class="form-check-label small" for="rememberMe">Remember me</label>
-                        </div>
-                        <a href="/forgot_password" class="text-warning text-decoration-none small fw-bold">Forgot password?</a>
-                    </div>
-
-                    <button type="submit" class="btn w-100 glow-btn py-3">LOGIN</button>
-                </form>
-
-                <div class="mt-4 text-center text-muted small">
-                    Need help? Contact college placement cell at <a href="mailto:placements@nitap.ac.in" class="text-warning text-decoration-none">placements@nitap.ac.in</a>
+                <div class="input-group">
+                    <label for="email">Student Email</label>
+                    <input type="email" id="email" name="email" class="input-field" placeholder="student@nitap.ac.in" required autocomplete="email">
                 </div>
+
+                <div class="input-group">
+                    <label for="password">Password</label>
+<input type="password" id="password" name="password" class="input-field" placeholder="••••••••" required autocomplete="new-password">                    <button type="button" class="password-toggle" onclick="togglePasswordVisibility()" aria-label="Toggle password visibility">
+                        <svg id="eyeIcon" stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" height="1.2em" width="1.2em" xmlns="http://www.w3.org/2000/svg"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                    </button>
+                </div>
+
+                <div class="form-actions">
+                    <label class="checkbox-wrapper">
+                        <input type="checkbox" name="rememberMe" id="rememberMe">
+                        <span>Remember me</span>
+                    </label>
+                    <a href="/forgot_password" class="forgot-link">Forgot password?</a>
+                </div>
+
+                <button type="submit" class="submit-btn">Login to Dashboard</button>
+            </form>
+            
+            <div style="text-align: center; margin-top: 2.5rem; color: #78716c; font-size: 0.9rem; font-weight: 500;">
+                Need help? Contact placement cell at <br> <a href="mailto:tap@nitandhra.ac.in" style="color: var(--primary); text-decoration: none; font-weight: 600;">tap@nitandhra.ac.in</a>
             </div>
         </div>
     </div>
 
-    <!-- Bootstrap Bundle JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         function togglePasswordVisibility() {
             const passwordField = document.getElementById("password");
             const eyeIcon = document.getElementById("eyeIcon");
+            
             if (passwordField.type === "password") {
                 passwordField.type = "text";
-                eyeIcon.classList.remove("bi-eye-slash");
-                eyeIcon.classList.add("bi-eye");
+                eyeIcon.innerHTML = '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line>';
             } else {
                 passwordField.type = "password";
-                eyeIcon.classList.remove("bi-eye");
-                eyeIcon.classList.add("bi-eye-slash");
+                eyeIcon.innerHTML = '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle>';
             }
         }
+        
+        // Form subtle animation on load
+        document.querySelectorAll('.input-group').forEach((el, index) => {
+            el.style.opacity = '0';
+            el.style.transform = 'translateY(10px)';
+            el.style.animation = `slideUp 0.5s ease forwards ${0.4 + (index * 0.1)}s`;
+        });
     </script>
 </body>
 </html>
