@@ -201,7 +201,13 @@ def init_database():
                 UNIQUE KEY unique_round_result (job_id, student_id, round_number)
             )
         """)
-       
+
+        # Ensure drive_link column exists in round_results (added in v2)
+        try:
+            cursor.execute("ALTER TABLE round_results ADD COLUMN drive_link TEXT DEFAULT NULL")
+        except Exception:
+            pass
+
        
         # Create notifications table
         cursor.execute("""
@@ -1598,38 +1604,33 @@ def faculty_recruitment_process():
         """, (j["job_id"],))
         students = cursor.fetchall()
 
-        # Get round results for all students in this job
+        # Get round results for all students in this job (include drive_link)
         cursor.execute("""
-            SELECT student_id, round_number, result
+            SELECT student_id, round_number, result, drive_link
             FROM round_results
             WHERE job_id=%s
         """, (j["job_id"],))
         rr_rows = cursor.fetchall()
-        # Build a dict: {student_id: {round_number: result}}
+        # Build dicts: {student_id: {round_number: result}} and {student_id: {round_number: drive_link}}
         round_map = {}
+        link_map  = {}
         for rrow in rr_rows:
             sid = rrow["student_id"]
             rnd = rrow["round_number"]
-            res = rrow["result"]
-            if sid not in round_map:
-                round_map[sid] = {}
-            round_map[sid][rnd] = res
+            round_map.setdefault(sid, {})[rnd] = rrow["result"]
+            link_map.setdefault(sid,  {})[rnd] = rrow["drive_link"] or ""
 
-        # Filter out students who are "Not Selected" in any previous round
+        # Include ALL students (even not-selected) so faculty can see full picture
         students_list = []
         for s in students:
             sid = s["student_id"]
             s_dict = dict(s)
             s_dict["rounds"] = {}
-            eliminated = False
+            s_dict["links"]  = {}
             for rnd in range(1, jdict["num_rounds"] + 1):
-                res = round_map.get(sid, {}).get(rnd, "Pending")
-                s_dict["rounds"][rnd] = res
-                if res == "Not Selected":
-                    eliminated = True
-                    break
-            if not eliminated:
-                students_list.append(s_dict)
+                s_dict["rounds"][rnd] = round_map.get(sid, {}).get(rnd, "Pending")
+                s_dict["links"][rnd]  = link_map.get(sid,  {}).get(rnd, "")
+            students_list.append(s_dict)
 
         jdict["students"] = students_list
         jdict["applicant_count"] = len(list(students))
@@ -1688,6 +1689,8 @@ def export_recruitment_excel(job_id):
     redir = faculty_required()
     if redir: return redir
 
+    round_num = request.args.get('round', type=int)
+
     cursor.execute("SELECT company_name, role FROM jobs WHERE job_id = %s", (job_id,))
     job = cursor.fetchone()
     if not job:
@@ -1696,12 +1699,31 @@ def export_recruitment_excel(job_id):
     company_name = job["company_name"]
     role_name = job["role"]
 
-    # Get number of rounds
     cursor.execute("SELECT num_rounds FROM recruitment_rounds WHERE job_id=%s", (job_id,))
     rr = cursor.fetchone()
     num_rounds = rr["num_rounds"] if rr else 1
 
-    # Get all applicants
+    import openpyxl
+    from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
+    from openpyxl.utils import get_column_letter
+    import io
+
+    amber_fill = PatternFill(start_color="F59E0B", end_color="F59E0B", fill_type="solid")
+    blue_fill  = PatternFill(start_color="3B82F6", end_color="3B82F6", fill_type="solid")
+    green_fill = PatternFill(start_color="10B981", end_color="10B981", fill_type="solid")
+    red_fill   = PatternFill(start_color="EF4444", end_color="EF4444", fill_type="solid")
+    white_font   = Font(name="Calibri", size=11, bold=True, color="FFFFFF")
+    title_font   = Font(name="Calibri", size=14, bold=True, color="78350F")
+    regular_font = Font(name="Calibri", size=11)
+    instr_font   = Font(name="Calibri", size=10, italic=True, color="6B7280")
+    center_align = Alignment(horizontal="center", vertical="center", wrap_text=True)
+    left_align   = Alignment(horizontal="left",   vertical="center")
+    thin_border  = Border(
+        left=Side(style='thin', color='E5E7EB'), right=Side(style='thin', color='E5E7EB'),
+        top=Side(style='thin', color='E5E7EB'),  bottom=Side(style='thin', color='E5E7EB')
+    )
+
+    # Fetch all applicants
     cursor.execute("""
         SELECT s.student_id, s.name, s.branch, s.roll_number, s.email, s.phone_number
         FROM applications a
@@ -1709,94 +1731,311 @@ def export_recruitment_excel(job_id):
         WHERE a.job_id = %s
         ORDER BY s.name ASC
     """, (job_id,))
-    students = cursor.fetchall()
+    all_students = cursor.fetchall()
 
-    # Get round results
-    cursor.execute("SELECT student_id, round_number, result FROM round_results WHERE job_id=%s", (job_id,))
+    # Fetch existing round results (including drive_link)
+    cursor.execute("SELECT student_id, round_number, result, drive_link FROM round_results WHERE job_id=%s", (job_id,))
     rr_rows = cursor.fetchall()
     round_map = {}
+    link_map  = {}
     for rrow in rr_rows:
         sid = rrow["student_id"]
-        if sid not in round_map:
-            round_map[sid] = {}
-        round_map[sid][rrow["round_number"]] = rrow["result"]
+        rnd = rrow["round_number"]
+        round_map.setdefault(sid, {})[rnd] = rrow["result"]
+        link_map.setdefault(sid,  {})[rnd] = rrow["drive_link"] or ""
 
-    import openpyxl
-    from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
-    from openpyxl.utils import get_column_letter
-    import io
+    # ── PER-ROUND EXPORT ─────────────────────────────────────────────────────────
+    if round_num:
+        # Filter eligible students: selected in all prior rounds (or all for round 1)
+        eligible = []
+        for s in all_students:
+            sid = s["student_id"]
+            ok = True
+            for prev in range(1, round_num):
+                if round_map.get(sid, {}).get(prev, "Pending") == "Not Selected":
+                    ok = False
+                    break
+            if ok:
+                eligible.append(s)
 
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = f"Round {round_num}"
+
+        # Title
+        ws.merge_cells(start_row=1, start_column=1, end_row=1, end_column=9)
+        ws.cell(1, 1).value = f"Round {round_num} — {company_name} ({role_name})"
+        ws.cell(1, 1).font = title_font
+        ws.cell(1, 1).alignment = left_align
+        ws.row_dimensions[1].height = 30
+
+        # Instructions
+        ws.merge_cells(start_row=2, start_column=1, end_row=2, end_column=9)
+        ws.cell(2, 1).value = (
+            f"INSTRUCTIONS: In column 'Round {round_num}', enter {round_num} if student is selected, "
+            f"0 if not selected. Paste the Google Drive / interview link in 'Drive Link' column for selected students."
+        )
+        ws.cell(2, 1).font = instr_font
+        ws.cell(2, 1).alignment = left_align
+        ws.row_dimensions[2].height = 22
+
+        # Headers (row 3)
+        hdrs = [
+            "S.No", "Student ID", "Roll No", "Student Name", "Branch", "Email", "Phone",
+            f"Round {round_num}  (enter {round_num}=selected / 0=not selected)",
+            "Drive Link  (paste here for selected students)"
+        ]
+        for ci, h in enumerate(hdrs, 1):
+            c = ws.cell(3, ci, h)
+            c.font  = white_font
+            c.fill  = amber_fill if ci <= 7 else blue_fill
+            c.alignment = center_align
+            c.border = thin_border
+        ws.row_dimensions[3].height = 36
+
+        # Data rows
+        for ri, s in enumerate(eligible, 1):
+            row_num = ri + 3
+            sid = s["student_id"]
+            existing_res  = round_map.get(sid, {}).get(round_num, "")
+            existing_link = link_map.get(sid, {}).get(round_num, "")
+            if existing_res == "Selected":
+                rval = round_num
+            elif existing_res == "Not Selected":
+                rval = 0
+            else:
+                rval = ""
+            vals = [ri, sid, s["roll_number"] or "—", s["name"], s["branch"],
+                    s["email"], s["phone_number"] or "—", rval, existing_link]
+            for ci, v in enumerate(vals, 1):
+                c = ws.cell(row_num, ci, v)
+                c.font  = regular_font
+                c.alignment = left_align if ci in (4, 6, 9) else center_align
+                c.border = thin_border
+
+        # Column widths
+        for ci, w in enumerate([6, 12, 15, 28, 16, 32, 14, 44, 52], 1):
+            ws.column_dimensions[get_column_letter(ci)].width = w
+
+        out = io.BytesIO()
+        wb.save(out)
+        out.seek(0)
+        from flask import send_file
+        clean = "".join([ch for ch in company_name if ch.isalnum() or ch in (' ', '_')]).strip()
+        return send_file(out, mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                         as_attachment=True,
+                         download_name=f"Round{round_num}_{clean}_{job_id}.xlsx")
+
+    # ── FULL SUMMARY EXPORT (no round param) ─────────────────────────────────────
     wb = openpyxl.Workbook()
     ws = wb.active
     ws.title = "Recruitment Process"
 
-    amber_fill = PatternFill(start_color="F59E0B", end_color="F59E0B", fill_type="solid")
-    green_fill = PatternFill(start_color="10B981", end_color="10B981", fill_type="solid")
-    red_fill = PatternFill(start_color="EF4444", end_color="EF4444", fill_type="solid")
-    white_font = Font(name="Calibri", size=11, bold=True, color="FFFFFF")
-    title_font = Font(name="Calibri", size=14, bold=True, color="78350F")
-    regular_font = Font(name="Calibri", size=11)
-    center_align = Alignment(horizontal="center", vertical="center")
-    left_align = Alignment(horizontal="left", vertical="center")
-    thin_border = Border(
-        left=Side(style='thin', color='E5E7EB'), right=Side(style='thin', color='E5E7EB'),
-        top=Side(style='thin', color='E5E7EB'), bottom=Side(style='thin', color='E5E7EB')
-    )
+    # num_cols = 6 base + (Round + Drive Link) * num_rounds
+    num_cols = 6 + num_rounds * 2
 
-    # Title
-    num_cols = 6 + num_rounds
     ws.merge_cells(start_row=1, start_column=1, end_row=1, end_column=num_cols)
     ws.cell(1, 1).value = f"Recruitment Process — {company_name} ({role_name})"
-    ws.cell(1, 1).font = title_font
+    ws.cell(1, 1).font  = title_font
     ws.cell(1, 1).alignment = left_align
     ws.row_dimensions[1].height = 30
 
-    # Headers
     base_headers = ["S.No", "Roll Number", "Student Name", "Branch", "Email", "Phone"]
-    round_headers = [f"Round {i}" for i in range(1, num_rounds + 1)]
+    round_headers = []
+    for i in range(1, num_rounds + 1):
+        round_headers.append(f"Round {i}")
+        round_headers.append(f"Drive Link {i}")
     all_headers = base_headers + round_headers
 
     for ci, h in enumerate(all_headers, 1):
         c = ws.cell(3, ci, h)
-        c.font = white_font
-        c.fill = amber_fill
+        c.font  = white_font
+        c.fill  = amber_fill
         c.alignment = center_align
         c.border = thin_border
     ws.row_dimensions[3].height = 24
 
-    for ri, s in enumerate(students, 1):
+    for ri, s in enumerate(all_students, 1):
         row_num = ri + 3
         sid = s["student_id"]
         vals = [ri, s["roll_number"] or "—", s["name"], s["branch"], s["email"], s["phone_number"] or "—"]
         for ci, v in enumerate(vals, 1):
             c = ws.cell(row_num, ci, v)
-            c.font = regular_font
-            c.alignment = center_align if ci != 3 and ci != 5 else left_align
+            c.font  = regular_font
+            c.alignment = left_align if ci in (3, 5) else center_align
             c.border = thin_border
         for rnd in range(1, num_rounds + 1):
-            res = round_map.get(sid, {}).get(rnd, "Pending")
-            ci = 6 + rnd
-            c = ws.cell(row_num, ci, res)
-            if res in ["Selected", "Not Selected"]:
-                c.font = Font(name="Calibri", size=11, bold=True, color="FFFFFF")
-                c.fill = green_fill if res == "Selected" else red_fill
+            res  = round_map.get(sid, {}).get(rnd, "Pending")
+            link = link_map.get(sid, {}).get(rnd, "")
+            ci_res  = 6 + (rnd - 1) * 2 + 1
+            ci_link = ci_res + 1
+            c = ws.cell(row_num, ci_res, res)
+            if res == "Selected":
+                c.font  = Font(name="Calibri", size=11, bold=True, color="FFFFFF")
+                c.fill  = green_fill
+            elif res == "Not Selected":
+                c.font  = Font(name="Calibri", size=11, bold=True, color="FFFFFF")
+                c.fill  = red_fill
             else:
-                c.font = regular_font
-                c.fill = PatternFill()
+                c.font  = regular_font
+                c.fill  = PatternFill()
             c.alignment = center_align
             c.border = thin_border
+            cl = ws.cell(row_num, ci_link, link or "")
+            cl.font  = regular_font
+            cl.alignment = left_align
+            cl.border = thin_border
 
     for col in ws.columns:
         max_len = max((len(str(c.value or '')) for c in col if c.row >= 3), default=10)
-        ws.column_dimensions[get_column_letter(col[0].column)].width = min(max_len + 4, 30)
+        ws.column_dimensions[get_column_letter(col[0].column)].width = min(max_len + 4, 50)
 
     out = io.BytesIO()
     wb.save(out)
     out.seek(0)
     from flask import send_file
-    clean = "".join([c for c in company_name if c.isalnum() or c in (' ', '_')]).strip()
+    clean = "".join([ch for ch in company_name if ch.isalnum() or ch in (' ', '_')]).strip()
     return send_file(out, mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                     as_attachment=True, download_name=f"RecruitmentProcess_{clean}_{job_id}.xlsx")
+                     as_attachment=True,
+                     download_name=f"RecruitmentProcess_{clean}_{job_id}.xlsx")
+
+
+@app.route("/faculty/recruitment_process/upload_excel/<string:job_id>/<int:round_num>", methods=["POST"])
+def upload_recruitment_excel(job_id, round_num):
+    """Parse an uploaded Round-N Excel and update round_results + auto-finalise application status."""
+    ensure_connection()
+    redir = faculty_required()
+    if redir: return jsonify({"success": False, "error": "Not logged in"})
+
+    if 'excel_file' not in request.files:
+        return jsonify({"success": False, "error": "No file uploaded"})
+
+    file = request.files['excel_file']
+    if not file.filename.lower().endswith('.xlsx'):
+        return jsonify({"success": False, "error": "Please upload a .xlsx file"})
+
+    import openpyxl, io as _io
+
+    try:
+        content = file.read()
+        wb = openpyxl.load_workbook(_io.BytesIO(content), data_only=True)
+        ws = wb.active
+
+        # Locate header row (row 3) and map column names → 1-based column index
+        headers = {}
+        for cell in ws[3]:
+            if cell.value is not None:
+                key = str(cell.value).strip().lower()
+                headers[key] = cell.column
+
+        # Resolve Student ID, Round N, Drive Link columns
+        student_id_col = drive_link_col = round_col = None
+        for key, col in headers.items():
+            if 'student id' in key:
+                student_id_col = col
+            if f'round {round_num}' in key:
+                round_col = col
+            if 'drive link' in key:
+                drive_link_col = col
+
+        if not student_id_col:
+            return jsonify({"success": False, "error": "Could not find 'Student ID' column in the Excel file."})
+        if not round_col:
+            return jsonify({"success": False, "error": f"Could not find 'Round {round_num}' column in the Excel file."})
+
+        updated = 0
+        errors  = []
+
+        for row in ws.iter_rows(min_row=4, values_only=True):
+            raw_sid = row[student_id_col - 1]
+            if raw_sid is None:
+                continue
+            try:
+                student_id   = int(float(str(raw_sid)))
+                round_value  = row[round_col - 1]
+                drive_link   = row[drive_link_col - 1] if drive_link_col else None
+
+                if round_value is None or str(round_value).strip() == "":
+                    continue  # faculty left blank — skip
+
+                rv = float(str(round_value).strip())
+                if rv == 0:
+                    result = "Not Selected"
+                    drive_link = None          # clear link for eliminated students
+                elif rv == round_num:
+                    result = "Selected"
+                else:
+                    continue  # unexpected value — skip
+
+                dl = str(drive_link).strip() if drive_link else None
+                if dl in (None, "", "None"):
+                    dl = None
+
+                cursor.execute("""
+                    INSERT INTO round_results (job_id, student_id, round_number, result, drive_link)
+                    VALUES (%s, %s, %s, %s, %s)
+                    ON DUPLICATE KEY UPDATE result = VALUES(result), drive_link = VALUES(drive_link)
+                """, (job_id, student_id, round_num, result, dl))
+                updated += 1
+            except Exception as row_err:
+                errors.append(str(row_err))
+
+        # ── AUTO-FINALISE WHEN LAST ROUND IS UPLOADED ────────────────────────────
+        cursor.execute("SELECT num_rounds FROM recruitment_rounds WHERE job_id=%s", (job_id,))
+        rr = cursor.fetchone()
+        num_rounds = rr["num_rounds"] if rr else 1
+
+        if round_num == num_rounds:
+            cursor.execute("""
+                SELECT s.student_id
+                FROM applications a
+                JOIN students s ON a.student_id = s.student_id
+                WHERE a.job_id = %s
+            """, (job_id,))
+            all_students = cursor.fetchall()
+
+            cursor.execute("SELECT student_id, round_number, result FROM round_results WHERE job_id=%s", (job_id,))
+            all_results = cursor.fetchall()
+            res_map = {}
+            for r in all_results:
+                res_map.setdefault(r["student_id"], {})[r["round_number"]] = r["result"]
+
+            cursor.execute("SELECT tier FROM jobs WHERE job_id=%s", (job_id,))
+            job_det   = cursor.fetchone()
+            tier_str  = job_det["tier"] if job_det else "Tier 3"
+            tier_num  = 1 if '1' in tier_str else (2 if '2' in tier_str else 3)
+
+            for s in all_students:
+                sid = s["student_id"]
+                sres = res_map.get(sid, {})
+                all_sel = all(sres.get(r, "Pending") == "Selected" for r in range(1, num_rounds + 1))
+                any_not = any(sres.get(r, "Pending") == "Not Selected" for r in range(1, num_rounds + 1))
+
+                if all_sel:
+                    cursor.execute(
+                        "UPDATE applications SET status='Selected' WHERE student_id=%s AND job_id=%s",
+                        (sid, job_id))
+                    cursor.execute(
+                        "UPDATE students SET selected_tier=%s WHERE student_id=%s",
+                        (tier_num, sid))
+                    # Notify student
+                    msg = f"Congratulations! You have been Selected for {job_id}. All {num_rounds} rounds cleared!"
+                    cursor.execute(
+                        "INSERT INTO notifications (student_id, message, link) VALUES (%s, %s, %s)",
+                        (sid, msg, "/my_applications"))
+                elif any_not:
+                    cursor.execute(
+                        "UPDATE applications SET status='Not Selected' WHERE student_id=%s AND job_id=%s",
+                        (sid, job_id))
+
+        db.commit()
+        return jsonify({"success": True, "updated": updated, "errors": errors,
+                        "finalised": (round_num == num_rounds)})
+
+    except Exception as e:
+        db.rollback()
+        return jsonify({"success": False, "error": str(e)})
+
 
 @app.route("/faculty/job_results/<string:job_id>")
 def faculty_job_results_api(job_id):
