@@ -25,6 +25,17 @@ WHERE email = 'pallavi123@gmail.com';
 
 SELECT * FROM students;
 
+SELECT student_id, name, must_change_password
+FROM students;
+
+UPDATE students
+SET must_change_password = 0
+WHERE student_id IN (1,2,3,4,5,6,7);
+
+UPDATE students
+SET must_change_password = 1
+WHERE student_id = 8;
+
 SELECT student_id, name, email FROM students;
 INSERT INTO students(student_id, name, email, password, branch, cgpa, backlogs, skills, selected_tier, batch)
 VALUES

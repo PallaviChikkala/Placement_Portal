@@ -82,7 +82,8 @@ def init_database():
             "ALTER TABLE students ADD COLUMN phone_number VARCHAR(20) DEFAULT NULL",
             "ALTER TABLE students ADD COLUMN aadhar VARCHAR(20) DEFAULT NULL",
             "ALTER TABLE students ADD COLUMN pan VARCHAR(20) DEFAULT NULL",
-            "ALTER TABLE students ADD COLUMN backlog_history INT DEFAULT 0"
+            "ALTER TABLE students ADD COLUMN backlog_history INT DEFAULT 0",
+            "ALTER TABLE students ADD COLUMN must_change_password TINYINT(1) DEFAULT 1"
         ]:
             try:
                 cursor.execute(col_sql)
@@ -278,58 +279,11 @@ def notify_students_new_job(company_name, role):
 
 @app.route("/")
 def home():
-    return '''
-        <form action = "/upload" method = "POST" enctype = "multipart/form-data">
+    return render_template("index.html")
 
-         <select name = "role">
-            <option>Select role</option>
-            <option>Frontend Developer</option>
-            <option>Backend Developer</option>
-            <option>Full Stack Developer</option>
-            <option>Java Developer</option>
-            <option>Python Developer</option>
-            <option>C++ Developer</option>
-            <option>Software Developer</option>
-            <option>Web Developer</option>
-            <option>Mobile App Developer</option>
-            <option>Android Developer</option>
-            <option>iOS Developer</option>
-            <option>React Developer</option>
-            <option>Angular Developer</option>
-            <option>Node.js Developer</option>
-            <option>PHP Developer</option>
-            <option>.NET Developer</option>
-            <option>Database Administrator(DBA)</option>
-            <option>SQL Developer</option>
-            <option>Data Analyst</option>
-            <option>Business Analyst</option>
-            <option>Data Scientist</option>
-            <option>Machine Learning Engineer</option>
-            <option>AI Engineer</option>
-            <option>Deep Learning Engineer</option>
-            <option>Cloud Engineer</option>
-            <option>DevOps Engineer</option>
-            <option>Cybersecurity Engineer</option>
-            <option>Network Engineer</option>
-            <option>Software Test Engineer</option>
-            <option>UI/UX Designer</option>
-            <option>Resume Analyzer</option>
-            <option>Custom</option>
-        </select>
-            <div>
-                <label>Upload JD File (Optional):</label>
-                <input type = "file" name = "jd_file" />
-            </div>
-            <div>
-                <label>Or Paste Custom JD Text:</label><br>
-                <textarea name="custom_jd" rows="5" cols="40" placeholder="Paste custom Job Description here..."></textarea>
-            </div>
-            <br>
-            <label>Upload Student Resume (PDF/DOCX):</label>
-            <input type = "file" name = "resume" placeholder = "Upload resume"/><br>
-            <button type = "submit">Analyze resume</button>
-        </form>
-'''
+@app.route("/resume_analyzer")
+def resume_analyzer():
+    return render_template("resume_analyzer.html")
 
 @app.route("/upload",methods = ["POST"])
 def upload():
@@ -623,6 +577,7 @@ def student_login_check():
     if student:
         session["student_id"] = student["student_id"]
         session["student_name"] = student["name"]
+        session["must_change_password"] = student.get("must_change_password", 1)
         if remember:
             session.permanent = True
         return redirect("/student_dashboard")
@@ -688,10 +643,11 @@ def change_password():
 
     if student:
         cursor.execute(
-            "UPDATE students SET password=%s WHERE student_id=%s",
-            (new_password, session["student_id"])
+    "UPDATE students SET password=%s, must_change_password=0 WHERE student_id=%s",
+    (new_password, session["student_id"])
         )
         db.commit()
+        session["must_change_password"] = 0
         flash("Password changed successfully", "success")
     else:
         flash("Old password is incorrect", "danger")
@@ -810,7 +766,7 @@ def student_dashboard():
 
     return render_template(
         "student/dashboard.html",
-        name=session["student_name"],
+        name=student["name"],
         student=student,
         upcoming_drives=upcoming_drives,
         eligible_count=eligible_count,
@@ -832,7 +788,11 @@ def student_profile():
     cursor.execute(query, (student_id,))
     student = cursor.fetchone()
 
-    return render_template("student/profile.html", student=student)
+    return render_template(
+    "student/profile.html",
+    student=student,
+    must_change_password=session.get("must_change_password", 0)
+)
 
 @app.route("/update_profile", methods=["POST"])
 def update_profile():
@@ -1423,6 +1383,24 @@ def faculty_job_add_column():
         from flask import flash
         flash(f"Error adding column: {str(e)}", "error")
        
+    return redirect("/faculty/jobs")
+
+@app.route("/faculty/jobs/delete_all", methods=["POST"])
+def faculty_jobs_delete_all():
+    ensure_connection()
+    redir = faculty_required()
+    if redir:
+        return redir
+
+    try:
+        cursor.execute("DELETE FROM applications")
+        cursor.execute("DELETE FROM jobs")
+        db.commit()
+        flash("All job openings deleted successfully!", "success")
+    except Exception as e:
+        db.rollback()
+        flash(f"Error deleting job openings: {str(e)}", "error")
+
     return redirect("/faculty/jobs")
 
 
@@ -2218,6 +2196,7 @@ def faculty_master_sheet():
     if redir: return redir
 
     return render_template("faculty/master_sheet.html")
+
 @app.route("/faculty/upload_master_sheet", methods=["POST"])
 def faculty_upload_master_sheet():
     ensure_connection()
@@ -2228,7 +2207,8 @@ def faculty_upload_master_sheet():
     file = request.files.get("master_file")
 
     if not file or file.filename == "":
-        return "No file uploaded"
+        flash("Please choose a file first.", "error")
+        return redirect("/faculty/master_sheet")
 
     filename = secure_filename(file.filename)
     upload_folder = os.path.join(app.static_folder, "uploads")
@@ -2325,20 +2305,22 @@ def faculty_upload_master_sheet():
             cursor.execute("""
                 INSERT INTO students
                 (student_id, roll_number, name, email, password, branch, cgpa,
-                 backlogs, backlog_history, batch, tenth_score, inter_score, skills)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                 backlogs, backlog_history, batch, tenth_score, inter_score, skills,
+                 must_change_password)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """, (
                 next_id, roll_no, name, email, roll_no, branch, cgpa,
                 active_backlogs, backlog_history, batch,
-                tenth_score, inter_score, ""
+                tenth_score, inter_score, "", 1
             ))
+
             inserted += 1
 
     db.commit()
 
     print("UPDATED:", updated)
     print("INSERTED:", inserted)
-
+    flash(f"Master sheet uploaded successfully! {inserted} students added and {updated} students updated.", "success")
     return redirect("/faculty/master_sheet")
 
 

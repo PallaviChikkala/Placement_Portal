@@ -148,14 +148,13 @@ body { min-height:100vh; font-family:'DM Sans',sans-serif; background:var(--bg-g
 
     <div class="row g-4">
       <!-- Upload Excel/CSV -->
-      <div class="col-lg-7">
+      <div class="col-lg-6 mx-auto">
         <div class="card-custom h-100 d-flex flex-column text-center align-items-center justify-content-center">
           <i class="ti ti-file-spreadsheet mb-3" style="font-size: 48px; color: #d97706;"></i>
           <h3 style="font-family:'Syne',sans-serif; font-size:20px; color:#78350f; font-weight:800; margin-bottom:12px;">Upload Master Sheet</h3>
           <p style="font-size:13px; color:#b97f10; margin-bottom:24px;">
-            Upload the student master sheet (<strong>.xlsx, .csv</strong>) to auto-update student profiles and
-            <strong>automatically notify students by email</strong>.<br>Upload a <strong>.pdf</strong> for read-only storage.
-          </p>
+  Upload the master sheet in <strong>.xlsx, .csv, or .pdf</strong> format for student data management and record keeping.
+</p>
           <form action="{{ url_for('faculty_upload_master_sheet') }}" method="POST" enctype="multipart/form-data" class="w-100" style="max-width:320px;">
             <input type="file" name="master_file" accept=".xlsx,.csv,.pdf" class="form-control mb-3" style="border-radius:10px; border-color:rgba(253,230,138,0.8);" required />
             <button type="submit" class="edit-action-btn w-100 justify-content-center">
@@ -164,49 +163,6 @@ body { min-height:100vh; font-family:'DM Sans',sans-serif; background:var(--bg-g
           </form>
         </div>
       </div>
-
-      <!-- Email Behaviour Info Panel -->
-      <div class="col-lg-5">
-        <div class="card-custom h-100" style="background:linear-gradient(135deg,rgba(255,251,235,0.9),rgba(254,243,199,0.7));">
-          <div style="display:flex; align-items:center; gap:10px; margin-bottom:18px;">
-            <span style="width:38px;height:38px;background:linear-gradient(135deg,#f59e0b,#d97706);border-radius:10px;display:flex;align-items:center;justify-content:center;">
-              <i class="ti ti-mail" style="color:#fff;font-size:18px;"></i>
-            </span>
-            <h4 style="font-family:'Syne',sans-serif;font-size:16px;font-weight:800;color:#78350f;margin:0;">Automatic Email Notifications</h4>
-          </div>
-          <p style="font-size:12.5px;color:#5c3b1a;margin-bottom:16px;line-height:1.7;">
-            When you upload an <strong>.xlsx</strong> or <strong>.csv</strong> master sheet, the system automatically:
-          </p>
-          <ul style="list-style:none;padding:0;margin:0 0 20px;display:flex;flex-direction:column;gap:10px;">
-            <li style="display:flex;gap:10px;align-items:flex-start;">
-              <span style="width:26px;height:26px;min-width:26px;background:#d97706;border-radius:50%;display:flex;align-items:center;justify-content:center;">
-                <i class="ti ti-refresh" style="color:#fff;font-size:13px;"></i>
-              </span>
-              <span style="font-size:12.5px;color:#374151;line-height:1.6;">
-                <strong style="color:#78350f;">Updates existing profiles</strong> — finds students by email or roll number and refreshes their CGPA, branch, phone, Aadhar, PAN, etc.
-                Sends each student a <em>"Profile Updated"</em> email listing what changed.
-              </span>
-            </li>
-            <li style="display:flex;gap:10px;align-items:flex-start;">
-              <span style="width:26px;height:26px;min-width:26px;background:#059669;border-radius:50%;display:flex;align-items:center;justify-content:center;">
-                <i class="ti ti-user-plus" style="color:#fff;font-size:13px;"></i>
-              </span>
-              <span style="font-size:12.5px;color:#374151;line-height:1.6;">
-                <strong style="color:#78350f;">Creates new accounts</strong> — if a student's email isn't registered, a new profile is saved in the database.
-                Sends a <em>"Welcome"</em> email with login credentials (temp password = Roll Number).
-              </span>
-            </li>
-          </ul>
-          <div style="background:rgba(245,158,11,0.08);border:1px solid #fde68a;border-radius:10px;padding:12px 14px;">
-            <p style="font-size:11.5px;color:#92400e;margin:0;line-height:1.6;">
-              <i class="ti ti-info-circle" style="vertical-align:middle;"></i>
-              &nbsp;Make sure the sheet has columns: <code>email</code>, <code>name</code>, <code>roll_number</code>, <code>cgpa</code>, <code>branch</code>, <code>batch</code>, <code>phone_number</code>, <code>aadhar</code>, <code>pan</code>.
-              Configure SMTP credentials in <strong>app.py</strong> to enable email delivery.
-            </p>
-          </div>
-        </div>
-      </div>
-    </div>
 
     {% if current_file %}
     <div class="mt-4 card-custom text-center">
@@ -219,7 +175,6 @@ body { min-height:100vh; font-family:'DM Sans',sans-serif; background:var(--bg-g
     {% endif %}
 
   </div>
-</div>
 
 <script>
 // Theme Toggle
