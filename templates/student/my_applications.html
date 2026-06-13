@@ -168,8 +168,8 @@
                                             <span class="badge-custom badge-shortlisted">Shortlisted</span>
                                         {% elif app.status == 'Selected' %}
                                             <span class="badge-custom badge-selected">Selected</span>
-                                        {% elif app.status == 'Rejected' %}
-                                            <span class="badge-custom badge-rejected">Rejected</span>
+                                        {% elif app.status == 'Not Selected' or app.status == 'Rejected' %}
+                                            <span class="badge-custom badge-rejected">Not Selected</span>
                                         {% else %}
                                             <span class="badge-custom badge-pending">{{ app.status }}</span>
                                         {% endif %}
@@ -190,7 +190,7 @@
                                         <div class="stepper-line-active" style="width: 0%;"></div>
                                     {% elif app.status == 'Shortlisted' or app.status == 'Interview' %}
                                         <div class="stepper-line-active" style="width: 66%;"></div>
-                                    {% elif app.status == 'Selected' or app.status == 'Rejected' %}
+                                    {% elif app.status == 'Selected' or app.status == 'Rejected' or app.status == 'Not Selected' %}
                                         <div class="stepper-line-active" style="width: 100%;"></div>
                                     {% else %}
                                         <div class="stepper-line-active" style="width: 33%;"></div>
@@ -240,7 +240,7 @@
                                             <i class="bi bi-trophy"></i>
                                             <span class="step-label" style="left: -16px; color: #10b981;">Hired</span>
                                         </div>
-                                    {% elif app.status == 'Rejected' %}
+                                    {% elif app.status == 'Rejected' or app.status == 'Not Selected' %}
                                         <div class="step-node failed">
                                             <i class="bi bi-x"></i>
                                             <span class="step-label" style="left: -26px; color: #ef4444;">Closed</span>

@@ -140,6 +140,7 @@ body { min-height: 100vh; font-family: 'DM Sans', sans-serif; background: var(--
 .option-card:nth-child(5) { animation-delay: 0.7s; }
 .option-card:nth-child(6) { animation-delay: 0.8s; }
 .option-card:nth-child(7) { animation-delay: 0.9s; }
+.option-card:nth-child(8) { animation-delay: 1.0s; }
 
 .option-card::after {
   content: '';
@@ -308,18 +309,18 @@ body { min-height: 100vh; font-family: 'DM Sans', sans-serif; background: var(--
     <a href="/faculty/job_results" class="option-card">
       <div class="card-icon"><i class="ti ti-report-analytics"></i></div>
       <h3>Job Results Tracker</h3>
-      <p>View selection and rejection tables for each available job opening</p>
+      <p>View selection and not-selected tables for each available job opening</p>
       <div class="card-meta">
         <span class="badge-count">Job-wise tables</span>
         <i class="ti ti-arrow-right" style="color:#d97706;"></i>
       </div>
     </a>
-    <a href="/faculty/rejected_students" class="option-card">
-      <div class="card-icon"><i class="ti ti-user-x"></i></div>
-      <h3>Rejected Students</h3>
-      <p>View complete records of all rejected students across all jobs</p>
+    <a href="/faculty/recruitment_process" class="option-card">
+      <div class="card-icon"><i class="ti ti-git-branch"></i></div>
+      <h3>Recruitment Process</h3>
+      <p>Track multi-round recruitment: set rounds, mark results, and export Excel per job</p>
       <div class="card-meta">
-        <span class="badge-count">Rejected list</span>
+        <span class="badge-count">Round-wise tracker</span>
         <i class="ti ti-arrow-right" style="color:#d97706;"></i>
       </div>
     </a>

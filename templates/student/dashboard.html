@@ -248,8 +248,8 @@
                                                     <span class="badge-custom badge-shortlisted">Shortlisted</span>
                                                 {% elif app.status == 'Selected' %}
                                                     <span class="badge-custom badge-selected">Selected</span>
-                                                {% elif app.status == 'Rejected' %}
-                                                    <span class="badge-custom badge-rejected">Rejected</span>
+                                                {% elif app.status == 'Not Selected' or app.status == 'Rejected' %}
+                                                    <span class="badge-custom badge-rejected">Not Selected</span>
                                                 {% else %}
                                                     <span class="badge-custom badge-pending">{{ app.status }}</span>
                                                 {% endif %}

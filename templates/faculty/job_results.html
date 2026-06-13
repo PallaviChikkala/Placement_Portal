@@ -152,7 +152,7 @@ body { min-height: 100vh; font-family: 'DM Sans', sans-serif; background: var(--
 .table-header h3.rejected-title { color: var(--danger-color); }
 .count-badge { font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: 20px; color: white; }
 .count-badge.selected-badge { background: var(--success-color); }
-.count-badge.rejected-badge { background: var(--danger-color); }
+.count-badge.not-selected-badge { background: var(--danger-color); }
 
 .table-responsive { overflow-x: auto; width: 100%; }
 table { width: 100%; border-collapse: collapse; text-align: left; font-size: 13px; }
@@ -266,11 +266,11 @@ tr:hover { background-color: rgba(253, 230, 138, 0.08); }
         </div>
       </div>
 
-      <!-- Rejected Students -->
+      <!-- Not Selected Students -->
       <div class="table-wrapper">
         <div class="table-header">
-          <h3 class="rejected-title"><i class="ti ti-circle-x"></i> Rejected Students</h3>
-          <span id="rejectedCount" class="count-badge rejected-badge">0</span>
+          <h3 class="rejected-title"><i class="ti ti-circle-x"></i> Not Selected Students</h3>
+          <span id="rejectedCount" class="count-badge not-selected-badge">0</span>
         </div>
         <div class="table-responsive">
           <table id="rejectedTable">
@@ -343,7 +343,7 @@ jobCards.forEach(card => {
       .then(res => res.json())
       .then(data => {
         selectedStudentsData = data.selected || [];
-        rejectedStudentsData = data.rejected || [];
+        rejectedStudentsData = data.not_selected || [];
         
         renderTables();
       })
@@ -418,7 +418,7 @@ function renderTables() {
         <td colspan="5" style="text-align:center; padding: 30px; color:var(--text-muted);">
           <div style="display:flex; flex-direction:column; align-items:center; gap:8px;">
             <i class="ti ti-info-circle" style="font-size:24px;"></i>
-            <span>No rejected students found</span>
+            <span>No not-selected students found</span>
           </div>
         </td>
       </tr>

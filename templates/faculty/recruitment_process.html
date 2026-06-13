@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Recruitment Process Tracker — NIT AP Placement Portal</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script>
+  (function() {
+    const savedTheme = localStorage.getItem('faculty-theme') || 'light';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+  })();
+</script>
+<style>
+:root {
+  --bg-gradient: linear-gradient(145deg, #fffdf5 0%, #fff8e1 40%, #fef3c0 75%, #fffdf5 100%);
+  --header-bg: rgba(255, 255, 255, 0.95);
+  --header-border: rgba(253, 230, 138, 0.6);
+  --card-bg: rgba(255, 255, 255, 0.85);
+  --card-hover-bg: rgba(255, 255, 255, 0.96);
+  --card-border: rgba(253, 230, 138, 0.5);
+  --text-main: #78350f;
+  --text-muted: #b97f10;
+  --text-accent: #b45309;
+  --badge-bg: rgba(253, 230, 138, 0.4);
+  --input-bg: rgba(255, 255, 255, 0.85);
+  --input-border: rgba(253, 230, 138, 0.6);
+  --button-gradient: linear-gradient(135deg, #f59e0b, #d97706);
+  --logout-bg: rgba(255, 255, 240, 0.6);
+  --table-hdr-bg: rgba(253, 230, 138, 0.35);
+  --table-border: rgba(253, 230, 138, 0.4);
+  --shadow-color: rgba(120, 53, 15, 0.05);
+  --shadow-hover: rgba(120, 53, 15, 0.14);
+  --success-color: #10b981;
+  --danger-color: #ef4444;
+  --warning-color: #f59e0b;
+}
+[data-theme="dark"] {
+  --bg-gradient: linear-gradient(145deg, #0f172a 0%, #1e293b 40%, #0f172a 100%);
+  --header-bg: rgba(30, 41, 59, 0.95);
+  --header-border: rgba(245, 158, 11, 0.3);
+  --card-bg: rgba(30, 41, 59, 0.75);
+  --card-hover-bg: rgba(30, 41, 59, 0.92);
+  --card-border: rgba(245, 158, 11, 0.22);
+  --text-main: #f8fafc;
+  --text-muted: #fbbf24;
+  --text-accent: #fbbf24;
+  --badge-bg: rgba(245, 158, 11, 0.2);
+  --input-bg: rgba(15, 23, 42, 0.6);
+  --input-border: rgba(245, 158, 11, 0.3);
+  --button-gradient: linear-gradient(135deg, #fbbf24, #d97706);
+  --logout-bg: rgba(15, 23, 42, 0.4);
+  --table-hdr-bg: rgba(245, 158, 11, 0.15);
+  --table-border: rgba(245, 158, 11, 0.2);
+  --shadow-color: rgba(0, 0, 0, 0.3);
+  --shadow-hover: rgba(0, 0, 0, 0.5);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { min-height: 100vh; font-family: 'DM Sans', sans-serif; background: var(--bg-gradient); color: var(--text-main); transition: background 0.3s, color 0.3s; }
+.blob { position: fixed; border-radius: 50%; pointer-events: none; filter: blur(55px); z-index: 0; }
+.blob-1 { width: 280px; height: 280px; background: rgba(230,180,40,0.22); top:-70px; left:-50px; animation: float-blob-1 12s infinite ease-in-out; }
+.blob-2 { width: 220px; height: 220px; background: rgba(255,220,80,0.18); bottom:-50px; right:-30px; animation: float-blob-2 15s infinite ease-in-out; }
+@keyframes float-blob-1 { 0%,100% { transform:translate(0,0) scale(1); } 50% { transform:translate(50px,30px) scale(1.1); } }
+@keyframes float-blob-2 { 0%,100% { transform:translate(0,0) scale(1); } 50% { transform:translate(-40px,-50px) scale(0.95); } }
+
+.global-header {
+  position: fixed; top:0; left:0; right:0; z-index:100;
+  background: var(--header-bg); backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--header-border);
+  padding: 10px 28px; display: flex; align-items: center;
+  justify-content: space-between;
+  transition: background 0.3s, border-color 0.3s;
+}
+.logo-area { display: flex; align-items: center; gap: 14px; }
+.logo-icon { width:44px; height:44px; background: linear-gradient(135deg,#f59e0b,#d97706); border-radius:14px; display:flex; align-items:center; justify-content:center; color:white; font-size:24px; font-weight:800; }
+.logo-text h2 { font-family:'Syne',sans-serif; font-size:16px; font-weight:800; color:var(--text-main); line-height:1.2; }
+.logo-text p { font-size:9px; letter-spacing:0.5px; color:var(--text-muted); text-transform:uppercase; }
+.header-right { display:flex; align-items:center; gap:12px; }
+.page-body { padding: 96px 32px 40px; max-width: 1400px; margin: 0 auto; position: relative; z-index:2; }
+
+.page-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:28px; flex-wrap:wrap; gap:14px; }
+.page-header h1 { font-family:'Syne',sans-serif; font-size:28px; font-weight:800; color:var(--text-main); display:flex; align-items:center; gap:10px; }
+.back-btn { background:var(--logout-bg); border:1px solid var(--card-border); padding:6px 14px; border-radius:40px; color:var(--text-main); font-size:12px; display:flex; align-items:center; gap:6px; text-decoration:none; font-weight:500; transition:all 0.2s; }
+.back-btn:hover { background:var(--badge-bg); border-color:var(--text-accent); }
+.action-btn { background: var(--button-gradient); color:white; border:none; padding:9px 20px; border-radius:40px; cursor:pointer; font-weight:700; font-size:13px; display:inline-flex; align-items:center; gap:7px; transition:opacity 0.2s; text-decoration:none; }
+.action-btn:hover { opacity:0.88; }
+
+.section-title { font-family:'Syne',sans-serif; font-size:16px; font-weight:800; color:var(--text-muted); margin-bottom:16px; letter-spacing:0.5px; text-transform:uppercase; }
+.jobs-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(270px, 1fr)); gap:20px; margin-bottom:36px; }
+.job-card {
+  background:var(--card-bg);
+  border:1px solid var(--card-border);
+  border-radius:22px;
+  padding:22px;
+  cursor:pointer;
+  transition:all 0.28s cubic-bezier(0.175,0.885,0.32,1.275);
+  box-shadow:0 4px 14px var(--shadow-color);
+  opacity:0;
+  animation:fadeUp 0.5s ease forwards;
+}
+.job-card:hover { transform:translateY(-6px); box-shadow:0 14px 32px var(--shadow-hover); border-color:var(--text-accent); background:var(--card-hover-bg); }
+.job-card.active { border-color:var(--text-accent); box-shadow:0 0 0 3px rgba(180,83,9,0.2); }
+.job-card-header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px; }
+.job-card h3 { font-family:'Syne',sans-serif; font-size:17px; font-weight:800; color:var(--text-main); }
+.job-card .job-role { font-size:13px; color:var(--text-muted); font-weight:600; margin-bottom:6px; }
+.tag { background:var(--badge-bg); color:var(--text-accent); padding:3px 10px; border-radius:20px; font-size:11px; font-weight:700; }
+.applicant-count { background:var(--button-gradient); color:white; padding:3px 10px; border-radius:20px; font-size:11px; font-weight:700; }
+@keyframes fadeUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+
+.detail-panel { display:none; background:var(--card-bg); border:1px solid var(--card-border); border-radius:24px; box-shadow:0 8px 28px var(--shadow-hover); margin-top:10px; overflow:hidden; animation:fadeIn 0.4s ease; }
+.detail-panel.visible { display:block; }
+@keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+
+.panel-header { padding:20px 28px; background:var(--table-hdr-bg); border-bottom:1px solid var(--card-border); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:14px; }
+.panel-header h2 { font-family:'Syne',sans-serif; font-size:20px; font-weight:800; color:var(--text-main); display:flex; align-items:center; gap:8px; }
+.panel-controls { display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+.rounds-control { display:flex; align-items:center; gap:8px; }
+.rounds-control label { font-size:13px; font-weight:700; color:var(--text-main); }
+.rounds-input { width:70px; padding:7px 10px; border-radius:10px; border:1px solid var(--input-border); background:var(--input-bg); color:var(--text-main); font-size:14px; font-weight:700; text-align:center; outline:none; transition:border-color 0.2s; }
+.rounds-input:focus { border-color:var(--text-accent); }
+
+.table-wrap { overflow-x:auto; padding:0 4px; }
+table { width:100%; border-collapse:collapse; font-size:13px; }
+th { padding:13px 16px; text-align:left; font-weight:700; font-size:11px; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-accent); background:var(--table-hdr-bg); border-bottom:1px solid var(--table-border); white-space:nowrap; }
+td { padding:12px 16px; border-bottom:1px solid var(--table-border); color:var(--text-main); font-weight:500; vertical-align:middle; }
+tr:last-child td { border-bottom:none; }
+tr:hover td { background:rgba(253,230,138,0.07); }
+.roll-badge { font-weight:700; background:var(--badge-bg); color:var(--text-accent); padding:3px 10px; border-radius:10px; font-size:12px; }
+.branch-badge { background:var(--badge-bg); color:var(--text-accent); padding:3px 8px; border-radius:8px; font-size:11px; font-weight:700; }
+
+.round-cell { display:flex; gap:6px; justify-content:center; }
+.round-btn {
+  padding:5px 11px; border-radius:8px; border:1.5px solid; font-size:11px; font-weight:700;
+  cursor:pointer; transition:all 0.18s; background:transparent;
+}
+.round-btn.selected-btn { border-color:var(--success-color); color:var(--success-color); }
+.round-btn.selected-btn.active { background:var(--success-color); color:white; }
+.round-btn.not-selected-btn { border-color:var(--danger-color); color:var(--danger-color); }
+.round-btn.not-selected-btn.active { background:var(--danger-color); color:white; }
+
+.empty-state { text-align:center; padding:48px; color:var(--text-muted); font-weight:600; font-size:14px; }
+.empty-state i { font-size:36px; display:block; margin-bottom:10px; }
+
+#toastContainer { position:fixed; bottom:24px; right:24px; display:flex; flex-direction:column; gap:10px; z-index:2000; }
+</style>
+</head>
+<body>
+<div class="blob blob-1"></div>
+<div class="blob blob-2"></div>
+
+<div class="global-header">
+  <div class="logo-area">
+    <div class="logo-icon">N</div>
+    <div class="logo-text">
+      <h2>National Institute of Technology<br>Andhra Pradesh</h2>
+      <p>Placement &amp; Career Cell</p>
+    </div>
+  </div>
+  <div class="header-right">
+    <button id="themeToggleBtn" style="background:var(--logout-bg); border:1px solid var(--card-border); padding:6px 10px; border-radius:30px; color:var(--text-main); font-size:16px; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:background 0.2s;">
+      <i class="ti ti-moon"></i>
+    </button>
+    <a href="/faculty_logout" class="back-btn"><i class="ti ti-logout"></i> Logout</a>
+  </div>
+</div>
+
+<div class="page-body">
+  <div class="page-header">
+    <h1><i class="ti ti-git-branch"></i> Recruitment Process Tracker</h1>
+    <a href="/faculty_dashboard" class="back-btn"><i class="ti ti-home"></i> Back to Dashboard</a>
+  </div>
+
+  <div class="section-title">Select a Job to View &amp; Manage Recruitment Rounds</div>
+
+  {% if jobs %}
+  <div class="jobs-grid">
+    {% for job in jobs %}
+    <div class="job-card" data-job-index="{{ loop.index0 }}" data-job-id="{{ job.job_id }}"
+         style="animation-delay: {{ (loop.index0 * 0.07) }}s;"
+         onclick="selectJob(this, {{ loop.index0 }})">
+      <div class="job-card-header">
+        <div>
+          <h3>{{ job.company_name }}</h3>
+          <div class="job-role">{{ job.role }}</div>
+        </div>
+        <span class="applicant-count">{{ job.applicant_count }} Applied</span>
+      </div>
+      <div style="font-size:12px; color:var(--text-muted); margin-bottom:8px;">
+        <i class="ti ti-coin" style="margin-right:4px;"></i>{{ job.ctc or 'N/A' }}
+        &nbsp;|&nbsp;
+        <i class="ti ti-map-pin" style="margin-right:4px;"></i>{{ job.location or 'N/A' }}
+      </div>
+      <div style="display:flex; gap:8px; flex-wrap:wrap;">
+        <span class="tag">Job ID: {{ job.job_id }}</span>
+        <span class="tag">{{ job.tier }}</span>
+        <span class="tag rounds-tag-{{ loop.index0 }}">{{ job.num_rounds }} Round{{ 's' if job.num_rounds > 1 else '' }}</span>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <div class="detail-panel" id="detailPanel">
+    <div class="panel-header">
+      <h2 id="panelTitle"><i class="ti ti-clipboard-list"></i> Students</h2>
+      <div class="panel-controls">
+        <div class="rounds-control">
+          <label for="numRoundsInput"><i class="ti ti-list-numbers"></i> Rounds:</label>
+          <input type="number" id="numRoundsInput" class="rounds-input" min="1" max="10" value="1">
+          <button class="action-btn" onclick="setRounds()" style="padding:7px 16px; font-size:12px;">Apply</button>
+        </div>
+        <a id="exportExcelBtn" href="#" class="action-btn" style="background:linear-gradient(135deg,#10b981,#059669);">
+          <i class="ti ti-file-spreadsheet"></i> Export Excel
+        </a>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table id="studentsTable">
+        <thead id="tableHead">
+          <tr>
+            <th>#</th><th>Roll No</th><th>Name</th><th>Branch</th><th>Email</th><th>Phone</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody">
+          <tr><td colspan="6" class="empty-state"><i class="ti ti-mouse"></i><br>Select a job above to load students.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  {% else %}
+  <div class="detail-panel visible" style="padding:48px;">
+    <div class="empty-state">
+      <i class="ti ti-alert-circle"></i>
+      No job openings found. Please add jobs from the Jobs page first.
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+<div id="toastContainer"></div>
+
+<script>
+const jobsData = [
+  {% for job in jobs %}
+  {
+    job_id: "{{ job.job_id }}",
+    company: {{ job.company_name | tojson }},
+    role: {{ job.role | tojson }},
+    num_rounds: {{ job.num_rounds }},
+    students: [
+      {% for s in job.students %}
+      {
+        student_id: {{ s.student_id }},
+        name: {{ s.name | tojson }},
+        roll: {{ (s.roll_number or '') | tojson }},
+        branch: {{ s.branch | tojson }},
+        email: {{ s.email | tojson }},
+        phone: {{ (s.phone_number or '') | tojson }},
+        rounds: { {% for rnd, res in s.rounds.items() %}"{{ rnd }}": {{ res | tojson }},{% endfor %} }
+      }{% if not loop.last %},{% endif %}
+      {% endfor %}
+    ]
+  }{% if not loop.last %},{% endif %}
+  {% endfor %}
+];
+
+let currentJobIndex = null;
+
+function selectJob(el, idx) {
+  document.querySelectorAll('.job-card').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  currentJobIndex = idx;
+  const job = jobsData[idx];
+
+  document.getElementById('panelTitle').innerHTML = '<i class="ti ti-clipboard-list"></i> ' + job.company + ' \u2014 ' + job.role;
+  document.getElementById('numRoundsInput').value = job.num_rounds;
+  document.getElementById('exportExcelBtn').href = '/faculty/recruitment_process/export_excel/' + job.job_id;
+  document.getElementById('detailPanel').classList.add('visible');
+  renderTable(job);
+  setTimeout(() => {
+    document.getElementById('detailPanel').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, 120);
+}
+
+function renderTable(job) {
+  const numRounds = job.num_rounds;
+  const head = document.getElementById('tableHead');
+  const body = document.getElementById('tableBody');
+
+  let headHtml = '<tr><th>#</th><th>Roll No</th><th>Name</th><th>Branch</th><th>Email</th><th>Phone</th>';
+  for (let r = 1; r <= numRounds; r++) {
+    headHtml += '<th style="text-align:center; min-width:160px;">Round ' + r + '</th>';
+  }
+  headHtml += '</tr>';
+  head.innerHTML = headHtml;
+
+  if (!job.students || job.students.length === 0) {
+    body.innerHTML = '<tr><td colspan="' + (6 + numRounds) + '" class="empty-state"><i class="ti ti-info-circle"></i><br>No students have applied for this job yet.</td></tr>';
+    return;
+  }
+
+  let rows = '';
+  job.students.forEach((s, idx) => {
+    const eliminated = Object.values(s.rounds).includes('Not Selected');
+    const rowStyle = eliminated ? 'opacity:0.4; pointer-events:none;' : '';
+    rows += '<tr style="' + rowStyle + '">' +
+      '<td style="font-weight:700; opacity:0.7;">' + (idx + 1) + '</td>' +
+      '<td><span class="roll-badge">' + (s.roll || '\u2014') + '</span></td>' +
+      '<td style="font-weight:600;">' + s.name + '</td>' +
+      '<td><span class="branch-badge">' + s.branch + '</span></td>' +
+      '<td style="font-size:12px;">' + s.email + '</td>' +
+      '<td style="font-size:12px;">' + (s.phone || '\u2014') + '</td>';
+    for (let r = 1; r <= numRounds; r++) {
+      const res = s.rounds[String(r)] || 'Pending';
+      const selActive = res === 'Selected' ? ' active' : '';
+      const notSelActive = res === 'Not Selected' ? ' active' : '';
+      rows += '<td>' +
+        '<div class="round-cell">' +
+          '<button class="round-btn selected-btn' + selActive + '" ' +
+            'onclick="setResult(\'' + job.job_id + '\',' + s.student_id + ',' + r + ',\'Selected\',this)">' +
+            '<i class="ti ti-circle-check"></i> Selected</button>' +
+          '<button class="round-btn not-selected-btn' + notSelActive + '" ' +
+            'onclick="setResult(\'' + job.job_id + '\',' + s.student_id + ',' + r + ',\'Not Selected\',this)">' +
+            '<i class="ti ti-circle-x"></i> Not Selected</button>' +
+        '</div>' +
+      '</td>';
+    }
+    rows += '</tr>';
+  });
+  body.innerHTML = rows;
+}
+
+function setRounds() {
+  if (currentJobIndex === null) { showToast('Select a job first.', 'error'); return; }
+  const job = jobsData[currentJobIndex];
+  const num = parseInt(document.getElementById('numRoundsInput').value) || 1;
+
+  fetch('/faculty/recruitment_process/set_rounds', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ job_id: job.job_id, num_rounds: num })
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.success) {
+      job.num_rounds = num;
+      const rtag = document.querySelector('.rounds-tag-' + currentJobIndex);
+      if (rtag) rtag.textContent = num + ' Round' + (num > 1 ? 's' : '');
+      renderTable(job);
+      showToast('Rounds set to ' + num + ' for ' + job.company, 'success');
+    } else {
+      showToast(data.error || 'Failed to update rounds', 'error');
+    }
+  });
+}
+
+function setResult(jobId, studentId, round, result, btn) {
+  const row = btn.closest('tr');
+  const allBtns = btn.closest('.round-cell').querySelectorAll('.round-btn');
+
+  fetch('/faculty/recruitment_process/set_result', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ job_id: jobId, student_id: studentId, round_number: round, result: result })
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.success) {
+      allBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+
+      const job = jobsData.find(j => j.job_id === String(jobId));
+      if (job) {
+        const student = job.students.find(s => s.student_id === studentId);
+        if (student) {
+          student.rounds[String(round)] = result;
+          if (result === 'Not Selected') {
+            setTimeout(() => {
+              row.style.opacity = '0.35';
+              row.style.pointerEvents = 'none';
+              row.title = 'Student eliminated in Round ' + round;
+            }, 400);
+          } else {
+            row.style.opacity = '1';
+            row.style.pointerEvents = '';
+            row.title = '';
+          }
+        }
+      }
+      showToast('Round ' + round + ': ' + result + ' saved!', result === 'Selected' ? 'success' : 'warning');
+    } else {
+      showToast(data.error || 'Failed to save result', 'error');
+    }
+  });
+}
+
+function showToast(msg, type) {
+  type = type || 'success';
+  const container = document.getElementById('toastContainer');
+  const toast = document.createElement('div');
+  const bg = {
+    success: 'linear-gradient(135deg,#10b981,#059669)',
+    warning: 'linear-gradient(135deg,#f59e0b,#d97706)',
+    error: 'linear-gradient(135deg,#ef4444,#dc2626)',
+    info: 'linear-gradient(135deg,#3b82f6,#2563eb)'
+  };
+  toast.style.cssText = 'background:' + (bg[type] || bg.success) + ';color:white;padding:13px 22px;border-radius:14px;box-shadow:0 10px 28px rgba(0,0,0,0.15);display:flex;align-items:center;gap:10px;font-family:DM Sans,sans-serif;font-size:13px;font-weight:600;opacity:0;transform:translateY(20px);transition:all 0.3s;min-width:220px;';
+  toast.innerHTML = '<i class="ti ti-circle-check" style="font-size:17px;"></i><span>' + msg + '</span>';
+  container.appendChild(toast);
+  setTimeout(() => { toast.style.opacity = '1'; toast.style.transform = 'translateY(0)'; }, 10);
+  setTimeout(() => { toast.style.opacity = '0'; toast.style.transform = 'translateY(-16px)'; setTimeout(() => toast.remove(), 300); }, 3000);
+}
+
+// Theme Toggle
+const themeToggle = document.getElementById('themeToggleBtn');
+if (themeToggle) {
+  themeToggle.addEventListener('click', () => {
+    const ct = document.documentElement.getAttribute('data-theme') || 'light';
+    const nt = ct === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', nt);
+    localStorage.setItem('faculty-theme', nt);
+    const icon = themeToggle.querySelector('i');
+    if (icon) icon.className = nt === 'dark' ? 'ti ti-sun' : 'ti ti-moon';
+  });
+  const ct = document.documentElement.getAttribute('data-theme') || 'light';
+  const icon = themeToggle.querySelector('i');
+  if (icon) icon.className = ct === 'dark' ? 'ti ti-sun' : 'ti ti-moon';
+}
+</script>
+</body>
+</html>

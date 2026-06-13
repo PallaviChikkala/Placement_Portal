@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>All Rejected Students — Placement Portal</title>
+<title>Not Selected Students — Placement Portal</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500;700&display=swap" rel="stylesheet">
 <script>
@@ -152,7 +152,7 @@ tr:hover { background-color: rgba(253, 230, 138, 0.08); }
 
 <div class="page-body">
   <div class="page-header">
-    <h1><i class="ti ti-user-x"></i> Rejected Students Registry</h1>
+    <h1><i class="ti ti-user-x"></i> Not Selected Students Registry</h1>
     <a href="/faculty_dashboard" class="back-home-btn"><i class="ti ti-home"></i> Back to Dashboard</a>
   </div>
 
@@ -163,7 +163,7 @@ tr:hover { background-color: rgba(253, 230, 138, 0.08); }
       <input type="text" id="registrySearch" class="search-input" placeholder="Search by name, roll no, branch, company...">
     </div>
     <div style="font-weight: 600; font-size: 14px; display: flex; align-items: center; gap: 8px;">
-      <span style="color: var(--text-muted);">Total Rejected Students:</span>
+      <span style="color: var(--text-muted);">Total Not Selected Students:</span>
       <span id="registryTotalCount" style="background: var(--badge-bg); color: var(--text-accent); padding: 4px 12px; border-radius: 20px; font-weight: 700;">{{ rejected_students|length }}</span>
     </div>
   </div>
@@ -171,7 +171,7 @@ tr:hover { background-color: rgba(253, 230, 138, 0.08); }
   <!-- Comprehensive Table -->
   <div class="table-wrapper">
     <div class="table-header">
-      <h3><i class="ti ti-users-minus"></i> All Rejected Applicants</h3>
+      <h3><i class="ti ti-users-minus"></i> All Not Selected Applicants</h3>
       <span id="filteredCountBadge" class="count-badge">{{ rejected_students|length }}</span>
     </div>
     <div class="table-responsive">
@@ -207,7 +207,7 @@ tr:hover { background-color: rgba(253, 230, 138, 0.08); }
               <td colspan="8" style="text-align:center; padding: 40px; color:var(--text-muted);">
                 <div class="empty-state">
                   <i class="ti ti-info-circle"></i>
-                  <span>No rejected records found.</span>
+                  <span>No not selected records found.</span>
                 </div>
               </td>
             </tr>

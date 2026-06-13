@@ -703,7 +703,7 @@ function viewApplicants(jobIdStr) {
       }
       
       let rows = data.applicants.map(a => {
-        const statuses = ["Pending", "Shortlisted", "Selected", "Rejected"];
+        const statuses = ["Pending", "Shortlisted", "Selected", "Not Selected"];
         let selectOptions = statuses.map(s => `
           <option value="${s}" ${a.status === s ? 'selected' : ''}>${s}</option>
         `).join("");
