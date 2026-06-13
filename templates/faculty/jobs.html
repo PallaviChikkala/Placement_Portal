@@ -730,29 +730,30 @@ function viewApplicants(jobIdStr) {
       }
       
       let rows = data.applicants.map(a => {
-        const statuses = ["Pending", "Shortlisted", "Selected", "Not Selected"];
-        let selectOptions = statuses.map(s => `
-          <option value="${s}" ${a.status === s ? 'selected' : ''}>${s}</option>
-        `).join("");
+        // Status badge colours (read-only — set automatically by round Excel uploads)
+        const statusColors = {
+          'Selected':     { bg: 'rgba(16,185,129,0.12)', color: '#10b981', border: 'rgba(16,185,129,0.3)', icon: 'ti-circle-check' },
+          'Not Selected': { bg: 'rgba(239,68,68,0.1)',   color: '#ef4444', border: 'rgba(239,68,68,0.25)', icon: 'ti-circle-x' },
+          'Shortlisted':  { bg: 'rgba(59,130,246,0.1)',  color: '#3b82f6', border: 'rgba(59,130,246,0.25)',icon: 'ti-star' },
+          'Pending':      { bg: 'rgba(107,114,128,0.1)', color: '#6b7280', border: 'rgba(107,114,128,0.2)',icon: 'ti-clock' }
+        };
+        const sc = statusColors[a.status] || statusColors['Pending'];
+        const badgeHtml = `<span style="display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:20px;font-size:11px;font-weight:700;background:${sc.bg};color:${sc.color};border:1px solid ${sc.border};"><i class="ti ${sc.icon}"></i>${a.status || 'Pending'}</span>`;
         
         return `<tr>
           <td><strong>${a.student_id}</strong></td>
           <td>${a.name}</td><td>${a.branch}</td>
           <td>${a.resume_path ? `<a href="${a.resume_path}" target="_blank" style="color:#d97706;font-weight:600;"><i class="ti ti-external-link"></i> View</a>` : '<span style="color:#a1a1aa;">—</span>'}</td>
-          <td>
-            <select onchange="updateApplicantStatus(this, '${a.application_id}', '${a.student_id}', '${jobIdStr}')" 
-                    style="padding:6px 12px; border-radius:12px; border:1px solid #d97706; background:white; font-size:12px; font-weight:600; color:#78350f; outline:none; cursor:pointer;">
-              ${selectOptions}
-            </select>
-          </td>
+          <td>${badgeHtml}</td>
         </tr>`;
       }).join("");
 
       document.getElementById("applicantsBody").innerHTML = `<table style="min-width: 600px;">
-        <thead><tr><th>STUDENT ID</th><th>NAME</th><th>BRANCH</th><th>RESUME</th><th>STATUS</th></tr></thead>
+        <thead><tr><th>STUDENT ID</th><th>NAME</th><th>BRANCH</th><th>RESUME</th><th>STATUS (auto)</th></tr></thead>
         <tbody>${rows}</tbody></table>`;
     });
 }
+
 
 function updateApplicantStatus(selectEl, appId, studentId, jobId) {
   const status = selectEl.value;

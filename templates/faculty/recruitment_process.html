@@ -21,8 +21,9 @@
   --card-hover-bg: rgba(255, 255, 255, 0.96);
   --card-border: rgba(253, 230, 138, 0.5);
   --text-main: #78350f;
-  --text-muted: #b97f10;
+  --text-muted: #a16207;
   --text-accent: #b45309;
+  --text-secondary: #92400e;
   --badge-bg: rgba(253, 230, 138, 0.4);
   --input-bg: rgba(255, 255, 255, 0.85);
   --input-border: rgba(253, 230, 138, 0.6);
@@ -35,32 +36,41 @@
   --success-color: #10b981;
   --danger-color: #ef4444;
   --warning-color: #f59e0b;
+  --pending-color: #6b7280;
+  --upload-card-bg: rgba(255, 255, 255, 0.75);
+  --upload-card-border: rgba(253, 230, 138, 0.5);
 }
 [data-theme="dark"] {
   --bg-gradient: linear-gradient(145deg, #0f172a 0%, #1e293b 40%, #0f172a 100%);
-  --header-bg: rgba(30, 41, 59, 0.95);
+  --header-bg: rgba(30, 41, 59, 0.97);
   --header-border: rgba(245, 158, 11, 0.3);
-  --card-bg: rgba(30, 41, 59, 0.75);
-  --card-hover-bg: rgba(30, 41, 59, 0.92);
-  --card-border: rgba(245, 158, 11, 0.22);
-  --text-main: #f8fafc;
+  --card-bg: rgba(30, 41, 59, 0.85);
+  --card-hover-bg: rgba(30, 41, 59, 0.96);
+  --card-border: rgba(245, 158, 11, 0.25);
+  --text-main: #f1f5f9;
   --text-muted: #fbbf24;
-  --text-accent: #fbbf24;
-  --badge-bg: rgba(245, 158, 11, 0.2);
-  --input-bg: rgba(15, 23, 42, 0.6);
+  --text-accent: #fcd34d;
+  --text-secondary: #e2e8f0;
+  --badge-bg: rgba(245, 158, 11, 0.22);
+  --input-bg: rgba(15, 23, 42, 0.65);
   --input-border: rgba(245, 158, 11, 0.3);
   --button-gradient: linear-gradient(135deg, #fbbf24, #d97706);
   --logout-bg: rgba(15, 23, 42, 0.4);
-  --table-hdr-bg: rgba(245, 158, 11, 0.15);
-  --table-border: rgba(245, 158, 11, 0.2);
+  --table-hdr-bg: rgba(245, 158, 11, 0.18);
+  --table-border: rgba(245, 158, 11, 0.22);
   --shadow-color: rgba(0, 0, 0, 0.3);
   --shadow-hover: rgba(0, 0, 0, 0.5);
+  --pending-color: #94a3b8;
+  --upload-card-bg: rgba(15, 23, 42, 0.55);
+  --upload-card-border: rgba(245, 158, 11, 0.25);
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { min-height: 100vh; font-family: 'DM Sans', sans-serif; background: var(--bg-gradient); color: var(--text-main); transition: background 0.3s, color 0.3s; }
 .blob { position: fixed; border-radius: 50%; pointer-events: none; filter: blur(55px); z-index: 0; }
 .blob-1 { width: 280px; height: 280px; background: rgba(230,180,40,0.22); top:-70px; left:-50px; animation: float-blob-1 12s infinite ease-in-out; }
 .blob-2 { width: 220px; height: 220px; background: rgba(255,220,80,0.18); bottom:-50px; right:-30px; animation: float-blob-2 15s infinite ease-in-out; }
+[data-theme="dark"] .blob-1 { background: rgba(245,158,11,0.1); }
+[data-theme="dark"] .blob-2 { background: rgba(217,119,6,0.08); }
 @keyframes float-blob-1 { 0%,100% { transform:translate(0,0) scale(1); } 50% { transform:translate(50px,30px) scale(1.1); } }
 @keyframes float-blob-2 { 0%,100% { transform:translate(0,0) scale(1); } 50% { transform:translate(-40px,-50px) scale(0.95); } }
 
@@ -77,11 +87,11 @@ body { min-height: 100vh; font-family: 'DM Sans', sans-serif; background: var(--
 .logo-text h2 { font-family:'Syne',sans-serif; font-size:16px; font-weight:800; color:var(--text-main); line-height:1.2; }
 .logo-text p { font-size:9px; letter-spacing:0.5px; color:var(--text-muted); text-transform:uppercase; }
 .header-right { display:flex; align-items:center; gap:12px; }
-.page-body { padding: 96px 32px 40px; max-width: 1400px; margin: 0 auto; position: relative; z-index:2; }
+.page-body { padding: 96px 32px 40px; max-width: 1500px; margin: 0 auto; position: relative; z-index:2; }
 
 .page-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:28px; flex-wrap:wrap; gap:14px; }
 .page-header h1 { font-family:'Syne',sans-serif; font-size:28px; font-weight:800; color:var(--text-main); display:flex; align-items:center; gap:10px; }
-.back-btn { background:var(--logout-bg); border:1px solid var(--card-border); padding:6px 14px; border-radius:40px; color:var(--text-main); font-size:12px; display:flex; align-items:center; gap:6px; text-decoration:none; font-weight:500; transition:all 0.2s; }
+.back-btn { background:var(--logout-bg); border:1px solid var(--card-border); padding:6px 14px; border-radius:40px; color:var(--text-main); font-size:12px; display:flex; align-items:center; gap:6px; text-decoration:none; font-weight:600; transition:all 0.2s; }
 .back-btn:hover { background:var(--badge-bg); border-color:var(--text-accent); }
 .action-btn { background: var(--button-gradient); color:white; border:none; padding:9px 20px; border-radius:40px; cursor:pointer; font-weight:700; font-size:13px; display:inline-flex; align-items:center; gap:7px; transition:opacity 0.2s; text-decoration:none; }
 .action-btn:hover { opacity:0.88; }
@@ -108,6 +118,7 @@ body { min-height: 100vh; font-family: 'DM Sans', sans-serif; background: var(--
 .applicant-count { background:var(--button-gradient); color:white; padding:3px 10px; border-radius:20px; font-size:11px; font-weight:700; }
 @keyframes fadeUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
 
+/* ── DETAIL PANEL ────────────────────────────────────────────────────────────── */
 .detail-panel { display:none; background:var(--card-bg); border:1px solid var(--card-border); border-radius:24px; box-shadow:0 8px 28px var(--shadow-hover); margin-top:10px; overflow:hidden; animation:fadeIn 0.4s ease; }
 .detail-panel.visible { display:block; }
 @keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
@@ -120,24 +131,68 @@ body { min-height: 100vh; font-family: 'DM Sans', sans-serif; background: var(--
 .rounds-input { width:70px; padding:7px 10px; border-radius:10px; border:1px solid var(--input-border); background:var(--input-bg); color:var(--text-main); font-size:14px; font-weight:700; text-align:center; outline:none; transition:border-color 0.2s; }
 .rounds-input:focus { border-color:var(--text-accent); }
 
+/* ── TABLE ───────────────────────────────────────────────────────────────────── */
 .table-wrap { overflow-x:auto; padding:0 4px; }
 table { width:100%; border-collapse:collapse; font-size:13px; }
 th { padding:13px 16px; text-align:left; font-weight:700; font-size:11px; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-accent); background:var(--table-hdr-bg); border-bottom:1px solid var(--table-border); white-space:nowrap; }
-td { padding:12px 16px; border-bottom:1px solid var(--table-border); color:var(--text-main); font-weight:500; vertical-align:middle; }
+td { padding:11px 14px; border-bottom:1px solid var(--table-border); color:var(--text-main); font-weight:500; vertical-align:middle; }
+[data-theme="dark"] td { color: #e2e8f0; }
 tr:last-child td { border-bottom:none; }
 tr:hover td { background:rgba(253,230,138,0.07); }
+[data-theme="dark"] tr:hover td { background: rgba(245,158,11,0.07); }
 .roll-badge { font-weight:700; background:var(--badge-bg); color:var(--text-accent); padding:3px 10px; border-radius:10px; font-size:12px; }
 .branch-badge { background:var(--badge-bg); color:var(--text-accent); padding:3px 8px; border-radius:8px; font-size:11px; font-weight:700; }
+[data-theme="dark"] .roll-badge, [data-theme="dark"] .branch-badge { color: #fde68a; }
 
-.round-cell { display:flex; gap:6px; justify-content:center; }
-.round-btn {
-  padding:5px 11px; border-radius:8px; border:1.5px solid; font-size:11px; font-weight:700;
-  cursor:pointer; transition:all 0.18s; background:transparent;
+/* Result badges (read-only) */
+.res-badge { display:inline-flex; align-items:center; gap:5px; padding:4px 10px; border-radius:20px; font-size:11px; font-weight:700; white-space:nowrap; }
+.res-badge.selected   { background:rgba(16,185,129,0.15); color:#10b981; border:1px solid rgba(16,185,129,0.3); }
+.res-badge.not-sel    { background:rgba(239,68,68,0.12);  color:#ef4444; border:1px solid rgba(239,68,68,0.25); }
+.res-badge.pending    { background:rgba(107,114,128,0.1); color:var(--pending-color); border:1px solid rgba(107,114,128,0.2); }
+.drive-link-cell a { color:var(--text-accent); text-decoration:none; font-size:12px; display:inline-flex; align-items:center; gap:4px; font-weight:600; }
+.drive-link-cell a:hover { text-decoration:underline; }
+.eliminated-row td { opacity:0.45; }
+
+/* ── PER-ROUND UPLOAD CARDS ──────────────────────────────────────────────────── */
+.rounds-section { padding:24px 28px; border-top:1px solid var(--card-border); display:flex; flex-direction:column; gap:16px; }
+.rounds-section-title { font-family:'Syne',sans-serif; font-size:15px; font-weight:800; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px; display:flex; align-items:center; gap:8px; margin-bottom:4px; }
+
+.round-upload-card {
+  background: var(--upload-card-bg);
+  border: 1px solid var(--upload-card-border);
+  border-radius:18px;
+  padding:20px 24px;
+  display:flex; align-items:center; flex-wrap:wrap; gap:16px;
+  transition: box-shadow 0.2s, border-color 0.2s;
 }
-.round-btn.selected-btn { border-color:var(--success-color); color:var(--success-color); }
-.round-btn.selected-btn.active { background:var(--success-color); color:white; }
-.round-btn.not-selected-btn { border-color:var(--danger-color); color:var(--danger-color); }
-.round-btn.not-selected-btn.active { background:var(--danger-color); color:white; }
+.round-upload-card:hover { border-color:var(--text-accent); box-shadow:0 4px 16px var(--shadow-hover); }
+.round-upload-num { font-family:'Syne',sans-serif; font-size:24px; font-weight:800; color:var(--text-accent); min-width:48px; }
+.round-upload-label { flex:1; min-width:140px; }
+.round-upload-label .lbl-main { font-size:14px; font-weight:700; color:var(--text-main); }
+.round-upload-label .lbl-sub  { font-size:12px; color:var(--text-muted); margin-top:2px; }
+.round-upload-actions { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+
+.download-btn { background:linear-gradient(135deg,#10b981,#059669); color:white; border:none; padding:8px 16px; border-radius:30px; cursor:pointer; font-weight:700; font-size:12px; display:inline-flex; align-items:center; gap:6px; text-decoration:none; transition:opacity 0.2s; }
+.download-btn:hover { opacity:0.88; }
+
+.upload-file-group { display:flex; align-items:center; gap:8px; }
+.upload-file-input { display:none; }
+.upload-file-label {
+  background:var(--input-bg); border:1.5px dashed var(--input-border); padding:7px 14px; border-radius:30px;
+  cursor:pointer; font-size:12px; font-weight:600; color:var(--text-muted);
+  display:inline-flex; align-items:center; gap:6px; transition:border-color 0.2s;
+}
+.upload-file-label:hover { border-color:var(--text-accent); color:var(--text-accent); }
+.upload-file-label.has-file { border-color:var(--text-accent); color:var(--text-accent); }
+
+.upload-submit-btn { background:var(--button-gradient); color:white; border:none; padding:8px 16px; border-radius:30px; cursor:pointer; font-weight:700; font-size:12px; display:inline-flex; align-items:center; gap:6px; transition:opacity 0.2s; }
+.upload-submit-btn:hover { opacity:0.88; }
+.upload-submit-btn:disabled { opacity:0.5; cursor:not-allowed; }
+
+.round-upload-status { font-size:11px; font-weight:600; padding:4px 10px; border-radius:20px; display:none; align-items:center; gap:5px; }
+.round-upload-status.success { background:rgba(16,185,129,0.12); color:#10b981; display:inline-flex; }
+.round-upload-status.error   { background:rgba(239,68,68,0.1);   color:#ef4444; display:inline-flex; }
+.round-upload-status.loading { background:var(--badge-bg); color:var(--text-muted); display:inline-flex; }
 
 .empty-state { text-align:center; padding:48px; color:var(--text-muted); font-weight:600; font-size:14px; }
 .empty-state i { font-size:36px; display:block; margin-bottom:10px; }
@@ -201,6 +256,7 @@ tr:hover td { background:rgba(253,230,138,0.07); }
   </div>
 
   <div class="detail-panel" id="detailPanel">
+    <!-- Panel Header -->
     <div class="panel-header">
       <h2 id="panelTitle"><i class="ti ti-clipboard-list"></i> Students</h2>
       <div class="panel-controls">
@@ -210,10 +266,12 @@ tr:hover td { background:rgba(253,230,138,0.07); }
           <button class="action-btn" onclick="setRounds()" style="padding:7px 16px; font-size:12px;">Apply</button>
         </div>
         <a id="exportExcelBtn" href="#" class="action-btn" style="background:linear-gradient(135deg,#10b981,#059669);">
-          <i class="ti ti-file-spreadsheet"></i> Export Excel
+          <i class="ti ti-file-spreadsheet"></i> Export Summary
         </a>
       </div>
     </div>
+
+    <!-- Read-only student table -->
     <div class="table-wrap">
       <table id="studentsTable">
         <thead id="tableHead">
@@ -225,6 +283,15 @@ tr:hover td { background:rgba(253,230,138,0.07); }
           <tr><td colspan="6" class="empty-state"><i class="ti ti-mouse"></i><br>Select a job above to load students.</td></tr>
         </tbody>
       </table>
+    </div>
+
+    <!-- Per-round upload section -->
+    <div class="rounds-section" id="roundsSection" style="display:none;">
+      <div class="rounds-section-title">
+        <i class="ti ti-upload"></i> Round-wise Excel Upload
+        <span style="font-size:11px; font-weight:500; color:var(--pending-color); margin-left:8px;">Download → Fill → Upload per round</span>
+      </div>
+      <div id="roundCards"><!-- Dynamically injected by JS --></div>
     </div>
   </div>
 
@@ -241,6 +308,7 @@ tr:hover td { background:rgba(253,230,138,0.07); }
 <div id="toastContainer"></div>
 
 <script>
+// ── DATA ─────────────────────────────────────────────────────────────────────
 const jobsData = [
   {% for job in jobs %}
   {
@@ -257,7 +325,8 @@ const jobsData = [
         branch: {{ s.branch | tojson }},
         email: {{ s.email | tojson }},
         phone: {{ (s.phone_number or '') | tojson }},
-        rounds: { {% for rnd, res in s.rounds.items() %}"{{ rnd }}": {{ res | tojson }},{% endfor %} }
+        rounds: { {% for rnd, res in s.rounds.items() %}"{{ rnd }}": {{ res | tojson }},{% endfor %} },
+        links:  { {% for rnd, lnk in s.links.items() %}"{{ rnd }}": {{ lnk | tojson }},{% endfor %} }
       }{% if not loop.last %},{% endif %}
       {% endfor %}
     ]
@@ -267,70 +336,182 @@ const jobsData = [
 
 let currentJobIndex = null;
 
+// ── JOB SELECTION ─────────────────────────────────────────────────────────────
 function selectJob(el, idx) {
   document.querySelectorAll('.job-card').forEach(c => c.classList.remove('active'));
   el.classList.add('active');
   currentJobIndex = idx;
   const job = jobsData[idx];
 
-  document.getElementById('panelTitle').innerHTML = '<i class="ti ti-clipboard-list"></i> ' + job.company + ' \u2014 ' + job.role;
+  document.getElementById('panelTitle').innerHTML =
+    '<i class="ti ti-clipboard-list"></i> ' + job.company + ' \u2014 ' + job.role;
   document.getElementById('numRoundsInput').value = job.num_rounds;
-  document.getElementById('exportExcelBtn').href = '/faculty/recruitment_process/export_excel/' + job.job_id;
+  document.getElementById('exportExcelBtn').href =
+    '/faculty/recruitment_process/export_excel/' + job.job_id;
   document.getElementById('detailPanel').classList.add('visible');
   renderTable(job);
+  renderRoundCards(job);
   setTimeout(() => {
     document.getElementById('detailPanel').scrollIntoView({ behavior: 'smooth', block: 'start' });
   }, 120);
 }
 
+// ── TABLE RENDER (READ-ONLY) ───────────────────────────────────────────────────
 function renderTable(job) {
   const numRounds = job.num_rounds;
   const head = document.getElementById('tableHead');
   const body = document.getElementById('tableBody');
 
+  // Build header: fixed cols + Round N + Drive Link N for each round
   let headHtml = '<tr><th>#</th><th>Roll No</th><th>Name</th><th>Branch</th><th>Email</th><th>Phone</th>';
   for (let r = 1; r <= numRounds; r++) {
-    headHtml += '<th style="text-align:center; min-width:160px;">Round ' + r + '</th>';
+    headHtml += `<th style="text-align:center; min-width:130px;">Round ${r}</th>`;
+    headHtml += `<th style="min-width:160px;">Drive Link ${r}</th>`;
   }
   headHtml += '</tr>';
   head.innerHTML = headHtml;
 
   if (!job.students || job.students.length === 0) {
-    body.innerHTML = '<tr><td colspan="' + (6 + numRounds) + '" class="empty-state"><i class="ti ti-info-circle"></i><br>No students have applied for this job yet.</td></tr>';
+    body.innerHTML = `<tr><td colspan="${6 + numRounds * 2}" class="empty-state"><i class="ti ti-info-circle"></i><br>No students have applied for this job yet.</td></tr>`;
     return;
   }
 
   let rows = '';
   job.students.forEach((s, idx) => {
-    const eliminated = Object.values(s.rounds).includes('Not Selected');
-    const rowStyle = eliminated ? 'opacity:0.4; pointer-events:none;' : '';
-    rows += '<tr style="' + rowStyle + '">' +
-      '<td style="font-weight:700; opacity:0.7;">' + (idx + 1) + '</td>' +
-      '<td><span class="roll-badge">' + (s.roll || '\u2014') + '</span></td>' +
-      '<td style="font-weight:600;">' + s.name + '</td>' +
-      '<td><span class="branch-badge">' + s.branch + '</span></td>' +
-      '<td style="font-size:12px;">' + s.email + '</td>' +
-      '<td style="font-size:12px;">' + (s.phone || '\u2014') + '</td>';
+    const isEliminated = Object.entries(s.rounds).some(([,v]) => v === 'Not Selected');
+    const rowClass = isEliminated ? 'eliminated-row' : '';
+    rows += `<tr class="${rowClass}">` +
+      `<td style="font-weight:700; opacity:0.7;">${idx + 1}</td>` +
+      `<td><span class="roll-badge">${s.roll || '\u2014'}</span></td>` +
+      `<td style="font-weight:600;">${s.name}</td>` +
+      `<td><span class="branch-badge">${s.branch}</span></td>` +
+      `<td style="font-size:12px;">${s.email}</td>` +
+      `<td style="font-size:12px;">${s.phone || '\u2014'}</td>`;
     for (let r = 1; r <= numRounds; r++) {
-      const res = s.rounds[String(r)] || 'Pending';
-      const selActive = res === 'Selected' ? ' active' : '';
-      const notSelActive = res === 'Not Selected' ? ' active' : '';
-      rows += '<td>' +
-        '<div class="round-cell">' +
-          '<button class="round-btn selected-btn' + selActive + '" ' +
-            'onclick="setResult(\'' + job.job_id + '\',' + s.student_id + ',' + r + ',\'Selected\',this)">' +
-            '<i class="ti ti-circle-check"></i> Selected</button>' +
-          '<button class="round-btn not-selected-btn' + notSelActive + '" ' +
-            'onclick="setResult(\'' + job.job_id + '\',' + s.student_id + ',' + r + ',\'Not Selected\',this)">' +
-            '<i class="ti ti-circle-x"></i> Not Selected</button>' +
-        '</div>' +
-      '</td>';
+      const res  = s.rounds[String(r)] || 'Pending';
+      const link = s.links[String(r)]  || '';
+      let badgeCls = 'pending', icon = 'ti-clock', label = 'Pending';
+      if (res === 'Selected')      { badgeCls = 'selected'; icon = 'ti-circle-check'; label = 'Selected'; }
+      else if (res === 'Not Selected') { badgeCls = 'not-sel'; icon = 'ti-circle-x'; label = 'Not Selected'; }
+
+      rows += `<td style="text-align:center;"><span class="res-badge ${badgeCls}"><i class="ti ${icon}"></i>${label}</span></td>`;
+      rows += `<td class="drive-link-cell">${link ? `<a href="${link}" target="_blank"><i class="ti ti-external-link"></i>Open Link</a>` : '<span style="color:var(--pending-color);font-size:12px;">\u2014</span>'}</td>`;
     }
     rows += '</tr>';
   });
   body.innerHTML = rows;
 }
 
+// ── ROUND UPLOAD CARDS ────────────────────────────────────────────────────────
+function renderRoundCards(job) {
+  const section = document.getElementById('roundsSection');
+  const container = document.getElementById('roundCards');
+  section.style.display = 'flex';
+
+  let html = '';
+  for (let r = 1; r <= job.num_rounds; r++) {
+    const downloadUrl = `/faculty/recruitment_process/export_excel/${job.job_id}?round=${r}`;
+    html += `
+    <div class="round-upload-card" id="uploadCard-${r}">
+      <div class="round-upload-num">R${r}</div>
+      <div class="round-upload-label">
+        <div class="lbl-main">Round ${r} Excel</div>
+        <div class="lbl-sub">Download template → fill in ${r}=selected / 0=not selected + Drive Link → Upload</div>
+      </div>
+      <div class="round-upload-actions">
+        <a href="${downloadUrl}" class="download-btn" download>
+          <i class="ti ti-download"></i> Download Round ${r} Excel
+        </a>
+        <div class="upload-file-group">
+          <input type="file" accept=".xlsx" class="upload-file-input" id="fileInput-${r}"
+                 onchange="onFileSelected(this, ${r})">
+          <label for="fileInput-${r}" class="upload-file-label" id="fileLabel-${r}">
+            <i class="ti ti-file-upload"></i> Choose File
+          </label>
+          <button class="upload-submit-btn" id="uploadBtn-${r}"
+                  onclick="uploadRoundExcel(${r})" disabled>
+            <i class="ti ti-cloud-upload"></i> Upload
+          </button>
+        </div>
+        <span class="round-upload-status" id="uploadStatus-${r}"></span>
+      </div>
+    </div>`;
+  }
+  container.innerHTML = html;
+}
+
+function onFileSelected(input, roundNum) {
+  const label  = document.getElementById(`fileLabel-${roundNum}`);
+  const btn    = document.getElementById(`uploadBtn-${roundNum}`);
+  if (input.files && input.files.length > 0) {
+    const fname = input.files[0].name;
+    label.innerHTML = `<i class="ti ti-file-check"></i> ${fname.length > 22 ? fname.substring(0,20)+'…' : fname}`;
+    label.classList.add('has-file');
+    btn.disabled = false;
+  } else {
+    label.innerHTML = '<i class="ti ti-file-upload"></i> Choose File';
+    label.classList.remove('has-file');
+    btn.disabled = true;
+  }
+}
+
+function uploadRoundExcel(roundNum) {
+  if (currentJobIndex === null) { showToast('Select a job first.', 'error'); return; }
+  const job    = jobsData[currentJobIndex];
+  const input  = document.getElementById(`fileInput-${roundNum}`);
+  const btn    = document.getElementById(`uploadBtn-${roundNum}`);
+  const status = document.getElementById(`uploadStatus-${roundNum}`);
+
+  if (!input.files || !input.files.length) {
+    showToast('Please choose an Excel file first.', 'error');
+    return;
+  }
+
+  const formData = new FormData();
+  formData.append('excel_file', input.files[0]);
+
+  btn.disabled = true;
+  setUploadStatus(roundNum, 'loading', '<i class="ti ti-loader-2"></i> Uploading…');
+
+  fetch(`/faculty/recruitment_process/upload_excel/${job.job_id}/${roundNum}`, {
+    method: 'POST',
+    body: formData
+  })
+  .then(r => r.json())
+  .then(data => {
+    btn.disabled = false;
+    if (data.success) {
+      const finalMsg = data.finalised
+        ? ` | ✅ Final round complete — application statuses auto-updated!`
+        : '';
+      setUploadStatus(roundNum, 'success',
+        `<i class="ti ti-circle-check"></i> ${data.updated} row(s) updated${finalMsg}`);
+      showToast(
+        `Round ${roundNum} uploaded: ${data.updated} row(s) saved.` +
+        (data.finalised ? ' All rounds done — statuses finalised!' : ''),
+        'success'
+      );
+      // Reload page to refresh table data from server
+      setTimeout(() => location.reload(), 1800);
+    } else {
+      setUploadStatus(roundNum, 'error', `<i class="ti ti-circle-x"></i> ${data.error}`);
+      showToast(data.error || 'Upload failed', 'error');
+    }
+  })
+  .catch(err => {
+    btn.disabled = false;
+    setUploadStatus(roundNum, 'error', '<i class="ti ti-circle-x"></i> Network error');
+    showToast('Network error during upload', 'error');
+  });
+}
+
+function setUploadStatus(roundNum, type, html) {
+  const el = document.getElementById(`uploadStatus-${roundNum}`);
+  el.className = `round-upload-status ${type}`;
+  el.innerHTML = html;
+}
+
+// ── SET ROUNDS ────────────────────────────────────────────────────────────────
 function setRounds() {
   if (currentJobIndex === null) { showToast('Select a job first.', 'error'); return; }
   const job = jobsData[currentJobIndex];
@@ -348,6 +529,7 @@ function setRounds() {
       const rtag = document.querySelector('.rounds-tag-' + currentJobIndex);
       if (rtag) rtag.textContent = num + ' Round' + (num > 1 ? 's' : '');
       renderTable(job);
+      renderRoundCards(job);
       showToast('Rounds set to ' + num + ' for ' + job.company, 'success');
     } else {
       showToast(data.error || 'Failed to update rounds', 'error');
@@ -355,46 +537,7 @@ function setRounds() {
   });
 }
 
-function setResult(jobId, studentId, round, result, btn) {
-  const row = btn.closest('tr');
-  const allBtns = btn.closest('.round-cell').querySelectorAll('.round-btn');
-
-  fetch('/faculty/recruitment_process/set_result', {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({ job_id: jobId, student_id: studentId, round_number: round, result: result })
-  })
-  .then(r => r.json())
-  .then(data => {
-    if (data.success) {
-      allBtns.forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-
-      const job = jobsData.find(j => j.job_id === String(jobId));
-      if (job) {
-        const student = job.students.find(s => s.student_id === studentId);
-        if (student) {
-          student.rounds[String(round)] = result;
-          if (result === 'Not Selected') {
-            setTimeout(() => {
-              row.style.opacity = '0.35';
-              row.style.pointerEvents = 'none';
-              row.title = 'Student eliminated in Round ' + round;
-            }, 400);
-          } else {
-            row.style.opacity = '1';
-            row.style.pointerEvents = '';
-            row.title = '';
-          }
-        }
-      }
-      showToast('Round ' + round + ': ' + result + ' saved!', result === 'Selected' ? 'success' : 'warning');
-    } else {
-      showToast(data.error || 'Failed to save result', 'error');
-    }
-  });
-}
-
+// ── TOAST ─────────────────────────────────────────────────────────────────────
 function showToast(msg, type) {
   type = type || 'success';
   const container = document.getElementById('toastContainer');
@@ -402,17 +545,17 @@ function showToast(msg, type) {
   const bg = {
     success: 'linear-gradient(135deg,#10b981,#059669)',
     warning: 'linear-gradient(135deg,#f59e0b,#d97706)',
-    error: 'linear-gradient(135deg,#ef4444,#dc2626)',
-    info: 'linear-gradient(135deg,#3b82f6,#2563eb)'
+    error:   'linear-gradient(135deg,#ef4444,#dc2626)',
+    info:    'linear-gradient(135deg,#3b82f6,#2563eb)'
   };
-  toast.style.cssText = 'background:' + (bg[type] || bg.success) + ';color:white;padding:13px 22px;border-radius:14px;box-shadow:0 10px 28px rgba(0,0,0,0.15);display:flex;align-items:center;gap:10px;font-family:DM Sans,sans-serif;font-size:13px;font-weight:600;opacity:0;transform:translateY(20px);transition:all 0.3s;min-width:220px;';
-  toast.innerHTML = '<i class="ti ti-circle-check" style="font-size:17px;"></i><span>' + msg + '</span>';
+  toast.style.cssText = `background:${bg[type]||bg.success};color:white;padding:13px 22px;border-radius:14px;box-shadow:0 10px 28px rgba(0,0,0,0.15);display:flex;align-items:center;gap:10px;font-family:DM Sans,sans-serif;font-size:13px;font-weight:600;opacity:0;transform:translateY(20px);transition:all 0.3s;min-width:220px;`;
+  toast.innerHTML = `<i class="ti ti-circle-check" style="font-size:17px;"></i><span>${msg}</span>`;
   container.appendChild(toast);
   setTimeout(() => { toast.style.opacity = '1'; toast.style.transform = 'translateY(0)'; }, 10);
-  setTimeout(() => { toast.style.opacity = '0'; toast.style.transform = 'translateY(-16px)'; setTimeout(() => toast.remove(), 300); }, 3000);
+  setTimeout(() => { toast.style.opacity = '0'; toast.style.transform = 'translateY(-16px)'; setTimeout(() => toast.remove(), 300); }, 4000);
 }
 
-// Theme Toggle
+// ── THEME TOGGLE ──────────────────────────────────────────────────────────────
 const themeToggle = document.getElementById('themeToggleBtn');
 if (themeToggle) {
   themeToggle.addEventListener('click', () => {
