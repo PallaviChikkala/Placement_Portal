@@ -1,56 +1,394 @@
-<html>
-    <head>
-        <title>Forms</title>
-    </head>
-    <body>
-        <select name = "role">
-            <option>Select role</option>
-            <option>Frontend Developer</option>
-            <option>Backend Developer</option>
-            <option>Full Stack Developer</option>
-            <option>Java Developer</option>
-            <option>Python Developer</option>
-            <option>C++ Developer</option>
-            <option>Software Developer</option>
-            <option>Web Developer</option>
-            <option>Mobile App Developer</option>
-            <option>Android Developer</option>
-            <option>iOS Developer</option>
-            <option>React Developer</option>
-            <option>Angular Developer</option>
-            <option>Node.js Developer</option>
-            <option>PHP Developer</option>
-            <option>.NET Developer</option>
-            <option>Database Administrator(DBA)</option>
-            <option>SQL Developer</option>
-            <option>Data Analyst</option>
-            <option>Business Analyst</option>
-            <option>Data Scientist</option>
-            <option>Machine Leraning Engineer</option>
-            <option>AI Engineer</option>
-            <option>Deep Learning Engineer</option>
-            <option>Cloud Engineer</option>
-            <option>DevOps Engineer</option>
-            <option>Cybersecurity Engineer</option>
-            <option>Network Engineer</option>
-            <option>Software Test Engineer</option>
-            <option>UI/UX Designer</option>
-            <option>Resume Analyzer</option>
-            <option>Custom</option>
-        </select>
-        <form action = "/upload" method = "POST" enctype = "multipart/form-data">
-            <div>
-                <label>Upload JD File (Optional):</label>
-                <input type = "file" name = "jd_file" />
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Resume Analyzer - Placement Portal</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+    <style>
+        :root {
+            --primary: #d97706;
+            --primary-light: #fbbf24;
+            --accent: #f59e0b;
+            --bg-color: #fcfaf8;
+            --text-main: #271c19;
+            --text-muted: #78716c;
+            --card-bg: rgba(255, 255, 255, 0.85);
+            --card-border: rgba(217, 119, 6, 0.15);
+            --input-bg: #ffffff;
+            --input-border: #e5e7eb;
+        }
+
+        [data-theme="dark"] {
+            --bg-color: #0f172a;
+            --text-main: #f8fafc;
+            --text-muted: #cbd5e1;
+            --card-bg: rgba(30, 41, 59, 0.7);
+            --card-border: rgba(245, 158, 11, 0.2);
+            --input-bg: rgba(15, 23, 42, 0.6);
+            --input-border: rgba(245, 158, 11, 0.3);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            transition: background 0.3s, color 0.3s;
+            background-image: 
+                radial-gradient(circle at 15% 50%, rgba(245, 158, 11, 0.05), transparent 25%),
+                radial-gradient(circle at 85% 30%, rgba(217, 119, 6, 0.05), transparent 25%);
+        }
+
+        nav {
+            padding: 1.5rem 5%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 10;
+        }
+
+        .logo {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.8rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #b45309 0%, #f59e0b 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-decoration: none;
+            letter-spacing: -0.5px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .theme-toggle {
+            background: transparent;
+            border: 1px solid var(--card-border);
+            color: var(--text-main);
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .theme-toggle:hover { background: rgba(245, 158, 11, 0.1); }
+
+        .container {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem 5%;
+        }
+
+        .analyzer-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--card-border);
+            border-radius: 24px;
+            padding: 3rem;
+            width: 100%;
+            max-width: 650px;
+            box-shadow: 0 10px 40px -10px rgba(217, 119, 6, 0.15);
+            animation: fadeUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            position: relative;
+            overflow: hidden;
+        }
+
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .analyzer-header {
+            text-align: center;
+            margin-bottom: 2.5rem;
+        }
+
+        .analyzer-header i {
+            font-size: 3rem;
+            color: var(--primary);
+            margin-bottom: 1rem;
+            display: inline-block;
+        }
+
+        .analyzer-header h1 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 2.2rem;
+            font-weight: 800;
+            color: var(--text-main);
+            margin-bottom: 0.5rem;
+        }
+
+        .analyzer-header p {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: var(--text-main);
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 0.8rem 1rem;
+            border-radius: 12px;
+            border: 1px solid var(--input-border);
+            background: var(--input-bg);
+            color: var(--text-main);
+            font-family: 'Inter', sans-serif;
+            font-size: 0.95rem;
+            transition: all 0.3s;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.15);
+        }
+
+        /* Drag and Drop Styling */
+        .file-drop-area {
+            border: 2px dashed var(--card-border);
+            border-radius: 16px;
+            padding: 2rem;
+            text-align: center;
+            background: rgba(245, 158, 11, 0.02);
+            transition: all 0.3s;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .file-drop-area:hover, .file-drop-area.dragover {
+            background: rgba(245, 158, 11, 0.08);
+            border-color: var(--primary);
+        }
+
+        .file-drop-area i {
+            font-size: 2.5rem;
+            color: var(--primary-light);
+            margin-bottom: 1rem;
+        }
+
+        .file-drop-area span {
+            display: block;
+            font-size: 0.95rem;
+            color: var(--text-muted);
+            margin-bottom: 0.5rem;
+        }
+
+        .file-drop-area strong {
+            color: var(--primary);
+        }
+
+        .file-input {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        .custom-jd-section {
+            display: none;
+            animation: fadeUp 0.4s ease forwards;
+        }
+
+        .btn-submit {
+            width: 100%;
+            padding: 1rem;
+            border-radius: 12px;
+            border: none;
+            background: linear-gradient(135deg, var(--accent) 0%, var(--primary) 100%);
+            color: white;
+            font-weight: 600;
+            font-size: 1.05rem;
+            font-family: 'Inter', sans-serif;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.3s;
+            margin-top: 2rem;
+            box-shadow: 0 4px 15px rgba(217, 119, 6, 0.3);
+        }
+
+        .btn-submit:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(217, 119, 6, 0.4);
+        }
+
+        .btn-back {
+            padding: 0.5rem 1rem;
+            border-radius: 100px;
+            border: 1px solid var(--card-border);
+            background: rgba(245, 158, 11, 0.05);
+            color: var(--text-main);
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.9rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.3s;
+            margin-bottom: 1.5rem;
+        }
+
+        .btn-back:hover {
+            background: rgba(245, 158, 11, 0.15);
+        }
+    </style>
+</head>
+<body>
+
+    <nav>
+        <a href="/" class="logo">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+            </svg>
+            PlacementPortal
+        </a>
+        <button class="theme-toggle" onclick="toggleTheme()" id="themeBtn">
+            <i class="ti ti-moon"></i>
+        </button>
+    </nav>
+
+    <div class="container">
+        <div class="analyzer-card">
+            <a href="/student_dashboard" class="btn-back"><i class="ti ti-arrow-left"></i> Back to Dashboard</a>
+            <div class="analyzer-header">
+                <i class="ti ti-brain"></i>
+                <h1>AI Resume Analyzer</h1>
+                <p>Upload your resume to get an AI-powered ATS score and feedback tailored to your target job profile.</p>
             </div>
-            <div>
-                <label>Or Paste Custom JD Text:</label><br>
-                <textarea name="custom_jd" rows="5" cols="40" placeholder="Paste custom Job Description here..."></textarea>
-            </div>
-            <br>
-            <label>Upload Student Resume (PDF/DOCX):</label>
-            <input type = "file" name = "resume" placeholder = "Upload resume"/><br>
-            <button type = "submit">Analyze resume</button>
-        </form>
-    </body>
+
+            <form action="/upload" method="POST" enctype="multipart/form-data" id="analyzerForm">
+                
+                <div class="form-group">
+                    <label>Target Job Role</label>
+                    <select name="role" id="roleSelect" class="form-control" onchange="toggleCustomJD()">
+                        <option value="">Select target role...</option>
+                        <option value="Frontend Developer">Frontend Developer</option>
+                        <option value="Backend Developer">Backend Developer</option>
+                        <option value="Full Stack Developer">Full Stack Developer</option>
+                        <option value="Java Developer">Java Developer</option>
+                        <option value="Python Developer">Python Developer</option>
+                        <option value="Data Analyst">Data Analyst</option>
+                        <option value="Data Scientist">Data Scientist</option>
+                        <option value="AI/ML Engineer">AI/ML Engineer</option>
+                        <option value="Cloud Engineer">Cloud Engineer</option>
+                        <option value="DevOps Engineer">DevOps Engineer</option>
+                        <option value="Cybersecurity Engineer">Cybersecurity Engineer</option>
+                        <option value="UI/UX Designer">UI/UX Designer</option>
+                        <option value="Custom">Custom / Upload Job Description</option>
+                    </select>
+                </div>
+
+                <div id="customJDSection" class="custom-jd-section">
+                    <div class="form-group">
+                        <label>Paste Custom Job Description</label>
+                        <textarea name="custom_jd" class="form-control" rows="6" placeholder="Paste the full job description text here..."></textarea>
+                    </div>
+                </div>
+
+                <div class="form-group" style="margin-top: 2rem;">
+                    <label>Upload Your Resume</label>
+                    <div class="file-drop-area">
+                        <i class="ti ti-file-cv"></i>
+                        <span>Drag & drop Resume file here or <strong>browse</strong></span>
+                        <span style="font-size: 0.8rem;">Supported formats: PDF, DOCX</span>
+                        <input type="file" name="resume" class="file-input" accept=".pdf,.docx" required id="resumeFileInput">
+                    </div>
+                    <div id="resumeFileName" style="margin-top: 8px; font-size: 0.85rem; color: var(--primary); text-align: center;"></div>
+                </div>
+
+                <button type="submit" class="btn-submit" id="submitBtn">
+                    <i class="ti ti-analyze"></i> Analyze Resume
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Theme Toggle Logic
+        function toggleTheme() {
+            const root = document.documentElement;
+            const btn = document.getElementById('themeBtn');
+            const icon = btn.querySelector('i');
+            
+            if (root.getAttribute('data-theme') === 'dark') {
+                root.removeAttribute('data-theme');
+                localStorage.setItem('theme', 'light');
+                icon.className = 'ti ti-moon';
+            } else {
+                root.setAttribute('data-theme', 'dark');
+                localStorage.setItem('theme', 'dark');
+                icon.className = 'ti ti-sun';
+            }
+        }
+
+        // Initialize Theme
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.setAttribute('data-theme', 'dark');
+            document.getElementById('themeBtn').querySelector('i').className = 'ti ti-sun';
+        }
+
+        // Toggle Custom JD Section
+        function toggleCustomJD() {
+            const select = document.getElementById('roleSelect');
+            const customSection = document.getElementById('customJDSection');
+            if (select.value === 'Custom') {
+                customSection.style.display = 'block';
+            } else {
+                customSection.style.display = 'none';
+            }
+        }
+
+
+
+        document.getElementById('resumeFileInput').addEventListener('change', function() {
+            document.getElementById('resumeFileName').textContent = this.files[0] ? this.files[0].name : '';
+        });
+
+        // Form Submit Loading State
+        document.getElementById('analyzerForm').addEventListener('submit', function(e) {
+            const role = document.getElementById('roleSelect').value;
+            if(!role) {
+                e.preventDefault();
+                alert('Please select a target job role.');
+                return;
+            }
+            const btn = document.getElementById('submitBtn');
+            btn.innerHTML = '<i class="ti ti-loader" style="animation: spin 1s linear infinite;"></i> Analyzing...';
+            btn.style.opacity = '0.8';
+            btn.style.pointerEvents = 'none';
+        });
+
+        const style = document.createElement('style');
+        style.textContent = `@keyframes spin { 100% { transform: rotate(360deg); } }`;
+        document.head.appendChild(style);
+    </script>
+</body>
 </html>

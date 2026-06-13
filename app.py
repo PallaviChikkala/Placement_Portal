@@ -7,6 +7,9 @@ from werkzeug.utils import secure_filename
 import json
 from datetime import timedelta
 import pandas as pd
+import re
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
 
 app = Flask(__name__)
 app.secret_key = "placement_portal_secret"
@@ -25,8 +28,8 @@ def get_connection():
     return mysql.connector.connect(
         host="localhost",
         user="root",
-        password="Hasini@1234",
-        database="placement_portal2",
+        password="Pallavi@2007",
+        database="placement_portal",
         connection_timeout=30,
         autocommit=False
     )
@@ -293,22 +296,25 @@ def upload():
     custom_jd = request.form.get("custom_jd", "")
    
     if not role or role == "Select a job profile...":
-        return "Please select a role."
+        return render_template("resume_analysis_result.html", error_msg="Please select a target job role.")
    
     text = ""
    
     if filename.endswith(".pdf"):
-        with pdfplumber.open(file) as pdf:
-            for page in pdf.pages:
-                text += page.extract_text() or ""
-   
+        try:
+            with pdfplumber.open(file) as pdf:
+                for page in pdf.pages:
+                    text += page.extract_text() or ""
+        except Exception:
+            return render_template("resume_analysis_result.html", error_msg="The uploaded resume file appears to be corrupted or is not a valid PDF. Please upload a valid PDF file and try again.")
+
     elif filename.endswith(".docx"):
         document = docx.Document(file)
         for para in document.paragraphs:
             text += para.text + "\n"
    
     else :
-        return "Only PDF and DOCX files are allowed."
+        return render_template("resume_analysis_result.html", error_msg="Only PDF and DOCX files are allowed for resumes.")
    
 
     role_skills = {
@@ -345,22 +351,7 @@ def upload():
     }
    
     if role == "Custom":
-        custom_text = ""
-        jd_file = request.files.get("jd_file")
-        if jd_file and jd_file.filename:
-            jd_filename = jd_file.filename.lower()
-            if jd_filename.endswith(".pdf"):
-                with pdfplumber.open(jd_file) as pdf:
-                    for page in pdf.pages:
-                        custom_text += page.extract_text() or ""
-            elif jd_filename.endswith(".docx"):
-                document = docx.Document(jd_file)
-                for para in document.paragraphs:
-                    custom_text += para.text + "\n"
-            elif jd_filename.endswith(".txt"):
-                custom_text = jd_file.read().decode('utf-8', errors='ignore')
-        else:
-            custom_text = custom_jd
+        custom_text = custom_jd
 
         all_possible_skills = ["Java", "Python", "C++", "C", "HTML", "CSS", "JavaScript", "TypeScript", "React", "Angular", "Vue.js", "Node.js", "Spring Boot", "MySQL", "MongoDB", "PostgreSQL", "SQL", "DBMS", "Machine Learning", "Deep Learning", "TensorFlow", "PyTorch", "Pandas", "NumPy", "Excel", "Power BI", "Tableau", "Git", "Docker", "Kubernetes", "AWS", "Azure", "GCP", "Linux", "Data Structures", "Algorithms", "DSA", "Problem Solving", "Communication"]
         required_skills = []
@@ -393,49 +384,68 @@ def upload():
         else :
             missing_optional.append(skill)
 
-    required_score = (len(found_required)/ len(required_skills))* 80
+    if len(required_skills) > 0:
+        required_score = (len(found_required) / len(required_skills)) * 50
+    else:
+        required_score = 50
 
-    if(len(found_optional) >= 1 ):
-        optional_score = 20
+    if len(found_optional) >= 1:
+        optional_score = 10
     else:
         optional_score = 0
 
-    score = int(required_score + optional_score)
+    keyword_score = required_score + optional_score
+
+    # --- AI Semantic Scoring using TF-IDF ---
+    def clean_text(t):
+        return re.sub(r'[^a-zA-Z0-9\s]', '', t).lower()
+        
+    cleaned_resume = clean_text(text)
+    if role == "Custom":
+        target_doc = clean_text(custom_text)
+    else:
+        target_doc = clean_text(" ".join(required_skills + optional_skills))
+
+    ai_score = 0
+    if cleaned_resume.strip() and target_doc.strip():
+        try:
+            vectorizer = TfidfVectorizer(stop_words='english')
+            tfidf_matrix = vectorizer.fit_transform([cleaned_resume, target_doc])
+            similarity = cosine_similarity(tfidf_matrix[0:1], tfidf_matrix[1:2])[0][0]
+            # TF-IDF on resumes vs short JDs is usually 0.15 - 0.4. We scale it up dynamically.
+            ai_score = min(int(similarity * 100 * 3), 40)
+        except Exception:
+            pass
+
+    score = int(keyword_score + ai_score)
 
     suggestion = ""
-    if len(found_optional) == 0:
-        suggestion = f"Good ATS score. Consider learning one of : {optional_skills}"
-    elif score < 70:
-        suggestion = f"Improve required skills<br> Required skills are : {required_skills}"
-    else :
-        suggestion = "Strong profile for this role"
+    if score >= 80:
+        suggestion = "Strong AI match! Your profile aligns exceptionally well."
+    elif score >= 60:
+        suggestion = f"Good potential. Consider highlighting missing keywords naturally: {', '.join(missing_required[:3])}"
+    else:
+        suggestion = f"Low AI match. Tailor your resume more heavily towards: {', '.join(required_skills[:4])}"
 
     genome_score = 0
 
     if score >= 70 :
-        genome_score += 40
-    elif score >= 50 :
-        genome_score += 25
-    else:
-        genome_score += 10
-
-    if "project" in text.lower() or "projects" in text.lower():
-        genome_score += 20
-
-    if "b.tech" in text.lower() or "bachelor" in text.lower() or "education" in text.lower():
         genome_score += 15
-   
-    if "certificate" in text.lower() or "certificates" in text.lower() or "certification" in text.lower():
+    elif score >= 50 :
         genome_score += 10
-   
-    if "internship" in text.lower() or "experience" in text.lower():
-        genome_score += 10
-   
-    if "award" in text.lower() or "achievement" in text.lower():
+    else:
         genome_score += 5
 
+    if "project" in text.lower() or "projects" in text.lower():
+        genome_score += 5
 
-    final_score = int((score + genome_score) / 2)
+    if "b.tech" in text.lower() or "bachelor" in text.lower() or "education" in text.lower():
+        genome_score += 5
+   
+    if "certificate" in text.lower() or "certificates" in text.lower() or "certification" in text.lower():
+        genome_score += 5
+   
+    final_score = min(score + genome_score, 100)
    
     # Update student's skills and save score if logged in
     if "student_id" in session:
@@ -454,114 +464,19 @@ def upload():
             cursor.execute("UPDATE students SET skills = %s WHERE student_id = %s", (skills_str, student_id))
             db.commit()
 
-    found_req_str = ", ".join(found_required) if found_required else "None"
-    missing_req_str = ", ".join(missing_required) if missing_required else "None"
-    found_opt_str = ", ".join(found_optional) if found_optional else "None"
-    missing_opt_str = ", ".join(missing_optional) if missing_optional else "None"
+    found_skills_list = found_required + found_optional
+    missing_skills_list = missing_required + missing_optional
 
-    return f"""
-    <html>
-    <head>
-        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
-        <link rel="stylesheet" href="/static/css/style.css">
-        <title>Resume Analysis Results</title>
-        <style>
-            body {{
-                background: linear-gradient(135deg, #0f172a, #1e293b);
-                color: #f8fafc;
-                min-height: 100vh;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                padding: 20px;
-            }}
-            .results-card {{
-                background: rgba(30, 41, 59, 0.7);
-                backdrop-filter: blur(16px);
-                border: 1px solid rgba(255, 255, 255, 0.1);
-                border-radius: 24px;
-                box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
-                padding: 40px;
-                width: 100%;
-                max-width: 700px;
-            }}
-            .skill-box {{
-                background: rgba(15, 23, 42, 0.6);
-                border: 1px solid rgba(255, 255, 255, 0.05);
-                border-radius: 12px;
-                padding: 15px;
-                height: 100%;
-            }}
-            .score-circle {{
-                width: 110px;
-                height: 110px;
-                border-radius: 50%;
-                border: 4px solid var(--accent);
-                display: flex;
-                flex-direction: column;
-                justify-content: center;
-                align-items: center;
-                margin: 0 auto;
-                box-shadow: 0 0 15px var(--accent-glow);
-            }}
-        </style>
-    </head>
-    <body>
-        <div class="results-card text-center animated-fade-in-up">
-            <h2 class="mb-4 text-warning" style="font-family: var(--font-heading);">Resume Analysis Report</h2>
-            <p class="text-muted mb-4">Role: <strong>{role}</strong></p>
-           
-            <div class="row g-3 text-start mb-4">
-                <div class="col-md-6">
-                    <div class="skill-box">
-                        <strong class="text-success">✔ Required Skills Found</strong>
-                        <p class="mb-0 text-white-50 mt-1">{found_req_str}</p>
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="skill-box">
-                        <strong class="text-danger">✖ Required Skills Missing</strong>
-                        <p class="mb-0 text-white-50 mt-1">{missing_req_str}</p>
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="skill-box">
-                        <strong class="text-success">✔ Optional Skills Found</strong>
-                        <p class="mb-0 text-white-50 mt-1">{found_opt_str}</p>
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="skill-box">
-                        <strong class="text-warning">⚠ Optional Skills Missing</strong>
-                        <p class="mb-0 text-white-50 mt-1">{missing_opt_str}</p>
-                    </div>
-                </div>
-            </div>
-
-           <div class="row mb-4">
-    <div class="col-12">
-        <div class="score-circle">
-            <span class="fs-3 fw-bold text-warning">{final_score}%</span>
-            <small style="font-size: 0.65rem;" class="text-uppercase text-muted">Overall Score</small>
-        </div>
-    </div>
-</div>
-            <div class="p-3 rounded mb-4" style="background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.2);">
-                <span class="text-warning"><strong>Recommendation:</strong></span>
-                <span class="text-white-50">{suggestion}</span>
-            </div>
-
-            <div class="d-flex gap-3 justify-content-center">
-                <a href="/student_dashboard" class="btn btn-premium">Go to Dashboard</a>
-                <a href="/student_profile" class="btn btn-premium-outline" style="border-color: rgba(255,255,255,0.4); color: white;">View Profile</a>
-            </div>
-        </div>
-    </body>
-    </html>
-    """
+    return render_template("resume_analysis_result.html", 
+                           score=final_score, 
+                           matched_skills=found_skills_list, 
+                           missing_skills=missing_skills_list, 
+                           suggestion=suggestion)
 
 @app.route("/student_login")
 def student_login_page():
+    if "student_id" in session:
+        return redirect("/student_dashboard")
     return render_template("student/login.html")
 
 @app.route("/student_login_check", methods = ["POST"])
@@ -1069,6 +984,8 @@ def student_logout():
 
 @app.route("/faculty_login")
 def faculty_login_page():
+    if "faculty_email" in session:
+        return redirect("/faculty_dashboard")
     ensure_connection()
     try:
         cursor.execute("SELECT COUNT(*) AS c FROM students")
@@ -2422,6 +2339,55 @@ def faculty_upload_students():
 
 # ─── FORGOT PASSWORD ─────────────────────────────────────────────────────────
 
+def send_reset_otp(to_email, otp):
+    import smtplib
+    from email.mime.text import MIMEText
+    from email.mime.multipart import MIMEMultipart
+    
+    # Dummy credentials provided by user for testing verification logic
+    # In production, replace with actual app password and sender email
+    sender_email = "hasini123@gmail.com"
+    sender_password = "dummy_app_password"
+    
+    msg = MIMEMultipart()
+    msg['From'] = sender_email
+    msg['To'] = to_email
+    msg['Subject'] = "Password Reset OTP - Placement Portal"
+    
+    html = f"""
+    <html>
+      <body>
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
+          <h2 style="color: #d97706; text-align: center;">Placement Portal</h2>
+          <p>Hello,</p>
+          <p>You have requested to reset your password. Please use the following One-Time Password (OTP) to proceed:</p>
+          <div style="text-align: center; margin: 20px 0;">
+            <span style="font-size: 24px; font-weight: bold; padding: 10px 20px; background-color: #fef3c7; border-radius: 5px; letter-spacing: 2px;">{otp}</span>
+          </div>
+          <p>If you did not request a password reset, please ignore this email.</p>
+          <br>
+          <p>Best regards,<br>Placement Portal Team</p>
+        </div>
+      </body>
+    </html>
+    """
+    msg.attach(MIMEText(html, 'html'))
+    
+    try:
+        # We will attempt to connect, but since we are using dummy credentials, 
+        # it will fail. We'll catch the exception and print the OTP to the console 
+        # so the user can still test the flow.
+        server = smtplib.SMTP('smtp.gmail.com', 587)
+        server.starttls()
+        server.login(sender_email, sender_password)
+        server.send_message(msg)
+        server.quit()
+        return True
+    except Exception as e:
+        print(f"Failed to send email due to dummy credentials. Your OTP is: {otp}")
+        print(f"SMTP Error: {e}")
+        return False
+
 @app.route("/forgot_password", methods=["GET", "POST"])
 def forgot_password():
     if request.method == "POST":
@@ -2430,30 +2396,33 @@ def forgot_password():
             from flask import flash
             flash("Please enter an email address.", "error")
             return redirect("/forgot_password")
-       
+        
         # Check students table
         cursor.execute("SELECT * FROM students WHERE email=%s", (email,))
         student = cursor.fetchone()
-       
+        
         # Check faculty table
         cursor.execute("SELECT * FROM faculty WHERE email=%s", (email,))
         faculty = cursor.fetchone()
-       
+        
         if not student and not faculty:
             from flask import flash
             flash("No account found with that email address.", "error")
             return redirect("/forgot_password")
-           
+            
         role = "student" if student else "faculty"
-       
+        
         # Generate 6 digit OTP
         import random
         otp = str(random.randint(100000, 999999))
         session['reset_email'] = email
         session['reset_role'] = role
         session['reset_otp'] = otp
-       
-        # Mocking email send by flashing it directly
+        
+        # Send Email using dummy credentials
+        send_reset_otp(email, otp)
+        
+        # Mocking email send by flashing it directly so user can still proceed through UI flow
         from flask import flash
         flash(f"MOCK EMAIL SEND: Your OTP is {otp}", "info")
         return redirect("/verify_otp")

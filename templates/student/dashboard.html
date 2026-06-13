@@ -277,8 +277,8 @@
                             <div class="p-3 bg-warning-subtle rounded-circle d-inline-flex mb-3">
                                 <i class="bi bi-cpu fs-2 text-warning"></i>
                             </div>
-                            <h5 class="fw-bold text-primary mb-2" style="font-family: var(--font-heading);">Resume ATS Engine</h5>
-                            <p class="text-muted small">Analyze your resume formatting and matching skills for standard placement profiles.</p>
+                            <h5 class="fw-bold text-primary mb-2" style="font-family: var(--font-heading);">Resume Analyzer</h5>
+                            <p class="text-muted small">Analyze your resume and gain insights to strengthen your professional profile.</p>
                         </div>
                         
                         <form action="/upload" method="POST" enctype="multipart/form-data" class="quick-upload-form">
@@ -291,9 +291,9 @@
                                     <option>Full Stack Developer</option>
                                     <option>Data Analyst</option>
                                     <option>AI/ML Engineer</option>
-                                    <option value="Custom">Upload Custom Job Description</option>
+                                    <option value="Custom">Paste Custom Job Description</option>
                                 </select>
-                                <input type="file" name="jd_file" id="customJdFile" class="form-control form-premium d-none mb-3" accept=".txt,.pdf,.docx">
+                                <textarea name="custom_jd" id="customJdFile" class="form-control form-premium d-none mb-3" rows="3" placeholder="Paste Job Description here..."></textarea>
                             </div>
                             
                             <div class="mb-4">

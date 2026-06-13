@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analysis Result - Placement Portal</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+    <style>
+        :root {
+            --primary: #d97706;
+            --primary-light: #fbbf24;
+            --accent: #f59e0b;
+            --bg-color: #fcfaf8;
+            --text-main: #271c19;
+            --text-muted: #78716c;
+            --card-bg: rgba(255, 255, 255, 0.85);
+            --card-border: rgba(217, 119, 6, 0.15);
+            --success: #10b981;
+            --success-bg: #ecfdf5;
+            --danger: #ef4444;
+            --danger-bg: #fef2f2;
+            --warning: #f59e0b;
+        }
+
+        [data-theme="dark"] {
+            --bg-color: #0f172a;
+            --text-main: #f8fafc;
+            --text-muted: #cbd5e1;
+            --card-bg: rgba(30, 41, 59, 0.7);
+            --card-border: rgba(245, 158, 11, 0.2);
+            --success-bg: rgba(16, 185, 129, 0.1);
+            --danger-bg: rgba(239, 68, 68, 0.1);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            transition: background 0.3s, color 0.3s;
+            background-image: 
+                radial-gradient(circle at 15% 50%, rgba(245, 158, 11, 0.05), transparent 25%),
+                radial-gradient(circle at 85% 30%, rgba(217, 119, 6, 0.05), transparent 25%);
+        }
+
+        nav {
+            padding: 1.5rem 5%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 10;
+        }
+
+        .logo {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.8rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #b45309 0%, #f59e0b 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-decoration: none;
+            letter-spacing: -0.5px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .theme-toggle {
+            background: transparent;
+            border: 1px solid var(--card-border);
+            color: var(--text-main);
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .theme-toggle:hover { background: rgba(245, 158, 11, 0.1); }
+
+        .container {
+            flex: 1;
+            padding: 2rem 5% 4rem;
+            max-width: 1000px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .header-section {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            animation: fadeUp 0.6s ease forwards;
+        }
+
+        .header-section h1 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 2.2rem;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .btn-back {
+            padding: 0.6rem 1.2rem;
+            border-radius: 100px;
+            border: 1px solid var(--card-border);
+            background: var(--card-bg);
+            color: var(--text-main);
+            text-decoration: none;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.3s;
+        }
+
+        .btn-back:hover {
+            background: rgba(245, 158, 11, 0.1);
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 2rem;
+            animation: fadeUp 0.8s ease forwards;
+        }
+
+        @media (max-width: 768px) {
+            .dashboard-grid { grid-template-columns: 1fr; }
+        }
+
+        .card {
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--card-border);
+            border-radius: 24px;
+            padding: 2rem;
+            box-shadow: 0 10px 40px -10px rgba(217, 119, 6, 0.1);
+        }
+
+        /* Score Section */
+        .score-section {
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .circular-progress {
+            width: 180px;
+            height: 180px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            margin-bottom: 1.5rem;
+            /* Conic gradient dynamically set via inline style based on score */
+            background: conic-gradient(var(--primary) calc({{ score }} * 3.6deg), rgba(245, 158, 11, 0.1) 0deg);
+        }
+
+        .circular-progress::before {
+            content: "";
+            position: absolute;
+            width: 150px;
+            height: 150px;
+            background-color: var(--bg-color);
+            border-radius: 50%;
+        }
+
+        .progress-value {
+            position: relative;
+            font-family: 'Outfit', sans-serif;
+            font-size: 3rem;
+            font-weight: 800;
+            color: var(--text-main);
+        }
+
+        .score-label {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            margin-bottom: 0.5rem;
+        }
+
+        .score-desc {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            line-height: 1.5;
+        }
+
+        /* Skills Section */
+        .card-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.3rem;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--text-main);
+        }
+
+        .skills-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 2rem;
+        }
+
+        .skill-badge {
+            padding: 0.5rem 1rem;
+            border-radius: 100px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .skill-badge.matched {
+            background: var(--success-bg);
+            color: var(--success);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+        }
+
+        .skill-badge.missing {
+            background: var(--danger-bg);
+            color: var(--danger);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+        }
+
+        /* Feedback Section */
+        .feedback-box {
+            background: rgba(245, 158, 11, 0.05);
+            border-left: 4px solid var(--primary);
+            padding: 1.2rem;
+            border-radius: 0 12px 12px 0;
+            margin-bottom: 1rem;
+        }
+
+        .feedback-box p {
+            font-size: 0.95rem;
+            line-height: 1.6;
+            color: var(--text-main);
+            margin-bottom: 0.5rem;
+        }
+
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body data-theme="light">
+
+    <nav>
+        <a href="/" class="logo">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+            </svg>
+            PlacementPortal
+        </a>
+        <button class="theme-toggle" onclick="toggleTheme()" id="themeBtn">
+            <i class="ti ti-moon"></i>
+        </button>
+    </nav>
+
+    <div class="container">
+        
+        {% if error_msg %}
+        <!-- Error State -->
+        <div class="card" style="text-align: center; max-width: 600px; margin: 40px auto; border-color: var(--danger);">
+            <i class="ti ti-alert-triangle" style="font-size: 4rem; color: var(--danger); margin-bottom: 1rem;"></i>
+            <h2 style="font-family: 'Outfit'; color: var(--text-main); margin-bottom: 1rem;">Analysis Failed</h2>
+            <p style="color: var(--danger); line-height: 1.6; margin-bottom: 2rem;">{{ error_msg }}</p>
+            <a href="javascript:history.back()" class="btn-back" style="display: inline-flex; justify-content: center; background: var(--danger-bg); border-color: rgba(239, 68, 68, 0.3); color: var(--danger);">
+                <i class="ti ti-refresh"></i> Try Again
+            </a>
+        </div>
+        {% else %}
+        <!-- Success State -->
+        <div class="header-section">
+            <h1><i class="ti ti-file-analytics"></i> AI Resume Analysis</h1>
+            <a href="/resume_analyzer" class="btn-back"><i class="ti ti-arrow-left"></i> Analyze Another</a>
+        </div>
+
+        <div class="dashboard-grid">
+            
+            <!-- Left Column: Score -->
+            <div class="card score-section">
+                <div class="circular-progress">
+                    <span class="progress-value">{{ score }}%</span>
+                </div>
+                <div class="score-label">ATS Match Score</div>
+                <p class="score-desc">
+                    {% if score >= 80 %}
+                        Excellent match! Your resume is highly optimized for this role.
+                    {% elif score >= 60 %}
+                        Good match, but there is room for improvement to pass strict ATS filters.
+                    {% else %}
+                        Low match. Consider heavily tailoring your resume for this specific role.
+                    {% endif %}
+                </p>
+            </div>
+
+            <!-- Right Column: Details -->
+            <div class="card">
+                
+                <h3 class="card-title"><i class="ti ti-circle-check" style="color: var(--success);"></i> Matched Skills</h3>
+                <div class="skills-container">
+                    {% if matched_skills %}
+                        {% for skill in matched_skills %}
+                        <div class="skill-badge matched"><i class="ti ti-check"></i> {{ skill }}</div>
+                        {% endfor %}
+                    {% else %}
+                        <p style="color: var(--text-muted); font-size: 0.9rem;">No key skills matched.</p>
+                    {% endif %}
+                </div>
+
+                <h3 class="card-title"><i class="ti ti-circle-x" style="color: var(--danger);"></i> Missing Skills (Found in JD)</h3>
+                <div class="skills-container">
+                    {% if missing_skills %}
+                        {% for skill in missing_skills %}
+                        <div class="skill-badge missing"><i class="ti ti-x"></i> {{ skill }}</div>
+                        {% endfor %}
+                    {% else %}
+                        <p style="color: var(--text-muted); font-size: 0.9rem;">Great! No major missing skills identified.</p>
+                    {% endif %}
+                </div>
+
+                <h3 class="card-title"><i class="ti ti-bulb" style="color: var(--primary);"></i> AI Recommendations</h3>
+                <div class="feedback-box">
+                    {% if score >= 80 %}
+                        <p><strong>Strong Candidate:</strong> Your resume has a very high overlap with the job description. Ensure your formatting is clean and contact info is clearly visible.</p>
+                    {% elif score >= 60 %}
+                        <p><strong>Add Keywords:</strong> Try incorporating the missing skills listed above naturally into your work experience or skills section to boost your ATS score.</p>
+                    {% else %}
+                        <p><strong>Major Revision Needed:</strong> Your resume lacks many core requirements for this role. If you have these missing skills, add them prominently. If not, consider building foundational projects in these areas before applying.</p>
+                    {% endif %}
+                </div>
+
+            </div>
+
+        </div>
+        {% endif %}
+
+    </div>
+
+    <script>
+        // Theme Logic
+        function toggleTheme() {
+            const root = document.documentElement;
+            const btn = document.getElementById('themeBtn');
+            const icon = btn.querySelector('i');
+            
+            if (root.getAttribute('data-theme') === 'dark') {
+                root.removeAttribute('data-theme');
+                localStorage.setItem('theme', 'light');
+                icon.className = 'ti ti-moon';
+            } else {
+                root.setAttribute('data-theme', 'dark');
+                localStorage.setItem('theme', 'dark');
+                icon.className = 'ti ti-sun';
+            }
+        }
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.setAttribute('data-theme', 'dark');
+            document.getElementById('themeBtn').querySelector('i').className = 'ti ti-sun';
+        }
+    </script>
+</body>
+</html>

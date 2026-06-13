@@ -165,7 +165,7 @@ tr:hover td { background-color:rgba(253,230,138,0.12); }
 .tier-btn:hover { background:rgba(253,230,138,0.3); }
 .tier-btn.active { background:linear-gradient(135deg,#f59e0b,#d97706); color:white; border-color:#d97706; }
 
-.branches-checkbox-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(130px,1fr)); gap:10px; background:#fffdf9; border:1px solid rgba(253,230,138,0.8); border-radius:10px; padding:12px; }
+.branches-checkbox-grid { display:flex; flex-direction:column; gap:0; background:#fffdf9; border:1px solid rgba(253,230,138,0.8); border-radius:10px; padding:16px; }
 .branch-check-label { display:flex; align-items:center; gap:8px; font-size:12px; font-weight:600; color:#5c3b1a; cursor:pointer; }
 .branch-check-label input[type="checkbox"] {
   appearance: none; width: 16px; height: 16px; border-radius: 4px; border: 2px solid #d97706;
@@ -190,10 +190,14 @@ tr:hover td { background-color:rgba(253,230,138,0.12); }
 [data-theme="dark"] .form-group input, [data-theme="dark"] .form-group select, [data-theme="dark"] .form-group textarea { background: var(--input-bg); border-color: var(--input-border); color: var(--text-main); }
 [data-theme="dark"] .form-group input:focus, [data-theme="dark"] .form-group select:focus, [data-theme="dark"] .form-group textarea:focus { background: rgba(30, 41, 59, 0.9); }
 [data-theme="dark"] .tier-btn { background: var(--input-bg); border-color: var(--input-border); color: var(--text-main); }
+[data-theme="dark"] .tier-btn.active { background: linear-gradient(135deg,#f59e0b,#d97706) !important; color: white !important; border-color: #d97706 !important; }
 [data-theme="dark"] .tier-btn:hover { background: var(--badge-bg); }
 [data-theme="dark"] .branches-checkbox-grid { background: var(--input-bg); border-color: var(--input-border); }
 [data-theme="dark"] .branch-check-label { color: var(--text-main); }
 [data-theme="dark"] .column-option input[type="checkbox"], [data-theme="dark"] .branch-check-label input[type="checkbox"] { background-color: var(--input-bg); }
+/* Fix: Extra Requirements container in dark mode */
+[data-theme="dark"] .extra-req-box { background: var(--input-bg) !important; border-color: var(--input-border) !important; }
+[data-theme="dark"] .extra-req-box .branch-check-label { color: var(--text-main) !important; }
 .delete-all-btn {
   background: #fee2e2;
   color: #b91c1c;
@@ -408,27 +412,74 @@ tr:hover td { background-color:rgba(253,230,138,0.12); }
           <label>Select Eligible Branches *</label>
           <div class="branches-checkbox-grid">
 
-  {% for branch in ['CSE', 'ECE', 'Mechanical', 'Chemical', 'Bio-Technology', 'AI', 'AIML', 'IT', 'Civil', 'EEE'] %}
-  <label class="branch-check-label">
-    <input type="checkbox" name="branches" value="{{ branch }}" class="branch-cb">
-    {{ branch }}
-  </label>
-  {% endfor %}
+            <!-- B.Tech Branches -->
+            <div style="width:100%;margin-bottom:10px;">
+              <span style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-accent);display:flex;align-items:center;gap:6px;margin-bottom:8px;">
+                <i class="ti ti-school" style="font-size:14px;"></i> B.Tech Branches
+              </span>
+              <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:6px;">
+                {% for branch in [
+                  'Biotechnology',
+                  'Chemical Engineering',
+                  'Civil Engineering',
+                  'Computer Science and Engineering',
+                  'Electrical and Electronics Engineering',
+                  'Electronics and Communication Engineering',
+                  'Mechanical Engineering',
+                  'Metallurgical and Materials Engineering'
+                ] %}
+                <label class="branch-check-label">
+                  <input type="checkbox" name="branches" value="{{ branch }}" class="branch-cb">
+                  {{ branch }}
+                </label>
+                {% endfor %}
+              </div>
+            </div>
 
-  <label class="branch-check-label">
-    <input type="checkbox" id="customBranchCheck" onchange="toggleCustomBranch()">
-    Other Branch
-  </label>
+            <!-- M.Tech Branches -->
+            <div style="width:100%;border-top:1px dashed var(--card-border);padding-top:12px;margin-top:4px;">
+              <span style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-accent);display:flex;align-items:center;gap:6px;margin-bottom:8px;">
+                <i class="ti ti-school" style="font-size:14px;"></i> M.Tech Branches
+              </span>
+              <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:6px;">
+                {% for branch in [
+                  'Advanced Communication Systems & Signal Processing',
+                  'Bioprocess Engineering',
+                  'Chemical Engineering (M.Tech)',
+                  'Computer Science and Data Analytics',
+                  'Geotechnical Engineering',
+                  'Manufacturing Engineering',
+                  'Materials Technology',
+                  'Power Electronics & Drives',
+                  'Thermal Engineering'
+                ] %}
+                <label class="branch-check-label">
+                  <input type="checkbox" name="branches" value="{{ branch }}" class="branch-cb">
+                  {{ branch }}
+                </label>
+                {% endfor %}
+              </div>
+            </div>
 
-  <input
-      type="text"
-      name="custom_branch"
-      id="customBranchInput"
-      placeholder="Enter branch name"
-      style="display:none;padding:10px;border-radius:10px;border:1px solid #fde68a;"
-  >
+            <!-- Other Branch -->
+            <div style="width:100%;border-top:1px dashed var(--card-border);padding-top:12px;margin-top:4px;">
+              <span style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-accent);display:flex;align-items:center;gap:6px;margin-bottom:8px;">
+                <i class="ti ti-plus" style="font-size:14px;"></i> Other Branch
+              </span>
+              <label class="branch-check-label" style="margin-bottom:8px;">
+                <input type="checkbox" id="customBranchCheck" onchange="toggleCustomBranch()">
+                Add Other Branch
+              </label>
+              <input
+                type="text"
+                name="custom_branch"
+                id="customBranchInput"
+                placeholder="Type branch name here"
+                style="display:none;width:100%;max-width:360px;padding:10px;border-radius:10px;border:1px solid rgba(253,230,138,0.8);background:var(--input-bg);color:var(--text-main);font-family:'DM Sans',sans-serif;"
+              >
+            </div>
 
-</div>
+          </div>
         </div>
         <div class="form-group full-width">
           <label>Select Job Tier *</label>
@@ -441,7 +492,7 @@ tr:hover td { background-color:rgba(253,230,138,0.12); }
         </div>
         <div class="form-group full-width">
           <label>Extra Requirements</label>
-          <div style="display:flex;gap:20px;align-items:center;background:#fffdf9;border:1px solid rgba(253,230,138,0.8);border-radius:10px;padding:12px;flex-wrap:wrap;">
+          <div class="extra-req-box" style="display:flex;gap:20px;align-items:center;background:#fffdf9;border:1px solid rgba(253,230,138,0.8);border-radius:10px;padding:12px;flex-wrap:wrap;">
             <label class="branch-check-label"><input type="checkbox" name="req_aadhar" id="fAadhar"> Require Aadhar Card</label>
             <label class="branch-check-label"><input type="checkbox" name="req_pan" id="fPan"> Require PAN Card</label>
           </div>
