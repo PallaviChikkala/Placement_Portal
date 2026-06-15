@@ -29,7 +29,7 @@ def get_connection():
         host="localhost",
         user="root",
         password="Hasini@1234",
-        database="placement_portal",
+        database="placement_portal2",
         connection_timeout=30,
         autocommit=False
     )
