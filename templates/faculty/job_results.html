@@ -140,7 +140,7 @@ body { min-height: 100vh; font-family: 'DM Sans', sans-serif; background: var(--
 .search-icon { position: absolute; left: 12px; top: 12px; color: var(--text-muted); font-size: 16px; }
 
 /* Tables Grid */
-.tables-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; }
+.tables-grid { display: grid; grid-template-columns: 1fr; gap: 28px; }
 @media (max-width: 992px) {
   .tables-grid { grid-template-columns: 1fr; }
 }
@@ -181,10 +181,10 @@ tr:hover { background-color: rgba(253, 230, 138, 0.08); }
 
 <div class="global-header">
   <div class="logo-area">
-    <div class="logo-icon">N</div>
+    <img src="/static/nitap_logo.png" class="logo-img" alt="NIT AP Logo" style="height: 40px; width: auto;">
     <div class="logo-text">
       <h2>National Institute of Technology<br>Andhra Pradesh</h2>
-      <p>Placement &amp; Career Cell</p>
+      <p>Training &amp; Placement Cell</p>
     </div>
   </div>
   <div style="display:flex; align-items:center; gap:16px;">
@@ -266,29 +266,6 @@ tr:hover { background-color: rgba(253, 230, 138, 0.08); }
         </div>
       </div>
 
-      <!-- Not Selected Students -->
-      <div class="table-wrapper">
-        <div class="table-header">
-          <h3 class="rejected-title"><i class="ti ti-circle-x"></i> Not Selected Students</h3>
-          <span id="rejectedCount" class="count-badge not-selected-badge">0</span>
-        </div>
-        <div class="table-responsive">
-          <table id="rejectedTable">
-            <thead>
-              <tr>
-                <th>Roll No</th>
-                <th>Name</th>
-                <th>Branch</th>
-                <th>Email</th>
-                <th>Phone</th>
-              </tr>
-            </thead>
-            <tbody>
-              <!-- AJAX Populated -->
-            </tbody>
-          </table>
-        </div>
-      </div>
     </div>
   </div>
 </div>
@@ -301,21 +278,17 @@ document.querySelectorAll('.job-selector-card').forEach((card, index) => {
 
 // Ajax fetching logic
 let selectedStudentsData = [];
-let rejectedStudentsData = [];
 
 const jobCards = document.querySelectorAll('.job-selector-card');
 const resultsSection = document.getElementById('resultsSection');
 const selectedJobTitle = document.getElementById('selectedJobTitle');
 const selectedJobSub = document.getElementById('selectedJobSub');
 const selectedTableBody = document.querySelector('#selectedTable tbody');
-const rejectedTableBody = document.querySelector('#rejectedTable tbody');
 const selectedCountBadge = document.getElementById('selectedCount');
-const rejectedCountBadge = document.getElementById('rejectedCount');
 const studentSearch = document.getElementById('studentSearch');
 
 jobCards.forEach(card => {
   card.addEventListener('click', function() {
-    // Remove active class from all cards
     jobCards.forEach(c => c.classList.remove('active'));
     this.classList.add('active');
 
@@ -324,33 +297,24 @@ jobCards.forEach(card => {
     const role = this.getAttribute('data-role');
     const ctc = this.getAttribute('data-ctc');
 
-    // Update Header Info
     selectedJobTitle.textContent = `${company} — ${role}`;
     selectedJobSub.textContent = `CTC: ${ctc} | Job ID: ${jobId}`;
-    
-    // Clear Tables
     selectedTableBody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Loading...</td></tr>';
-    rejectedTableBody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Loading...</td></tr>';
     resultsSection.classList.add('active');
 
-    // Smooth scroll to tables
     setTimeout(() => {
       resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }, 100);
 
-    // Fetch via AJAX
     fetch(`/faculty/job_results/${jobId}`)
       .then(res => res.json())
       .then(data => {
         selectedStudentsData = data.selected || [];
-        rejectedStudentsData = data.not_selected || [];
-        
         renderTables();
       })
       .catch(err => {
         console.error(err);
         selectedTableBody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:red;">Failed to load data</td></tr>';
-        rejectedTableBody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:red;">Failed to load data</td></tr>';
       });
   });
 });
@@ -358,7 +322,6 @@ jobCards.forEach(card => {
 function renderTables() {
   const searchTerm = studentSearch.value.toLowerCase().trim();
 
-  // Filter selected
   const filteredSelected = selectedStudentsData.filter(s => 
     s.name.toLowerCase().includes(searchTerm) || 
     (s.roll_number && s.roll_number.toLowerCase().includes(searchTerm)) || 
@@ -366,18 +329,8 @@ function renderTables() {
     s.email.toLowerCase().includes(searchTerm)
   );
 
-  // Filter rejected
-  const filteredRejected = rejectedStudentsData.filter(s => 
-    s.name.toLowerCase().includes(searchTerm) || 
-    (s.roll_number && s.roll_number.toLowerCase().includes(searchTerm)) || 
-    s.branch.toLowerCase().includes(searchTerm) || 
-    s.email.toLowerCase().includes(searchTerm)
-  );
-
   selectedCountBadge.textContent = filteredSelected.length;
-  rejectedCountBadge.textContent = filteredRejected.length;
 
-  // Render selected table
   if (filteredSelected.length > 0) {
     selectedTableBody.innerHTML = filteredSelected.map(s => `
       <tr>
@@ -395,30 +348,6 @@ function renderTables() {
           <div style="display:flex; flex-direction:column; align-items:center; gap:8px;">
             <i class="ti ti-info-circle" style="font-size:24px;"></i>
             <span>No selected students found</span>
-          </div>
-        </td>
-      </tr>
-    `;
-  }
-
-  // Render rejected table
-  if (filteredRejected.length > 0) {
-    rejectedTableBody.innerHTML = filteredRejected.map(s => `
-      <tr>
-        <td style="font-weight:700;">${s.roll_number || 'N/A'}</td>
-        <td>${s.name}</td>
-        <td><span style="background:var(--badge-bg); padding:4px 8px; border-radius:10px; font-size:11px; color:var(--text-accent); font-weight:700;">${s.branch}</span></td>
-        <td>${s.email}</td>
-        <td>${s.phone_number || 'N/A'}</td>
-      </tr>
-    `).join('');
-  } else {
-    rejectedTableBody.innerHTML = `
-      <tr>
-        <td colspan="5" style="text-align:center; padding: 30px; color:var(--text-muted);">
-          <div style="display:flex; flex-direction:column; align-items:center; gap:8px;">
-            <i class="ti ti-info-circle" style="font-size:24px;"></i>
-            <span>No not-selected students found</span>
           </div>
         </td>
       </tr>

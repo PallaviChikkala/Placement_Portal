@@ -289,10 +289,12 @@
             </a>
         </div>
         {% else %}
-        <!-- Success State -->
         <div class="header-section">
             <h1><i class="ti ti-file-analytics"></i> AI Resume Analysis</h1>
-            <a href="/resume_analyzer" class="btn-back"><i class="ti ti-arrow-left"></i> Analyze Another</a>
+            <div style="display:flex; gap:12px; flex-wrap:wrap; align-items:center;">
+                <a href="/resume_analyzer" class="btn-back"><i class="ti ti-arrow-left"></i> Analyze Another</a>
+                <a href="/student_dashboard" class="btn-back" style="background: rgba(245,158,11,0.1); border-color: rgba(245,158,11,0.4); color: var(--primary);"><i class="ti ti-layout-dashboard"></i> Back to Dashboard</a>
+            </div>
         </div>
 
         <div class="dashboard-grid">
