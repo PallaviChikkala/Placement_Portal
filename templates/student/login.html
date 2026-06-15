@@ -437,15 +437,11 @@ input::-ms-clear {
                     </button>
                 </div>
 
-                <div class="form-actions">
-                    <label class="checkbox-wrapper">
-                        <input type="checkbox" name="rememberMe" id="rememberMe">
-                        <span>Remember me</span>
-                    </label>
+                <div class="form-actions" style="justify-content: flex-end;">
                     <a href="/forgot_password" class="forgot-link">Forgot password?</a>
                 </div>
 
-                <button type="submit" class="submit-btn">Login to Dashboard</button>
+                <button type="submit" class="submit-btn">Sign In to Dashboard</button>
             </form>
             
             <div style="text-align: center; margin-top: 2.5rem; color: #78716c; font-size: 0.9rem; font-weight: 500;">
@@ -455,6 +451,9 @@ input::-ms-clear {
     </div>
 
     <script>
+        // Clear notification state on new login
+        sessionStorage.removeItem('notifPopupShown');
+
         function togglePasswordVisibility() {
             const passwordField = document.getElementById("password");
             const eyeIcon = document.getElementById("eyeIcon");

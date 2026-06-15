@@ -161,7 +161,7 @@ body { min-height: 100vh; font-family: 'DM Sans', sans-serif; background: var(--
   left: 125%;
 }
 .card-icon { font-size:42px; color:var(--text-accent); margin-bottom:20px; display:inline-block; transition: color 0.3s; }
-.option-card h3 { font-family:'Syne',sans-serif; font-size:26px; font-weight:800; color:var(--text-main); transition: color 0.3s; }
+.option-card h3 { font-family:'Syne',sans-serif; font-size:22px; font-weight:800; color:var(--text-main); transition: color 0.3s; line-height: 1.2; word-wrap: break-word; }
 .option-card p { font-size:13px; color:var(--text-muted); margin-top:8px; font-weight:500; transition: color 0.3s; }
 .card-meta { margin-top:16px; padding-top:12px; border-top:1px solid var(--card-border); display:flex; justify-content:space-between; align-items:center; transition: border-color 0.3s; }
 .badge-count { font-size:11px; font-weight:700; background:var(--badge-bg); padding:4px 10px; border-radius:20px; color:var(--text-accent); transition: all 0.3s; }
@@ -198,10 +198,10 @@ body { min-height: 100vh; font-family: 'DM Sans', sans-serif; background: var(--
 
 <div class="global-header">
   <div class="logo-area">
-    <div class="logo-icon">N</div>
+    <img src="/static/nitap_logo.png" class="logo-img" alt="NIT AP Logo" style="height: 40px; width: auto;">
     <div class="logo-text">
       <h2>National Institute of Technology<br>Andhra Pradesh</h2>
-      <p>Placement &amp; Career Cell</p>
+      <p>Training &amp; Placement Cell</p>
     </div>
   </div>
   <div style="display:flex; align-items:center; gap:16px;">
@@ -236,6 +236,10 @@ body { min-height: 100vh; font-family: 'DM Sans', sans-serif; background: var(--
       <p>Placement dashboard · manage students &amp; placements</p>
     </div>
     <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
+      <form action="/faculty/update_settings" method="POST" style="display:flex; gap:8px; align-items:center; background: var(--input-bg); border: 1px solid var(--input-border); border-radius: 30px; padding: 4px 4px 4px 16px;">
+        <input type="text" name="recruitment_title" value="{{ global_settings.recruitment_title }}" placeholder="Recruitment Season" required style="background: transparent; border: none; color: var(--text-main); font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 600; outline: none; width: 200px;">
+        <button type="submit" style="background: var(--button-gradient); color: white; border: none; padding: 6px 16px; border-radius: 24px; font-weight: 700; font-size: 13px; cursor: pointer; transition: opacity 0.2s;" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">Save</button>
+      </form>
       <a href="/faculty_logout" class="logout-btn"><i class="ti ti-logout"></i> Logout</a>
     </div>
   </div>
@@ -317,7 +321,7 @@ body { min-height: 100vh; font-family: 'DM Sans', sans-serif; background: var(--
     </a>
     <a href="/faculty/recruitment_process" class="option-card">
       <div class="card-icon"><i class="ti ti-git-branch"></i></div>
-      <h3>Recruitment Process</h3>
+      <h3><small><b>Recruitment</b></small> Process</h3>
       <p>Track multi-round recruitment: set rounds, mark results, and export Excel per job</p>
       <div class="card-meta">
         <span class="badge-count">Round-wise tracker</span>

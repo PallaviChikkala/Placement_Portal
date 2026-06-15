@@ -180,6 +180,11 @@ def init_database():
         except Exception:
             pass
 
+        try:
+            cursor.execute("ALTER TABLE applications ADD COLUMN drive_link TEXT DEFAULT NULL")
+        except Exception:
+            pass
+
         # Create recruitment_rounds table (tracks number of rounds per job)
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS recruitment_rounds (
@@ -230,6 +235,15 @@ def init_database():
                 password VARCHAR(50)
             )
         """)
+        
+        # Create global_settings table
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS global_settings (
+                setting_key VARCHAR(50) PRIMARY KEY,
+                setting_value VARCHAR(255)
+            )
+        """)
+        cursor.execute("INSERT IGNORE INTO global_settings (setting_key, setting_value) VALUES ('recruitment_year', '2025')")
        
         # Insert Dr. Shankar if not exists
         cursor.execute("SELECT COUNT(*) as count FROM faculty")
@@ -266,6 +280,25 @@ def init_database():
         print("Warning: Database initialization failed. Details:", e)
 
 init_database()
+
+def normalize_branch(branch_name):
+    if not branch_name: return ""
+    b = branch_name.lower().strip()
+    if b in ["cse", "computer science", "computer science engineering", "computer science and engineering", "computer science & engineering"]:
+        return "cse"
+    elif b in ["ece", "electronics", "electronics and communication", "electronics and communication engineering", "electronics & communication engineering"]:
+        return "ece"
+    elif b in ["eee", "electrical", "electrical and electronics", "electrical and electronics engineering"]:
+        return "eee"
+    elif b in ["me", "mech", "mechanical", "mechanical engineering"]:
+        return "mech"
+    elif b in ["ce", "civil", "civil engineering"]:
+        return "civil"
+    elif b in ["it", "information technology"]:
+        return "it"
+    elif b in ["ai", "aiml", "artificial intelligence", "ai & ds", "artificial intelligence and data science"]:
+        return "ai"
+    return b
 
 def notify_students_new_job(company_name, role):
     """
@@ -322,48 +355,92 @@ def upload():
     else :
         return render_template("resume_analysis_result.html", error_msg="Only PDF and DOCX files are allowed for resumes.")
    
+    # Skill aliases for smarter matching (handles abbreviations and alternate names)
+    skill_aliases = {
+        "JavaScript": ["javascript", "js", "es6", "ecmascript"],
+        "TypeScript": ["typescript", "ts"],
+        "HTML": ["html", "html5"],
+        "CSS": ["css", "css3", "scss", "sass"],
+        "React": ["react", "reactjs", "react.js"],
+        "Angular": ["angular", "angularjs"],
+        "Vue.js": ["vue", "vuejs", "vue.js"],
+        "Node.js": ["node", "nodejs", "node.js"],
+        "Spring Boot": ["spring boot", "springboot", "spring"],
+        "MySQL": ["mysql", "sql"],
+        "MongoDB": ["mongodb", "mongo"],
+        "PostgreSQL": ["postgresql", "postgres"],
+        "SQL": ["sql", "mysql", "postgresql", "sqlite"],
+        "Python": ["python", "python3"],
+        "Java": ["java"],
+        "C++": ["c++", "cpp"],
+        "Machine Learning": ["machine learning", "ml", "machine-learning"],
+        "Deep Learning": ["deep learning", "dl", "deep-learning"],
+        "TensorFlow": ["tensorflow", "tf"],
+        "PyTorch": ["pytorch", "torch"],
+        "Pandas": ["pandas"],
+        "NumPy": ["numpy", "np"],
+        "Scikit-learn": ["scikit-learn", "sklearn", "scikit learn"],
+        "Power BI": ["power bi", "powerbi"],
+        "Tableau": ["tableau"],
+        "Excel": ["excel", "ms excel", "microsoft excel"],
+        "Git": ["git", "github", "gitlab"],
+        "Docker": ["docker"],
+        "Kubernetes": ["kubernetes", "k8s"],
+        "REST API": ["rest", "rest api", "restful", "api"],
+        "DBMS": ["dbms", "database management"],
+        "Hibernate": ["hibernate"],
+        "Mathematics": ["mathematics", "math", "statistics", "linear algebra", "calculus"],
+        "Statistics": ["statistics", "statistical"],
+        "Natural Language Processing": ["nlp", "natural language processing"],
+        "Flask": ["flask"],
+        "Data Structures": ["data structures", "dsa", "algorithms"],
+        "Algorithms": ["algorithms", "dsa", "data structures"],
+        "Spacy": ["spacy"],
+        "NLTK": ["nltk"],
+        "Regex": ["regex", "regular expression"],
+        "Text Parsing": ["text parsing", "parsing"],
+        "Bootstrap": ["bootstrap"],
+        "Tailwind CSS": ["tailwind", "tailwindcss"],
+    }
+
+    def skill_in_text(skill, text_lower):
+        """Check if a skill appears in text using aliases."""
+        aliases = skill_aliases.get(skill, [skill.lower()])
+        return any(alias in text_lower for alias in aliases)
 
     role_skills = {
-
-    "Frontend Developer": {
-        "required": ["HTML", "CSS", "JavaScript"],
-        "optional": ["React", "Angular", "Vue.js", "Bootstrap", "Tailwind CSS", "Git"]
-    },
-
-    "Backend Developer": {
-        "required": ["Java", "MySQL", "DBMS"],
-        "optional": ["Spring Boot", "REST API", "Hibernate", "Git", "Docker"]
-    },
-
-    "Full Stack Developer": {
-        "required": ["HTML", "CSS", "JavaScript", "Java", "MySQL"],
-        "optional": ["React", "Node.js", "Spring Boot", "MongoDB", "Git"]
-    },
-
-    "Data Analyst": {
-        "required": ["Python", "SQL", "Excel"],
-        "optional": ["Power BI", "Tableau", "Pandas", "NumPy", "Statistics"]
-    },
-
-    "AI/ML Engineer": {
-        "required": ["Python", "Machine Learning", "Mathematics"],
-        "optional": ["Pandas", "NumPy", "Scikit-learn", "TensorFlow", "PyTorch", "Deep Learning"]
-    },
-
-    "Resume Analyzer": {
-        "required": ["Python", "Natural Language Processing", "Regex", "Text Parsing"],
-        "optional": ["Machine Learning", "Spacy", "NLTK", "Flask"]
-    }
+        "Frontend Developer": {
+            "required": ["HTML", "CSS", "JavaScript"],
+            "optional": ["React", "Angular", "Vue.js", "Bootstrap", "Tailwind CSS", "Git", "TypeScript"]
+        },
+        "Backend Developer": {
+            "required": ["Java", "MySQL", "DBMS"],
+            "optional": ["Spring Boot", "REST API", "Hibernate", "Git", "Docker", "Python"]
+        },
+        "Full Stack Developer": {
+            "required": ["HTML", "CSS", "JavaScript", "Java", "MySQL"],
+            "optional": ["React", "Node.js", "Spring Boot", "MongoDB", "Git", "REST API"]
+        },
+        "Data Analyst": {
+            "required": ["Python", "SQL", "Excel"],
+            "optional": ["Power BI", "Tableau", "Pandas", "NumPy", "Statistics"]
+        },
+        "AI/ML Engineer": {
+            "required": ["Python", "Machine Learning", "Mathematics"],
+            "optional": ["Pandas", "NumPy", "Scikit-learn", "TensorFlow", "PyTorch", "Deep Learning"]
+        },
+        "Resume Analyzer": {
+            "required": ["Python", "Natural Language Processing", "Regex", "Text Parsing"],
+            "optional": ["Machine Learning", "Spacy", "NLTK", "Flask"]
+        }
     }
    
+    text_lower = text.lower()
+
     if role == "Custom":
         custom_text = custom_jd
-
-        all_possible_skills = ["Java", "Python", "C++", "C", "HTML", "CSS", "JavaScript", "TypeScript", "React", "Angular", "Vue.js", "Node.js", "Spring Boot", "MySQL", "MongoDB", "PostgreSQL", "SQL", "DBMS", "Machine Learning", "Deep Learning", "TensorFlow", "PyTorch", "Pandas", "NumPy", "Excel", "Power BI", "Tableau", "Git", "Docker", "Kubernetes", "AWS", "Azure", "GCP", "Linux", "Data Structures", "Algorithms", "DSA", "Problem Solving", "Communication"]
-        required_skills = []
-        for s in all_possible_skills:
-            if s.lower() in custom_text.lower():
-                required_skills.append(s)
+        all_possible_skills = list(skill_aliases.keys())
+        required_skills = [s for s in all_possible_skills if skill_in_text(s, custom_jd.lower())]
         optional_skills = []
         if not required_skills:
             required_skills = ["Problem Solving", "Communication"]
@@ -374,91 +451,87 @@ def upload():
 
     found_required = []
     missing_required = []
-
     for skill in required_skills:
-        if skill.lower() in text.lower():
+        if skill_in_text(skill, text_lower):
             found_required.append(skill)
-        else :
+        else:
             missing_required.append(skill)
 
     missing_optional = []
     found_optional = []
-
     for skill in optional_skills:
-        if skill.lower() in text.lower():
+        if skill_in_text(skill, text_lower):
             found_optional.append(skill)
-        else :
+        else:
             missing_optional.append(skill)
 
+    # --- Keyword Scoring (50 pts max) ---
     if len(required_skills) > 0:
-        required_score = (len(found_required) / len(required_skills)) * 50
+        required_score = (len(found_required) / len(required_skills)) * 40
     else:
-        required_score = 50
+        required_score = 40
 
-    if len(found_optional) >= 1:
-        optional_score = 10
+    if len(optional_skills) > 0:
+        optional_score = (len(found_optional) / len(optional_skills)) * 10
     else:
-        optional_score = 0
+        optional_score = 10 if found_optional else 0
 
     keyword_score = required_score + optional_score
 
-    # --- AI Semantic Scoring using TF-IDF ---
+    # --- AI Semantic Scoring using TF-IDF (40 pts max) ---
     def clean_text(t):
         return re.sub(r'[^a-zA-Z0-9\s]', '', t).lower()
         
     cleaned_resume = clean_text(text)
     if role == "Custom":
-        target_doc = clean_text(custom_text)
+        target_doc = clean_text(custom_jd)
     else:
         target_doc = clean_text(" ".join(required_skills + optional_skills))
 
     ai_score = 0
     if cleaned_resume.strip() and target_doc.strip():
         try:
-            vectorizer = TfidfVectorizer(stop_words='english')
+            vectorizer = TfidfVectorizer(stop_words='english', ngram_range=(1,2))
             tfidf_matrix = vectorizer.fit_transform([cleaned_resume, target_doc])
             similarity = cosine_similarity(tfidf_matrix[0:1], tfidf_matrix[1:2])[0][0]
-            # TF-IDF on resumes vs short JDs is usually 0.15 - 0.4. We scale it up dynamically.
-            ai_score = min(int(similarity * 100 * 3), 40)
+            ai_score = min(int(similarity * 100 * 2.5), 40)
         except Exception:
             pass
 
     score = int(keyword_score + ai_score)
 
-    suggestion = ""
-    if score >= 80:
-        suggestion = "Strong AI match! Your profile aligns exceptionally well."
-    elif score >= 60:
-        suggestion = f"Good potential. Consider highlighting missing keywords naturally: {', '.join(missing_required[:3])}"
-    else:
-        suggestion = f"Low AI match. Tailor your resume more heavily towards: {', '.join(required_skills[:4])}"
-
+    # --- Profile Bonus Scoring (up to 20 pts) ---
     genome_score = 0
 
-    if score >= 70 :
-        genome_score += 15
-    elif score >= 50 :
-        genome_score += 10
-    else:
-        genome_score += 5
-
-    if "project" in text.lower() or "projects" in text.lower():
-        genome_score += 5
-
-    if "b.tech" in text.lower() or "bachelor" in text.lower() or "education" in text.lower():
-        genome_score += 5
-   
-    if "certificate" in text.lower() or "certificates" in text.lower() or "certification" in text.lower():
-        genome_score += 5
+    if "project" in text_lower or "projects" in text_lower or "github.com" in text_lower:
+        genome_score += 6
+    if "b.tech" in text_lower or "bachelor" in text_lower or "education" in text_lower or "university" in text_lower or "college" in text_lower:
+        genome_score += 4
+    if "certificate" in text_lower or "certification" in text_lower or "certified" in text_lower:
+        genome_score += 4
+    if "internship" in text_lower or "intern" in text_lower or "experience" in text_lower:
+        genome_score += 4
+    if "achievement" in text_lower or "award" in text_lower or "hackathon" in text_lower or "competition" in text_lower:
+        genome_score += 2
    
     final_score = min(score + genome_score, 100)
-   
-    # Update student's skills and save score if logged in
+
+    # --- Rich AI Suggestion based on analysis ---
+    if final_score >= 85:
+        suggestion = "Excellent match! Your resume is strongly aligned. Ensure formatting is clean, quantify achievements (e.g. 'Improved performance by 30%'), and tailor your summary to this exact role."
+    elif final_score >= 70:
+        top_missing = missing_required[:2] + missing_optional[:2]
+        suggestion = f"Good match. Boost your score by adding these skills: {', '.join(top_missing)}. Quantify your project outcomes and add a concise professional summary."
+    elif final_score >= 55:
+        suggestion = f"Moderate match. Focus on adding the missing required skills: {', '.join(missing_required[:4])}. Consider building small projects to demonstrate these and link your GitHub."
+    else:
+        suggestion = f"Low match. Your resume needs significant tailoring. Priority skills to add: {', '.join(required_skills[:4])}. Study these, build projects, and highlight relevant coursework."
+
+    # --- Update student profile if logged in ---
     if "student_id" in session:
         student_id = session["student_id"]
         session["resume_score"] = final_score
        
-        # Combine found skills
         found_skills = list(set(found_required + found_optional))
         if found_skills:
             cursor.execute("SELECT skills FROM students WHERE student_id = %s", (student_id,))
@@ -466,7 +539,6 @@ def upload():
             existing_skills = [s.strip() for s in current_skills_row["skills"].split(",")] if current_skills_row and current_skills_row["skills"] else []
             combined_skills = list(set(existing_skills + found_skills))
             skills_str = ", ".join(combined_skills)
-           
             cursor.execute("UPDATE students SET skills = %s WHERE student_id = %s", (skills_str, student_id))
             db.commit()
 
@@ -489,8 +561,6 @@ def student_login_page():
 def student_login_check():
     email = request.form["email"]
     password = request.form["password"]
-    remember = request.form.get("rememberMe")
-
     query = "SELECT * FROM students WHERE email = %s AND password = %s"
     cursor.execute(query, (email,password))
     student = cursor.fetchone()
@@ -499,8 +569,6 @@ def student_login_check():
         session["student_id"] = student["student_id"]
         session["student_name"] = student["name"]
         session["must_change_password"] = student.get("must_change_password", 1)
-        if remember:
-            session.permanent = True
         return redirect("/student_dashboard")
     else :
         return render_template("student/login.html", error="Wrong password or invalid credentials.")
@@ -509,7 +577,6 @@ def student_login_check():
 def google_login_check():
     import base64
     credential = request.form.get("credential")
-    remember = request.form.get("rememberMe")
     if not credential:
         return render_template("student/login.html", error="Google Sign-In failed.")
        
@@ -533,8 +600,6 @@ def google_login_check():
         if student:
             session["student_id"] = student["student_id"]
             session["student_name"] = student["name"]
-            if remember:
-                session.permanent = True
             return redirect("/student_dashboard")
         else:
             return render_template("student/login.html", error=f"Email {email} is not registered. Please contact faculty.")
@@ -626,8 +691,8 @@ def student_dashboard():
         job_tier_str = str(job.get("tier", "Tier 3")).lower()
         job_tier_num = 1 if "1" in job_tier_str else (2 if "2" in job_tier_str else 3)
 
-        eligible_branches = [b.strip().lower() for b in job.get("branches", "").split(",")] if job.get("branches") else []
-        student_branch = student["branch"].strip().lower() if student["branch"] else ""
+        eligible_branches = [normalize_branch(b) for b in job.get("branches", "").split(",")] if job.get("branches") else []
+        student_branch = normalize_branch(student["branch"]) if student["branch"] else ""
 
         cgpa_ok = student["cgpa"] >= float(job.get("cgpa_cutoff") or 0)
         backlogs_ok = student["backlogs"] <= int(job.get("active_backlogs") or 0)
@@ -804,8 +869,8 @@ def eligible_companies():
         job_tier_str = str(job.get('tier', 'Tier 3')).lower()
         job_tier_num = 1 if '1' in job_tier_str else (2 if '2' in job_tier_str else 3)
 
-        eligible_branches = [b.strip().lower() for b in job.get('branches', '').split(',')] if job.get('branches') else []
-        student_branch = student['branch'].strip().lower() if student['branch'] else ""
+        eligible_branches = [normalize_branch(b) for b in job.get('branches', '').split(',')] if job.get('branches') else []
+        student_branch = normalize_branch(student['branch']) if student['branch'] else ""
        
         cgpa_ok = student['cgpa'] >= float(job.get('cgpa_cutoff') or 0) if student['cgpa'] is not None else True
         backlogs_ok = student['backlogs'] <= int(job.get('active_backlogs') or 0) if student['backlogs'] is not None else True
@@ -849,6 +914,11 @@ def eligible_companies():
         job_item['max_backlogs'] = job.get('active_backlogs') or 0
         job_item['eligible_branches'] = job.get('branches') or ''
         job_item['deadline'] = str(job.get('deadline')) if job.get('deadline') else 'Ongoing'
+
+        # Fetch number of rounds if set by faculty
+        cursor.execute("SELECT num_rounds FROM recruitment_rounds WHERE job_id = %s", (job['job_id'],))
+        r_round = cursor.fetchone()
+        job_item['num_rounds'] = r_round['num_rounds'] if r_round else None
 
         jobs_list.append(job_item)
        
@@ -967,8 +1037,14 @@ def my_applications():
     student = cursor.fetchone()
    
     query = """
-        SELECT a.applied_date, a.status, a.resume_path,
-               j.company_name, j.role, j.ctc as package_lpa, j.tier, j.deadline
+        SELECT a.applied_date, a.status, a.resume_path, a.job_id, a.drive_link,
+               j.company_name, j.role, j.ctc as package_lpa, j.tier, j.deadline,
+               (SELECT MAX(round_number) FROM round_results rr WHERE rr.job_id = a.job_id AND rr.student_id = a.student_id AND rr.result = 'Selected') as max_cleared_round,
+               (SELECT MAX(round_number) FROM round_results rr WHERE rr.job_id = a.job_id AND rr.student_id = a.student_id) as max_attempted_round,
+               (SELECT num_rounds FROM recruitment_rounds WHERE job_id = a.job_id) as total_rounds,
+               (SELECT result FROM round_results rr WHERE rr.job_id = a.job_id AND rr.student_id = a.student_id ORDER BY round_number DESC LIMIT 1) as latest_round_result,
+               (SELECT drive_link FROM round_results rr WHERE rr.job_id = a.job_id AND rr.student_id = a.student_id AND drive_link IS NOT NULL ORDER BY round_number DESC LIMIT 1) as latest_drive_link,
+               (SELECT round_number FROM round_results rr WHERE rr.job_id = a.job_id AND rr.student_id = a.student_id AND drive_link IS NOT NULL ORDER BY round_number DESC LIMIT 1) as latest_drive_round
         FROM applications a
         JOIN jobs j ON a.job_id = j.job_id
         WHERE a.student_id = %s
@@ -976,11 +1052,55 @@ def my_applications():
     """
     cursor.execute(query, (student_id,))
     apps = cursor.fetchall()
-    # Replace 'Rejected' with 'Not Selected'
+    # Replace 'Rejected' with 'Not Selected' and determine pipeline status text
     for app in apps:
         if app.get('status') == 'Rejected':
             app['status'] = 'Not Selected'
-   
+            
+        # Determine pipeline status text for UI
+        app['pipeline_status'] = 'Reviewing'
+        if app.get('status') == 'Selected':
+            app['pipeline_status'] = 'Hired'
+        elif app.get('status') == 'Not Selected':
+            app['pipeline_status'] = 'Closed'
+        elif app.get('max_cleared_round'):
+            next_round = app['max_cleared_round'] + 1
+            if app.get('total_rounds') and next_round > app['total_rounds']:
+                app['pipeline_status'] = f"Cleared Round {app['max_cleared_round']}"
+            else:
+                app['pipeline_status'] = f"Qualified for Round {next_round}"
+        elif app.get('status') == 'Shortlisted' or app.get('status') == 'Interview':
+            app['pipeline_status'] = 'Interviewing'
+
+    # Fetch all round links for this student
+    cursor.execute("""
+        SELECT job_id, round_number, drive_link 
+        FROM round_results 
+        WHERE student_id = %s AND drive_link IS NOT NULL AND drive_link != '' 
+        ORDER BY job_id, round_number ASC
+    """, (student_id,))
+    all_round_links = cursor.fetchall()
+    links_by_job = {}
+    for rl in all_round_links:
+        if rl['job_id'] not in links_by_job:
+            links_by_job[rl['job_id']] = []
+        
+        # Check if text is a link or just plain text
+        link_val = rl['drive_link'].strip()
+        is_url = link_val.startswith('http://') or link_val.startswith('https://') or link_val.startswith('www.')
+        if link_val.startswith('www.'):
+            link_val = 'https://' + link_val
+            
+        links_by_job[rl['job_id']].append({
+            "round_number": rl['round_number'], 
+            "raw_text": rl['drive_link'],
+            "is_url": is_url,
+            "url": link_val
+        })
+        
+    for app in apps:
+        app['round_links'] = links_by_job.get(app['job_id'], [])
+
     return render_template("student/my_applications.html", applications=apps, student=student)
 
 @app.route("/student_logout")
@@ -988,10 +1108,39 @@ def student_logout():
     session.clear()
     return redirect("/student_login")
 
-@app.route("/faculty_login")
-def faculty_login_page():
-    if "faculty_email" in session:
-        return redirect("/faculty_dashboard")
+@app.context_processor
+def inject_global_settings():
+    ensure_connection()
+    try:
+        cursor.execute("SELECT setting_key, setting_value FROM global_settings")
+        rows = cursor.fetchall()
+        settings = {}
+        for r in rows:
+            settings[r["setting_key"]] = r["setting_value"]
+        if 'recruitment_title' not in settings:
+            settings['recruitment_title'] = '2026 Recruitment Season Live'
+        return dict(global_settings=settings)
+    except Exception:
+        return dict(global_settings={'recruitment_title': '2026 Recruitment Season Live'})
+
+@app.route("/faculty/update_settings", methods=["POST"])
+def faculty_update_settings():
+    ensure_connection()
+    redir = faculty_required()
+    if redir: return redir
+    
+    title = request.form.get("recruitment_title", "").strip()
+    if title:
+        cursor.execute("""
+            INSERT INTO global_settings (setting_key, setting_value) 
+            VALUES ('recruitment_title', %s) 
+            ON DUPLICATE KEY UPDATE setting_value = %s
+        """, (title, title))
+        db.commit()
+        flash("Settings updated successfully!", "success")
+    return redirect("/faculty_dashboard")
+
+def get_dashboard_stats():
     ensure_connection()
     try:
         cursor.execute("SELECT COUNT(*) AS c FROM students")
@@ -1003,8 +1152,25 @@ def faculty_login_page():
         active_jobs = cursor.fetchone()["c"]
     except Exception:
         active_jobs = 0
-    return render_template("faculty/login.html", total_students=total_students, active_jobs=active_jobs)
+    
+    placement_rate = 0.0
+    if total_students > 0:
+        try:
+            cursor.execute("SELECT COUNT(DISTINCT student_id) as placed FROM applications WHERE status = 'Selected'")
+            placed_students = cursor.fetchone()["placed"]
+            placement_rate = round((placed_students / total_students * 100), 1)
+        except Exception:
+            pass
 
+    return total_students, active_jobs, placement_rate
+
+@app.route("/faculty_login")
+def faculty_login_page():
+    if "faculty_email" in session:
+        return redirect("/faculty_dashboard")
+    
+    total_students, active_jobs, placement_rate = get_dashboard_stats()
+    return render_template("faculty/login.html", total_students=total_students, active_jobs=active_jobs, placement_rate=placement_rate)
 
 @app.route("/faculty_login_check", methods=["POST"])
 def faculty_login_check():
@@ -1028,15 +1194,9 @@ def faculty_login_check():
         session.permanent = True
         return redirect("/faculty_dashboard")
 
-    try:
-        cursor.execute("SELECT COUNT(*) AS c FROM students")
-        total_students = cursor.fetchone()["c"]
-        cursor.execute("SELECT COUNT(*) AS c FROM jobs")
-        active_jobs = cursor.fetchone()["c"]
-    except Exception:
-        total_students = active_jobs = 0
+    total_students, active_jobs, placement_rate = get_dashboard_stats()
     return render_template("faculty/login.html", error="Invalid email or password.",
-                           total_students=total_students, active_jobs=active_jobs)
+                           total_students=total_students, active_jobs=active_jobs, placement_rate=placement_rate)
 
 
 def faculty_required():
@@ -1422,8 +1582,13 @@ def faculty_applications_update_status():
         job_db_id = app_record["job_id"]
         old_status = app_record["status"]
 
+        drive_link = data.get("drive_link")
+        
         # Update applications table
-        cursor.execute("UPDATE applications SET status = %s WHERE application_id = %s", (status, app_id))
+        if drive_link:
+            cursor.execute("UPDATE applications SET status = %s, drive_link = %s WHERE application_id = %s", (status, drive_link, app_id))
+        else:
+            cursor.execute("UPDATE applications SET status = %s WHERE application_id = %s", (status, app_id))
 
         # Check the job company and role/tier
         cursor.execute("SELECT company_name, role, tier FROM jobs WHERE job_id = %s", (job_db_id,))
@@ -1433,12 +1598,13 @@ def faculty_applications_update_status():
         job_tier_str = job_details["tier"] if job_details else "Tier 3"
         job_tier_num = 1 if '1' in job_tier_str else (2 if '2' in job_tier_str else 3)
 
-        # Notify student if status changed
-        if old_status != status:
+        
+        # Notify student if status changed or drive link provided
+        if old_status != status or drive_link:
             message = f"Your application status for {company_name} - {role_name} has been updated to {status}."
             if status == "Selected":
                 message = f"Congratulations! You have been Selected by {company_name} for the {role_name} role (Tier {job_tier_str})!"
-           
+            
             cursor.execute("INSERT INTO notifications (student_id, message, link) VALUES (%s, %s, %s)",
                            (student_id, message, "/my_applications"))
 
@@ -1620,17 +1786,23 @@ def faculty_recruitment_process():
             round_map.setdefault(sid, {})[rnd] = rrow["result"]
             link_map.setdefault(sid,  {})[rnd] = rrow["drive_link"] or ""
 
-        # Include ALL students (even not-selected) so faculty can see full picture
+        # Filter out eliminated students to keep the tracker clean
         students_list = []
         for s in students:
             sid = s["student_id"]
             s_dict = dict(s)
             s_dict["rounds"] = {}
             s_dict["links"]  = {}
+            
+            is_eliminated = False
             for rnd in range(1, jdict["num_rounds"] + 1):
                 s_dict["rounds"][rnd] = round_map.get(sid, {}).get(rnd, "Pending")
                 s_dict["links"][rnd]  = link_map.get(sid,  {}).get(rnd, "")
-            students_list.append(s_dict)
+                if s_dict["rounds"][rnd] == "Not Selected":
+                    is_eliminated = True
+                    
+            if not is_eliminated:
+                students_list.append(s_dict)
 
         jdict["students"] = students_list
         jdict["applicant_count"] = len(list(students))
@@ -1670,12 +1842,78 @@ def set_round_result():
     student_id = data.get("student_id")
     round_number = int(data.get("round_number", 1))
     result = data.get("result", "Pending")  # 'Selected', 'Not Selected', 'Pending'
+    drive_link = data.get("drive_link")
     try:
+        # Check previous result
+        cursor.execute("SELECT result, drive_link FROM round_results WHERE job_id=%s AND student_id=%s AND round_number=%s", (job_id, student_id, round_number))
+        prev = cursor.fetchone()
+        prev_result = prev["result"] if prev else None
+        prev_link = prev["drive_link"] if prev else None
+        
+        # If nothing changed, we can skip inserting duplicate notifications
+        changed = (prev_result != result) or (str(prev_link or "").strip() != str(drive_link or "").strip())
+
         cursor.execute("""
-            INSERT INTO round_results (job_id, student_id, round_number, result)
-            VALUES (%s, %s, %s, %s)
-            ON DUPLICATE KEY UPDATE result = %s
-        """, (job_id, student_id, round_number, result, result))
+            INSERT INTO round_results (job_id, student_id, round_number, result, drive_link)
+            VALUES (%s, %s, %s, %s, %s)
+            ON DUPLICATE KEY UPDATE result = VALUES(result), drive_link = VALUES(drive_link)
+        """, (job_id, student_id, round_number, result, drive_link))
+
+        if changed:
+            # Fetch job details for notification message
+            cursor.execute("SELECT company_name, role FROM jobs WHERE job_id = %s", (job_id,))
+            job_det = cursor.fetchone()
+            company_name = job_det["company_name"] if job_det else f"Job {job_id}"
+            role_name = job_det["role"] if job_det else "Role"
+    
+            # Create notification for the student
+            if result == "Selected":
+                msg = f"🎉 You have been <strong>Qualified for Round {round_number}</strong> of <strong>{company_name} - {role_name}</strong>!"
+                # Update application status to reflect progress
+                cursor.execute("""
+                    UPDATE applications SET status = 'Shortlisted'
+                    WHERE student_id = %s AND job_id = %s AND status NOT IN ('Selected', 'Not Selected')
+                """, (student_id, job_id))
+            elif result == "Not Selected":
+                msg = f"Your application for <strong>{company_name} - {role_name}</strong> has been updated: <strong>Not Selected</strong> in Round {round_number}."
+                # Update application status
+                cursor.execute("""
+                    UPDATE applications SET status = 'Not Selected'
+                    WHERE student_id = %s AND job_id = %s
+                """, (student_id, job_id))
+            else:
+                msg = f"Your Round {round_number} status for <strong>{company_name} - {role_name}</strong> is being reviewed."
+    
+            cursor.execute("INSERT INTO notifications (student_id, message, link) VALUES (%s, %s, %s)",
+                           (student_id, msg, "/my_applications"))
+
+        # Check if all rounds are cleared for auto-finalise
+        cursor.execute("SELECT num_rounds FROM recruitment_rounds WHERE job_id=%s", (job_id,))
+        rr = cursor.fetchone()
+        num_rounds = rr["num_rounds"] if rr else 1
+
+        cursor.execute("SELECT round_number, result FROM round_results WHERE job_id=%s AND student_id=%s", (job_id, student_id))
+        student_rounds = cursor.fetchall()
+        round_map = {r["round_number"]: r["result"] for r in student_rounds}
+
+        all_selected = all(round_map.get(r, "Pending") == "Selected" for r in range(1, num_rounds + 1))
+        
+        cursor.execute("SELECT status FROM applications WHERE student_id=%s AND job_id=%s", (student_id, job_id))
+        cur_app = cursor.fetchone()
+        current_status = cur_app["status"] if cur_app else "Pending"
+
+        if all_selected and len(round_map) == num_rounds and current_status != 'Selected':
+            cursor.execute("UPDATE applications SET status='Selected' WHERE student_id=%s AND job_id=%s", (student_id, job_id))
+            # Update tier
+            cursor.execute("SELECT tier FROM jobs WHERE job_id=%s", (job_id,))
+            jt = cursor.fetchone()
+            tier_str = jt["tier"] if jt else "Tier 3"
+            tier_num = 1 if '1' in tier_str else (2 if '2' in tier_str else 3)
+            cursor.execute("UPDATE students SET selected_tier=%s WHERE student_id=%s", (tier_num, student_id))
+            final_msg = f"🏆 Congratulations! You have been <strong>Selected</strong> by <strong>{company_name}</strong> for the <strong>{role_name}</strong> role! All {num_rounds} rounds cleared!"
+            cursor.execute("INSERT INTO notifications (student_id, message, link) VALUES (%s, %s, %s)",
+                           (student_id, final_msg, "/my_applications"))
+
         db.commit()
         return jsonify({"success": True})
     except Exception as e:
@@ -1946,6 +2184,15 @@ def upload_recruitment_excel(job_id, round_num):
         updated = 0
         errors  = []
 
+        cursor.execute("SELECT company_name, role FROM jobs WHERE job_id = %s", (job_id,))
+        job_det = cursor.fetchone()
+        cname = job_det["company_name"] if job_det else f"Job {job_id}"
+        rname = job_det["role"] if job_det else "Role"
+        
+        cursor.execute("SELECT num_rounds FROM recruitment_rounds WHERE job_id=%s", (job_id,))
+        rr = cursor.fetchone()
+        num_rounds = rr["num_rounds"] if rr else 1
+
         for row in ws.iter_rows(min_row=4, values_only=True):
             raw_sid = row[student_id_col - 1]
             if raw_sid is None:
@@ -1971,28 +2218,57 @@ def upload_recruitment_excel(job_id, round_num):
                 if dl in (None, "", "None"):
                     dl = None
 
+                cursor.execute("SELECT result, drive_link FROM round_results WHERE job_id=%s AND student_id=%s AND round_number=%s", (job_id, student_id, round_num))
+                prev = cursor.fetchone()
+                prev_result = prev["result"] if prev else None
+                prev_link = prev["drive_link"] if prev else None
+                
+                changed = (prev_result != result) or (str(prev_link or "").strip() != str(dl or "").strip())
+
                 cursor.execute("""
                     INSERT INTO round_results (job_id, student_id, round_number, result, drive_link)
                     VALUES (%s, %s, %s, %s, %s)
                     ON DUPLICATE KEY UPDATE result = VALUES(result), drive_link = VALUES(drive_link)
                 """, (job_id, student_id, round_num, result, dl))
                 updated += 1
+                
+                if changed:
+                    # Update application status & Create Notification for Intermediate Rounds
+                    if result == "Selected":
+                        msg = f"🎉 You have been <strong>Qualified for Round {round_num}</strong> of <strong>{cname} - {rname}</strong>!"
+                        cursor.execute("""
+                            UPDATE applications SET status = 'Shortlisted'
+                            WHERE student_id = %s AND job_id = %s AND status NOT IN ('Selected', 'Not Selected')
+                        """, (student_id, job_id))
+                    elif result == "Not Selected":
+                        msg = f"Your application for <strong>{cname} - {rname}</strong> has been updated: <strong>Not Selected</strong> in Round {round_num}."
+                        cursor.execute("""
+                            UPDATE applications SET status = 'Not Selected'
+                            WHERE student_id = %s AND job_id = %s
+                        """, (student_id, job_id))
+                    else:
+                        msg = f"Your Round {round_num} status for <strong>{cname} - {rname}</strong> is being reviewed."
+                        
+                    if dl:
+                        msg += f" <br><strong>Attachment:</strong> <a href='{dl}' target='_blank'>View File/Drive Link</a>"
+                        
+                    if round_num != num_rounds:
+                        cursor.execute("INSERT INTO notifications (student_id, message, link) VALUES (%s, %s, %s)",
+                                       (student_id, msg, "/my_applications"))
+
             except Exception as row_err:
                 errors.append(str(row_err))
 
         # ── AUTO-FINALISE WHEN LAST ROUND IS UPLOADED ────────────────────────────
-        cursor.execute("SELECT num_rounds FROM recruitment_rounds WHERE job_id=%s", (job_id,))
-        rr = cursor.fetchone()
-        num_rounds = rr["num_rounds"] if rr else 1
-
         if round_num == num_rounds:
             cursor.execute("""
-                SELECT s.student_id
+                SELECT s.student_id, a.status
                 FROM applications a
                 JOIN students s ON a.student_id = s.student_id
                 WHERE a.job_id = %s
             """, (job_id,))
             all_students = cursor.fetchall()
+            app_status_map = {s["student_id"]: s["status"] for s in all_students}
 
             cursor.execute("SELECT student_id, round_number, result FROM round_results WHERE job_id=%s", (job_id,))
             all_results = cursor.fetchall()
@@ -2001,32 +2277,35 @@ def upload_recruitment_excel(job_id, round_num):
                 res_map.setdefault(r["student_id"], {})[r["round_number"]] = r["result"]
 
             cursor.execute("SELECT tier FROM jobs WHERE job_id=%s", (job_id,))
-            job_det   = cursor.fetchone()
-            tier_str  = job_det["tier"] if job_det else "Tier 3"
+            job_det_t   = cursor.fetchone()
+            tier_str  = job_det_t["tier"] if job_det_t else "Tier 3"
             tier_num  = 1 if '1' in tier_str else (2 if '2' in tier_str else 3)
 
             for s in all_students:
                 sid = s["student_id"]
+                current_status = app_status_map.get(sid, "Pending")
                 sres = res_map.get(sid, {})
                 all_sel = all(sres.get(r, "Pending") == "Selected" for r in range(1, num_rounds + 1))
                 any_not = any(sres.get(r, "Pending") == "Not Selected" for r in range(1, num_rounds + 1))
-
-                if all_sel:
+                
+                final_msg = None
+                if all_sel and current_status != 'Selected':
                     cursor.execute(
                         "UPDATE applications SET status='Selected' WHERE student_id=%s AND job_id=%s",
                         (sid, job_id))
                     cursor.execute(
                         "UPDATE students SET selected_tier=%s WHERE student_id=%s",
                         (tier_num, sid))
-                    # Notify student
-                    msg = f"Congratulations! You have been Selected for {job_id}. All {num_rounds} rounds cleared!"
-                    cursor.execute(
-                        "INSERT INTO notifications (student_id, message, link) VALUES (%s, %s, %s)",
-                        (sid, msg, "/my_applications"))
-                elif any_not:
+                    final_msg = f"🏆 Congratulations! You have been <strong>Selected</strong> by <strong>{cname}</strong> for the <strong>{rname}</strong> role! All {num_rounds} rounds cleared!"
+                elif any_not and current_status != 'Not Selected':
                     cursor.execute(
                         "UPDATE applications SET status='Not Selected' WHERE student_id=%s AND job_id=%s",
                         (sid, job_id))
+                    final_msg = f"Your application for <strong>{cname} - {rname}</strong> has been updated: <strong>Not Selected</strong>."
+                
+                if final_msg:
+                    cursor.execute("INSERT INTO notifications (student_id, message, link) VALUES (%s, %s, %s)",
+                                   (sid, final_msg, "/my_applications"))
 
         db.commit()
         return jsonify({"success": True, "updated": updated, "errors": errors,
@@ -2053,43 +2332,7 @@ def faculty_job_results_api(job_id):
     """, (job_id,))
     selected = cursor.fetchall()
 
-    # Get not selected (was rejected)
-    cursor.execute("""
-        SELECT s.student_id, s.name, s.email, s.branch, s.roll_number, s.phone_number
-        FROM students s
-        JOIN applications a ON s.student_id = a.student_id
-        WHERE a.job_id = %s AND (a.status = 'Rejected' OR a.status = 'Not Selected')
-        ORDER BY s.name ASC
-    """, (job_id,))
-    not_selected = cursor.fetchall()
-
-    return jsonify({"selected": selected, "not_selected": not_selected})
-
-@app.route("/faculty/not_selected_students")
-def faculty_not_selected_students():
-    ensure_connection()
-    redir = faculty_required()
-    if redir: return redir
-
-    # Query all students who are not selected for any job
-    query = """
-        SELECT s.student_id, s.name, s.email, s.branch, s.roll_number, s.phone_number,
-               a.status, j.company_name, j.role, j.job_id
-        FROM students s
-        JOIN applications a ON s.student_id = a.student_id
-        JOIN jobs j ON a.job_id = j.job_id
-        WHERE a.status = 'Rejected' OR a.status = 'Not Selected'
-        ORDER BY s.name ASC
-    """
-    cursor.execute(query)
-    not_selected = cursor.fetchall()
-
-    return render_template("faculty/rejected_students.html", rejected_students=not_selected)
-
-# Keep old route as alias
-@app.route("/faculty/rejected_students")
-def faculty_rejected_students():
-    return faculty_not_selected_students()
+    return jsonify({"selected": selected})
 
 
 @app.route("/faculty/download_applied_excel/<string:job_id>")
@@ -2351,7 +2594,22 @@ def faculty_master_sheet():
     redir = faculty_required()
     if redir: return redir
 
-    return render_template("faculty/master_sheet.html")
+    import os
+    upload_dir = os.path.join(app.static_folder, "uploads")
+    current_file = None
+    file_type = None
+    file_size = 0
+
+    if os.path.exists(os.path.join(upload_dir, "master_sheet.xlsx")):
+        current_file = "master_sheet.xlsx"
+        file_type = "Excel Document"
+        file_size = round(os.path.getsize(os.path.join(upload_dir, current_file)) / 1024)
+    elif os.path.exists(os.path.join(upload_dir, "master_sheet.pdf")):
+        current_file = "master_sheet.pdf"
+        file_type = "PDF Document"
+        file_size = round(os.path.getsize(os.path.join(upload_dir, current_file)) / 1024)
+
+    return render_template("faculty/master_sheet.html", current_file=current_file, file_type=file_type, file_size=file_size)
 
 @app.route("/faculty/upload_master_sheet", methods=["POST"])
 def faculty_upload_master_sheet():
@@ -2414,15 +2672,25 @@ def faculty_upload_master_sheet():
 
     updated = 0
     inserted = 0
+    uploaded_emails = set()
 
     for index, row in df.iterrows():
-        roll_no = str(row.get("roll_no", "")).strip()
+        raw_roll = row.get("roll_no", "")
+        if pd.isna(raw_roll):
+            roll_no = ""
+        else:
+            roll_no = str(raw_roll).strip()
+            if roll_no.endswith('.0'):
+                roll_no = roll_no[:-2]
+
         name = str(row.get("name", "")).strip()
         email = str(row.get("email", "")).strip().lower()
-        branch = str(row.get("branch", "")).strip()
+        branch = normalize_branch(str(row.get("branch", "")).strip())
 
         if email == "" or email == "nan":
             continue
+
+        uploaded_emails.add(email)
 
         cgpa = float(row.get("cgpa", 0) or 0)
         active_backlogs = int(float(row.get("active_backlogs", 0) or 0))
@@ -2472,11 +2740,29 @@ def faculty_upload_master_sheet():
 
             inserted += 1
 
+    deleted = 0
+    if uploaded_emails:
+        format_strings = ','.join(['%s'] * len(uploaded_emails))
+        cursor.execute(f"SELECT student_id FROM students WHERE LOWER(email) NOT IN ({format_strings})", tuple(uploaded_emails))
+        to_delete = cursor.fetchall()
+        
+        if to_delete:
+            delete_ids = [s["student_id"] for s in to_delete]
+            del_format = ','.join(['%s'] * len(delete_ids))
+            
+            cursor.execute(f"DELETE FROM round_results WHERE student_id IN ({del_format})", tuple(delete_ids))
+            cursor.execute(f"DELETE FROM applications WHERE student_id IN ({del_format})", tuple(delete_ids))
+            cursor.execute(f"DELETE FROM notifications WHERE student_id IN ({del_format})", tuple(delete_ids))
+            cursor.execute(f"DELETE FROM students WHERE student_id IN ({del_format})", tuple(delete_ids))
+            
+            deleted = len(delete_ids)
+
     db.commit()
 
     print("UPDATED:", updated)
     print("INSERTED:", inserted)
-    flash(f"Master sheet uploaded successfully! {inserted} students added and {updated} students updated.", "success")
+    print("DELETED:", deleted)
+    flash(f"Master sheet uploaded successfully! {inserted} added, {updated} updated, and {deleted} removed.", "success")
     return redirect("/faculty/master_sheet")
 
 
@@ -2547,7 +2833,7 @@ def faculty_upload_students():
                     name       = str(row_dict.get('name', ''))
                     email      = str(row_dict.get('email', ''))
                     password   = str(row_dict.get('password', email.split('@')[0] if email else 'default123'))
-                    branch     = str(row_dict.get('branch', ''))
+                    branch     = normalize_branch(str(row_dict.get('branch', '')))
                     cgpa       = float(row_dict.get('cgpa', 0.0))
                     backlogs   = int(row_dict.get('backlogs', 0))
                     skills     = str(row_dict.get('skills', ''))

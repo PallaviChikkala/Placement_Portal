@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Applications - Placement Portal</title>
+    <title>Placement History - Placement Portal</title>
     <!-- Bootstrap & Icons -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
@@ -142,7 +142,7 @@
             </div>
 
             <!-- Application Cards List -->
-            <div class="row g-4 animated-fade-in-up">
+            <div class="row g-4 animated-fade-in-up" id="applicationsGrid">
                 {% if applications %}
                     {% for app in applications %}
                     <div class="col-12 mb-2">
@@ -159,6 +159,9 @@
                                     </div>
                                     <h6 class="text-dark fw-semibold mb-2">{{ app.role }} • {{ app.package_lpa }} LPA</h6>
                                     <p class="text-muted small mb-0"><i class="bi bi-file-earmark-check text-success me-1"></i> Submitted Resume: <span class="text-dark fw-semibold">Active CV profile</span></p>
+                                    {% if app.drive_link %}
+                                    <p class="text-muted small mb-0 mt-1"><i class="bi bi-link-45deg text-primary me-1"></i> Drive Link: <a href="{{ app.drive_link }}" target="_blank" class="fw-semibold text-decoration-underline" style="word-break: break-all;">View Attached Link</a></p>
+                                    {% endif %}
                                 </div>
                                 <div class="text-md-end text-start mt-2 mt-md-0">
                                     <div class="mb-2">
@@ -182,7 +185,27 @@
 
                             <!-- Timeline Stepper -->
                             <div class="stepper-outer p-2 mb-2">
-                                <span class="text-muted small fw-semibold text-uppercase d-block mb-3">Application Status</span>
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <span class="text-muted small fw-semibold text-uppercase">Application Status</span>
+                                    {% if app.total_rounds %}
+                                    <span class="badge bg-light text-dark border small">Selection Rounds: {{ app.total_rounds }}</span>
+                                    {% endif %}
+                                </div>
+
+                                {% if app.round_links %}
+                                    <div class="mb-4">
+                                    {% for rl in app.round_links %}
+                                        <div class="alert py-2 px-3 mb-2 small" style="background: rgba(245,158,11,0.05); border: 1px solid rgba(245,158,11,0.2); border-radius: 8px;">
+                                            <i class="bi bi-paperclip text-primary me-1"></i> <strong>Round {{ rl.round_number }} Attachment:</strong> 
+                                            {% if rl.is_url %}
+                                                <a href="{{ rl.url }}" target="_blank" class="fw-semibold text-decoration-underline ms-1" style="word-break: break-all;">View Document/Link</a>
+                                            {% else %}
+                                                <span class="ms-1" style="word-break: break-all;">{{ rl.raw_text }}</span>
+                                            {% endif %}
+                                        </div>
+                                    {% endfor %}
+                                    </div>
+                                {% endif %}
                                 
                                 <div class="stepper-container">
                                     <!-- Dynamic Active Line Width -->
@@ -206,31 +229,31 @@
                                     <!-- Step 2: Under Review -->
                                     {% if app.status == 'Pending' %}
                                         <div class="step-node active">
-                                            2
+                                            <i class="bi bi-hourglass"></i>
                                             <span class="step-label" style="left: -24px;">Reviewing</span>
                                         </div>
                                     {% else %}
                                         <div class="step-node completed">
                                             <i class="bi bi-check"></i>
-                                            <span class="step-label" style="left: -24px;">Reviewing</span>
+                                            <span class="step-label" style="left: -24px;">Reviewed</span>
                                         </div>
                                     {% endif %}
 
-                                    <!-- Step 3: Interview -->
+                                    <!-- Step 3: Interview / Pipeline Status -->
                                     {% if app.status == 'Pending' %}
                                         <div class="step-node">
                                             3
-                                            <span class="step-label" style="left: -24px;">Interview</span>
+                                            <span class="step-label" style="left: -24px;">Status</span>
                                         </div>
-                                    {% elif app.status == 'Shortlisted' or app.status == 'Interview' %}
-                                        <div class="step-node active">
-                                            3
-                                            <span class="step-label" style="left: -24px;">Interview</span>
-                                        </div>
-                                    {% else %}
+                                    {% elif app.status == 'Selected' or app.status == 'Rejected' or app.status == 'Not Selected' %}
                                         <div class="step-node completed">
                                             <i class="bi bi-check"></i>
-                                            <span class="step-label" style="left: -24px;">Interview</span>
+                                            <span class="step-label" style="left: -24px;">{{ app.pipeline_status if not app.pipeline_status in ['Hired', 'Closed'] else 'Evaluated' }}</span>
+                                        </div>
+                                    {% else %}
+                                        <div class="step-node active">
+                                            <i class="bi bi-arrow-repeat"></i>
+                                            <span class="step-label" style="left: -24px;">{{ app.pipeline_status }}</span>
                                         </div>
                                     {% endif %}
 
@@ -269,13 +292,30 @@
     </div>
 
     <!-- Bootstrap Bundle JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script><script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        window.onload = function() {
+            if (localStorage.getItem("theme") === "dark") {
+                document.body.classList.add("dark-mode");
+            }
+        }
 
-window.onload = function() {
-    if (localStorage.getItem("theme") === "dark") {
-        document.body.classList.add("dark-mode");
-    }
-}
-</script>
+        // Auto-refresh applications grid every 15 seconds silently
+        setInterval(function() {
+            if (document.querySelector('.modal.show')) return;
+            fetch(window.location.href)
+                .then(res => res.text())
+                .then(html => {
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(html, 'text/html');
+                    const newGrid = doc.getElementById('applicationsGrid');
+                    const oldGrid = document.getElementById('applicationsGrid');
+                    if (oldGrid && newGrid) {
+                        oldGrid.innerHTML = newGrid.innerHTML;
+                    }
+                })
+                .catch(err => console.error("Auto-refresh failed", err));
+        }, 15000);
+    </script>
 </body>
 </html>

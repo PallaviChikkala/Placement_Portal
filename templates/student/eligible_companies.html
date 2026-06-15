@@ -60,7 +60,7 @@
                     <i class="bi bi-building"></i> Eligible Companies
                 </a>
                 <a href="/my_applications" class="sidebar-link">
-                    <i class="bi bi-file-earmark-text"></i> My Applications
+                    <i class="bi bi-file-earmark-text"></i> Placement History
                 </a>
             </div>
             
@@ -173,7 +173,7 @@
                             <!-- Actions -->
                             <div class="card-footer-custom d-flex gap-2">
                                 <button class="btn btn-premium-outline btn-sm flex-grow-1" 
-                                        onclick="showJobDetails('{{ job.company_name }}', '{{ job.role }}', '{{ job.package_lpa }}', '{{ job.tier }}', '{{ job.deadline }}', '{{ job.required_skills }}', '{{ job.job_description|replace('\n', '<br>')|replace('\'', '\\\'') }}', '{{ job.eligible_branches }}', '{{ job.min_cgpa }}')">
+                                        onclick="showJobDetails('{{ job.company_name }}', '{{ job.role }}', '{{ job.package_lpa }}', '{{ job.tier }}', '{{ job.deadline }}', '{{ job.required_skills }}', '{{ job.job_description|replace('\n', '<br>')|replace('\'', '\\\'') }}', '{{ job.eligible_branches }}', '{{ job.min_cgpa }}', '{{ job.num_rounds }}')">
                                     View Details
                                 </button>
                                 
@@ -270,6 +270,7 @@
                             <ul class="small text-muted ps-3 mt-2">
                                 <li>Eligible Branches: <strong class="text-dark" id="modal-branches">All</strong></li>
                                 <li>Minimum CGPA: <strong class="text-dark" id="modal-min-cgpa">6.0</strong></li>
+                                <li id="modal-rounds-li">Selection Rounds: <strong class="text-dark" id="modal-rounds">TBD</strong></li>
                             </ul>
                         </div>
                         <div class="col-md-6">
@@ -402,7 +403,7 @@ window.onload = function() {
         }
 
         // Show details in Modal
-        function showJobDetails(company, role, lpa, tier, deadline, skills, description, branches, minCgpa) {
+        function showJobDetails(company, role, lpa, tier, deadline, skills, description, branches, minCgpa, numRounds) {
             document.getElementById("modal-company-name").innerText = company;
             document.getElementById("modal-job-role").innerText = role;
             document.getElementById("modal-package").innerText = `${lpa} LPA`;
@@ -410,6 +411,14 @@ window.onload = function() {
             document.getElementById("modal-deadline").innerText = deadline;
             document.getElementById("modal-branches").innerText = branches || "All Branches";
             document.getElementById("modal-min-cgpa").innerText = `${minCgpa || '6.0'} CGPA`;
+            
+            if (numRounds && numRounds !== "None") {
+                document.getElementById("modal-rounds-li").style.display = "list-item";
+                document.getElementById("modal-rounds").innerText = numRounds;
+            } else {
+                document.getElementById("modal-rounds-li").style.display = "none";
+            }
+            
             document.getElementById("modal-required-skills").innerText = skills || "Not Specified";
             document.getElementById("modal-description").innerHTML = description || "No detailed description provided.";
             
@@ -506,6 +515,24 @@ window.onload = function() {
         
         setInterval(updateCountdowns, 1000);
         updateCountdowns();
+
+        // Auto-refresh jobs grid every 15 seconds silently
+        setInterval(function() {
+            if (document.querySelector('.modal.show')) return;
+            fetch(window.location.href)
+                .then(res => res.text())
+                .then(html => {
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(html, 'text/html');
+                    const newGrid = doc.getElementById('jobsGrid');
+                    const oldGrid = document.getElementById('jobsGrid');
+                    if (oldGrid && newGrid) {
+                        oldGrid.innerHTML = newGrid.innerHTML;
+                        if (typeof filterCards === 'function') filterCards();
+                    }
+                })
+                .catch(err => console.error("Auto-refresh failed", err));
+        }, 15000);
     </script>
 </body>
 </html>
