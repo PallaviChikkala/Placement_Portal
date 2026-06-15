@@ -28,7 +28,7 @@ def get_connection():
     return mysql.connector.connect(
         host="localhost",
         user="root",
-        password="Pallavi@2007",
+        password="Hasini@1234",
         database="placement_portal",
         connection_timeout=30,
         autocommit=False
