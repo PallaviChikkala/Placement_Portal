@@ -87,33 +87,42 @@
             <div class="card glass-card p-3 mb-4 animated-fade-in-up">
                 <div class="row g-3 justify-content-between">
                     <!-- Search Input -->
-                    <div class="col-md-6 col-sm-12">
+                    <div class="col-md-4 col-sm-12">
                         <div class="input-group">
                             <span class="input-group-text bg-white border-end-0" style="border: 1px solid var(--border-color); border-radius: var(--radius-sm) 0 0 var(--radius-sm);"><i class="bi bi-search text-muted"></i></span>
                             <input type="text" id="companySearch" class="form-control form-premium border-start-0" placeholder="Search company or role..." oninput="filterCards()" style="border-radius: 0 var(--radius-sm) var(--radius-sm) 0;">
                         </div>
                     </div>
+                    <!-- View Mode Filter -->
+                    <div class="col-md-3 col-sm-6">
+                        <select id="viewModeFilter" class="form-select form-premium" onchange="toggleViewMode()">
+                            <option value="active">Active Drives</option>
+                            <option value="past">Past & Expired</option>
+                        </select>
+                    </div>
                     <!-- Status Filter -->
                     <div class="col-md-3 col-sm-6">
                         <select id="statusFilter" class="form-select form-premium" onchange="filterCards()">
-                            <option value="all">All Drives</option>
+                            <option value="all">All Statuses</option>
                             <option value="eligible">Eligible Only</option>
                             <option value="ineligible">Ineligible Only</option>
                             <option value="applied">Already Applied</option>
                         </select>
                     </div>
                     <!-- Clear Filter -->
-                    <div class="col-md-3 col-sm-6 text-end">
-                        <button class="btn btn-outline-secondary w-100 py-2 rounded" onclick="clearFilters()"><i class="bi bi-x-circle me-1"></i> Clear Filters</button>
+                    <div class="col-md-2 col-sm-12 text-end">
+                        <button class="btn btn-outline-secondary w-100 py-2 rounded" onclick="clearFilters()"><i class="bi bi-x-circle me-1"></i> Clear</button>
                     </div>
                 </div>
             </div>
 
-            <!-- Job Cards Grid -->
-            <div class="row g-4 animated-fade-in-up delay-100" id="jobsGrid">
-                {% if jobs %}
-                    {% for job in jobs %}
-                    <div class="col-md-6 col-xl-4 job-card-container" 
+            <!-- Active Jobs Container -->
+            <div id="active-jobs-container">
+                <!-- Job Cards Grid -->
+                <div class="row g-4 animated-fade-in-up delay-100" id="jobsGrid">
+                    {% if active_jobs %}
+                        {% for job in active_jobs %}
+                        <div class="col-md-6 col-xl-4 job-card-container" 
                          data-job-id="{{ job.job_id }}"
                          data-company="{{ job.company_name|lower }}" 
                          data-role="{{ job.role|lower }}"
@@ -186,16 +195,79 @@
                                 {% endif %}
                             </div>
                         </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="col-12 text-center py-5">
+                            <i class="bi bi-search display-1 text-muted mb-3 opacity-25"></i>
+                            <h4 class="text-muted">No active drives found</h4>
+                            <p class="text-muted small">Check back later for new opportunities.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div> <!-- End Active Jobs Container -->
+
+            <!-- Past Jobs Container -->
+            <div id="past-jobs-container" style="display: none;">
+                <div class="card glass-card p-0 overflow-hidden animated-fade-in-up delay-100">
+                    <div class="custom-table-container">
+                        <table class="table table-premium mb-0 table-hover align-middle">
+                            <thead>
+                                <tr>
+                                    <th class="ps-4">Company Name</th>
+                                    <th>Role</th>
+                                    <th>CTC (LPA)</th>
+                                    <th>Status</th>
+                                    <th class="pe-4 text-end">Expired Date</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% if past_jobs %}
+                                    {% for job in past_jobs %}
+                                    <tr class="stagger-row" style="--row-idx: {{ loop.index0 }};">
+                                        <td class="ps-4 fw-bold text-dark">
+                                            <div class="d-flex align-items-center gap-3">
+                                                <div class="company-badge-logo" style="width: 36px; height: 36px; font-size: 1rem;">
+                                                    {{ job.company_name[0] }}
+                                                </div>
+                                                {{ job.company_name }}
+                                            </div>
+                                        </td>
+                                        <td>{{ job.role }}</td>
+                                        <td class="fw-semibold text-primary">{{ job.package_lpa }}</td>
+                                        <td>
+                                            {% if job.application_status == 'Selected' and job.is_expired %}
+                                                <span class="badge bg-success"> Selected</span>
+                                                <span class="badge bg-secondary ms-1">🕒 Expired</span>
+                                            {% elif job.application_status == 'Selected' %}
+                                                <span class="badge bg-success"> Selected</span>
+                                            {% elif job.application_status in ['Not Selected', 'Rejected'] and job.is_expired %}
+                                                <span class="badge bg-danger"> Not Selected</span>
+                                                <span class="badge bg-secondary ms-1">🕒 Expired</span>
+                                            {% elif job.application_status in ['Not Selected', 'Rejected'] %}
+                                                <span class="badge bg-danger"> Not Selected</span>
+                                            {% elif job.applied %}
+                                                <span class="badge bg-warning text-dark">⏳ Expired (Applied)</span>
+                                            {% else %}
+                                                <span class="badge bg-secondary">🕒 Expired</span>
+                                            {% endif %}
+                                        </td>
+                                        <td class="pe-4 text-end text-danger fw-medium">{{ job.deadline }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                {% else %}
+                                    <tr>
+                                        <td colspan="4" class="text-center text-muted py-5">
+                                            <i class="bi bi-clock-history fs-1 d-block mb-2 opacity-50"></i>
+                                            No past or expired drives found.
+                                        </td>
+                                    </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
                     </div>
-                    {% endfor %}
-                {% else %}
-                    <div class="col-12 text-center text-muted py-5">
-                        <i class="bi bi-building-x fs-1 d-block mb-3 text-warning"></i>
-                        <h4>No Job Openings Available</h4>
-                        <p class="small text-muted">Check back later for new placement opportunities.</p>
-                    </div>
-                {% endif %}
-            </div>
+                </div>
+            </div> <!-- End Past Jobs Container -->
 
             <!-- Placement Policy & Tier Legend -->
             <div class="card glass-card p-4 mt-5 animated-fade-in-up delay-200">
@@ -355,6 +427,10 @@ window.onload = function() {
     if (localStorage.getItem("theme") === "dark") {
         document.body.classList.add("dark-mode");
     }
+    // Ensure the correct view mode is set on page load in case browser caches select value
+    if (document.getElementById('viewModeFilter')) {
+        toggleViewMode();
+    }
 }
 
         // Init bootstrap tooltips
@@ -362,6 +438,25 @@ window.onload = function() {
         tooltipTriggerList.map(function (tooltipTriggerEl) {
             return new bootstrap.Tooltip(tooltipTriggerEl);
         });
+
+        // Toggle Active and Past views
+        function toggleViewMode() {
+            const mode = document.getElementById('viewModeFilter').value;
+            if (mode === 'active') {
+                document.getElementById('active-jobs-container').style.display = 'block';
+                document.getElementById('past-jobs-container').style.display = 'none';
+                document.getElementById('statusFilter').disabled = false;
+                document.getElementById('companySearch').placeholder = "Search company or role...";
+                document.getElementById('companySearch').disabled = false;
+                filterCards(); // Re-apply active filters
+            } else {
+                document.getElementById('active-jobs-container').style.display = 'none';
+                document.getElementById('past-jobs-container').style.display = 'block';
+                document.getElementById('statusFilter').disabled = true;
+                document.getElementById('companySearch').placeholder = "Search not available in Past Mode...";
+                document.getElementById('companySearch').disabled = true;
+            }
+        }
 
         // Client-side filtering mechanism
         function filterCards() {
@@ -528,8 +623,15 @@ window.onload = function() {
                     const oldGrid = document.getElementById('jobsGrid');
                     if (oldGrid && newGrid) {
                         oldGrid.innerHTML = newGrid.innerHTML;
-                        if (typeof filterCards === 'function') filterCards();
                     }
+                    
+                    const newPastGrid = doc.getElementById('past-jobs-container');
+                    const oldPastGrid = document.getElementById('past-jobs-container');
+                    if (oldPastGrid && newPastGrid) {
+                        oldPastGrid.innerHTML = newPastGrid.innerHTML;
+                    }
+
+                    if (typeof filterCards === 'function') filterCards();
                 })
                 .catch(err => console.error("Auto-refresh failed", err));
         }, 15000);

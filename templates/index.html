@@ -13,15 +13,11 @@
             --bg-color: #fcfaf8; /* Creamy off-white */
             --text-main: #271c19; /* Deep brown/black */
             --text-muted: #78716c; /* Warm gray */
-            --card-bg: rgba(255, 255, 255, 0.85);
-            --card-border: rgba(217, 119, 6, 0.15);
+            --card-bg: rgba(255, 255, 255, 0.7);
+            --card-border: rgba(217, 119, 6, 0.2);
         }
         
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
             font-family: 'Inter', sans-serif;
@@ -31,406 +27,376 @@
             display: flex;
             flex-direction: column;
             overflow-x: hidden;
-            background-image: 
-                radial-gradient(circle at 15% 50%, rgba(245, 158, 11, 0.08), transparent 25%),
-                radial-gradient(circle at 85% 30%, rgba(217, 119, 6, 0.08), transparent 25%),
-                linear-gradient(135deg, #fffdfa 0%, #fef8e6 50%, #f5eada 100%);
+        }
+
+        /* Ambient Background */
+        .bg-elements {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            z-index: -1;
+            overflow: hidden;
+            background: linear-gradient(135deg, #fdfbf7 0%, #f6ecd9 100%);
+        }
+
+        .blob {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.6;
+            animation: float 10s infinite alternate ease-in-out;
+        }
+
+        .blob-1 {
+            width: 50vw; height: 50vw;
+            background: rgba(245, 158, 11, 0.15);
+            top: -20%; right: -10%;
+        }
+
+        .blob-2 {
+            width: 40vw; height: 40vw;
+            background: rgba(217, 119, 6, 0.1);
+            bottom: -10%; left: -10%;
+            animation-delay: -5s;
         }
 
         /* Navigation */
         nav {
-            padding: 1.5rem 5%;
+            padding: 2.5rem 5%;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            position: relative;
             z-index: 10;
         }
 
         .logo {
             font-family: 'Outfit', sans-serif;
-            font-size: 1.8rem;
+            font-size: 1.6rem;
             font-weight: 800;
             background: linear-gradient(135deg, #b45309 0%, #f59e0b 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             text-decoration: none;
-            letter-spacing: -0.5px;
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 12px;
         }
 
-        .logo svg {
-            width: 28px;
-            height: 28px;
-            color: var(--primary);
+        .logo svg { width: 28px; height: 28px; color: var(--primary); }
+
+        .institution-logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #1c1917;
+            letter-spacing: -0.5px;
         }
 
-        /* Hero Section */
-        .hero {
+        .nitap-img {
+            height: 45px;
+            width: auto;
+            object-fit: contain;
+        }
+
+        /* Main Container */
+        .container {
             flex: 1;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4rem;
+            padding: 0 5%;
+            align-items: center;
+            position: relative;
+            z-index: 1;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        /* Left Content */
+        .content-left {
             display: flex;
             flex-direction: column;
             justify-content: center;
-            align-items: center;
-            text-align: center;
-            padding: 2rem 20px 4rem;
-            position: relative;
-            z-index: 1;
+            animation: slideRight 1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            opacity: 0;
+            transform: translateX(-30px);
         }
 
         .badge {
-            background: rgba(245, 158, 11, 0.1);
-            border: 1px solid rgba(245, 158, 11, 0.3);
+            background: rgba(255, 255, 255, 0.5);
+            border: 1px solid var(--card-border);
             color: #b45309;
-            padding: 0.5rem 1rem;
+            padding: 0.6rem 1.2rem;
             border-radius: 100px;
-            font-size: 0.875rem;
+            font-size: 0.85rem;
             font-weight: 600;
-            margin-bottom: 2rem;
-            animation: fadeUp 1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-            opacity: 0;
-            transform: translateY(20px);
             display: inline-flex;
             align-items: center;
-            gap: 8px;
-            box-shadow: 0 4px 15px rgba(245, 158, 11, 0.1);
+            gap: 10px;
+            width: max-content;
+            margin-bottom: 2rem;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 15px rgba(245, 158, 11, 0.05);
         }
         
         .badge span {
-            width: 8px;
-            height: 8px;
+            width: 8px; height: 8px;
             background-color: var(--accent);
             border-radius: 50%;
-            display: inline-block;
             box-shadow: 0 0 8px var(--accent);
+            animation: pulse 2s infinite;
         }
 
-        .hero h1 {
+        h1 {
             font-family: 'Outfit', sans-serif;
-            font-size: clamp(3rem, 6vw, 5rem);
+            font-size: clamp(3rem, 5vw, 4.5rem);
             font-weight: 800;
             line-height: 1.1;
             margin-bottom: 1.5rem;
-            animation: fadeUp 1s cubic-bezier(0.16, 1, 0.3, 1) 0.1s forwards;
-            opacity: 0;
-            transform: translateY(30px);
-            max-width: 900px;
             color: #1c1917;
+            letter-spacing: -1px;
         }
 
-        .hero h1 span {
+        h1 span {
+            display: block;
             background: linear-gradient(135deg, #d97706 0%, #f59e0b 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
+        }
+
+        .desc {
+            font-size: 1.15rem;
+            color: var(--text-muted);
+            max-width: 500px;
+            margin-bottom: 3rem;
+            line-height: 1.7;
+        }
+
+        /* Right Content - Modern Portals */
+        .content-right {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            animation: slideLeft 1s cubic-bezier(0.16, 1, 0.3, 1) 0.2s forwards;
+            opacity: 0;
+            transform: translateX(30px);
             position: relative;
         }
 
-        .hero p {
-            font-size: 1.125rem;
-            color: var(--text-muted);
-            max-width: 600px;
-            margin-bottom: 3.5rem;
-            line-height: 1.6;
-            animation: fadeUp 1s cubic-bezier(0.16, 1, 0.3, 1) 0.2s forwards;
-            opacity: 0;
-            transform: translateY(30px);
+        .content-right::before {
+            content: '';
+            position: absolute;
+            top: -20%; left: -10%;
+            width: 120%; height: 140%;
+            background: radial-gradient(circle, rgba(255,255,255,0.4) 0%, transparent 70%);
+            z-index: -1;
+            pointer-events: none;
         }
 
-        /* Cards Container */
-        .login-options {
-            display: flex;
-            gap: 2.5rem;
-            flex-wrap: wrap;
-            justify-content: center;
-            animation: fadeUp 1s cubic-bezier(0.16, 1, 0.3, 1) 0.3s forwards;
-            opacity: 0;
-            transform: translateY(30px);
-        }
-
-        /* Card Styling */
-        .portal-card {
+        .portal-option {
             background: var(--card-bg);
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
             border: 1px solid var(--card-border);
             border-radius: 24px;
-            padding: 2.5rem 2rem;
-            width: 340px;
+            padding: 2rem;
+            display: flex;
+            align-items: center;
+            gap: 2rem;
             text-decoration: none;
             color: var(--text-main);
-            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
             position: relative;
             overflow: hidden;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            text-align: center;
-            box-shadow: 0 10px 40px -10px rgba(217, 119, 6, 0.15);
+            box-shadow: 0 10px 30px rgba(217, 119, 6, 0.05);
         }
 
-        .portal-card::before {
+        .portal-option::before {
             content: '';
             position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(135deg, rgba(253, 230, 138, 0.3) 0%, transparent 100%);
-            opacity: 0;
-            transition: opacity 0.4s ease;
+            top: 0; left: 0;
+            width: 4px; height: 100%;
+            background: linear-gradient(to bottom, #d97706, #fbbf24);
+            transform: scaleY(0);
+            transition: transform 0.4s ease;
+            transform-origin: top;
         }
 
-        .portal-card:hover {
-            transform: translateY(-8px);
-            border-color: rgba(245, 158, 11, 0.4);
-            box-shadow: 0 20px 40px rgba(217, 119, 6, 0.2), 
-                        0 0 50px rgba(245, 158, 11, 0.1);
+        .portal-option:hover {
+            transform: translateX(10px) translateY(-5px);
             background: #ffffff;
+            border-color: rgba(217, 119, 6, 0.3);
+            box-shadow: 0 20px 40px rgba(217, 119, 6, 0.15);
         }
 
-        .portal-card:hover::before {
-            opacity: 1;
+        .portal-option:hover::before {
+            transform: scaleY(1);
         }
 
-        .card-icon {
-            width: 72px;
-            height: 72px;
+        .icon-wrapper {
+            width: 80px; height: 80px;
             border-radius: 20px;
             background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
             border: 1px solid rgba(245, 158, 11, 0.2);
             display: flex;
             align-items: center;
             justify-content: center;
-            margin-bottom: 1.5rem;
-            font-size: 2rem;
+            font-size: 2.5rem;
             color: var(--primary);
-            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-            box-shadow: 0 8px 16px rgba(217, 119, 6, 0.1);
+            flex-shrink: 0;
+            transition: all 0.4s ease;
         }
 
-        .portal-card:hover .card-icon {
-            transform: scale(1.1) translateY(-5px);
-            box-shadow: 0 12px 20px rgba(217, 119, 6, 0.2);
+        .portal-option:hover .icon-wrapper {
             background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            transform: scale(1.05) rotate(-5deg);
+            box-shadow: 0 10px 20px rgba(217, 119, 6, 0.15);
         }
 
-        .card-title {
+        .portal-info {
+            flex: 1;
+        }
+
+        .portal-info h2 {
             font-family: 'Outfit', sans-serif;
             font-size: 1.5rem;
             font-weight: 700;
-            margin-bottom: 0.75rem;
+            margin-bottom: 0.5rem;
             letter-spacing: -0.5px;
-            color: #1c1917;
         }
 
-        .card-desc {
+        .portal-info p {
             font-size: 0.95rem;
             color: var(--text-muted);
             line-height: 1.5;
-            margin-bottom: 1.5rem;
         }
 
-        .card-btn {
-            margin-top: auto;
-            padding: 0.75rem 1.5rem;
-            border-radius: 100px;
-            font-weight: 600;
-            font-size: 0.9rem;
+        .arrow-btn {
+            width: 45px; height: 45px;
+            border-radius: 50%;
+            background: transparent;
+            border: 1px solid rgba(217, 119, 6, 0.3);
             display: flex;
             align-items: center;
-            gap: 8px;
-            transition: all 0.3s ease;
-            background: #fffbeb;
-            border: 1px solid rgba(245, 158, 11, 0.3);
+            justify-content: center;
             color: var(--primary);
+            transition: all 0.3s ease;
         }
 
-        .portal-card:hover .card-btn {
-            background: linear-gradient(135deg, var(--accent) 0%, var(--primary) 100%);
+        .portal-option:hover .arrow-btn {
+            background: var(--primary);
             color: white;
-            border-color: transparent;
+            border-color: var(--primary);
+            transform: translateX(5px);
             box-shadow: 0 4px 15px rgba(217, 119, 6, 0.3);
         }
 
-        .card-btn svg {
-            transition: transform 0.3s ease;
-        }
-
-        .portal-card:hover .card-btn svg {
-            transform: translateX(4px);
-        }
-
-        /* Abstract Shapes */
-        .ambient-shape {
-            position: absolute;
-            filter: blur(100px);
-            border-radius: 50%;
-            z-index: -1;
-            opacity: 0.6;
-            animation: pulse 10s infinite alternate ease-in-out;
-        }
-
-        .shape-top {
-            width: 40vw;
-            height: 40vw;
-            max-width: 600px;
-            max-height: 600px;
-            background: rgba(251, 191, 36, 0.25);
-            top: -20%;
-            right: -10%;
-        }
-
-        .shape-bottom {
-            width: 30vw;
-            height: 30vw;
-            max-width: 500px;
-            max-height: 500px;
-            background: rgba(245, 158, 11, 0.2);
-            bottom: -10%;
-            left: -10%;
-            animation-delay: -5s;
-        }
-
-        .shape-middle {
-            width: 20vw;
-            height: 20vw;
-            max-width: 300px;
-            max-height: 300px;
-            background: rgba(217, 119, 6, 0.15);
-            top: 40%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            animation-delay: -2s;
-            animation-duration: 15s;
-        }
-
-        .cursor-glow {
-            position: fixed;
-            width: 400px;
-            height: 400px;
-            background: radial-gradient(circle, rgba(245, 158, 11, 0.1) 0%, transparent 70%);
-            border-radius: 50%;
-            pointer-events: none;
-            transform: translate(-50%, -50%);
-            z-index: 0;
-            transition: opacity 0.3s ease;
-            opacity: 0;
-        }
-
         /* Animations */
-        @keyframes fadeUp {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+        @keyframes float {
+            0% { transform: scale(1) translate(0, 0); }
+            100% { transform: scale(1.05) translate(20px, 20px); }
+        }
+
+        @keyframes slideRight {
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        @keyframes slideLeft {
+            to { opacity: 1; transform: translateX(0); }
         }
 
         @keyframes pulse {
-            0% { transform: scale(1); opacity: 0.4; }
-            100% { transform: scale(1.1); opacity: 0.7; }
+            0% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(245, 158, 11, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
         }
 
         /* Responsive */
-        @media (max-width: 768px) {
-            .hero {
-                padding-top: 1rem;
+        @media (max-width: 968px) {
+            .container {
+                grid-template-columns: 1fr;
+                gap: 3rem;
+                padding-top: 2rem;
+                padding-bottom: 4rem;
             }
-            .portal-card {
-                width: 100%;
-                max-width: 340px;
+            .content-left {
+                text-align: center;
+                align-items: center;
             }
+            .badge { margin: 0 auto 2rem; }
+            .content-right {
+                padding: 0 1rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .portal-option {
+                flex-direction: column;
+                text-align: center;
+                padding: 2rem 1.5rem;
+                gap: 1.5rem;
+            }
+            .arrow-btn { margin-top: 1rem; }
+            h1 { font-size: 2.5rem; }
         }
     </style>
 </head>
 <body>
-    <div class="cursor-glow" id="cursorGlow"></div>
-    <div class="ambient-shape shape-top"></div>
-    <div class="ambient-shape shape-bottom"></div>
-    <div class="ambient-shape shape-middle"></div>
+    <div class="bg-elements">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+    </div>
 
     <nav>
         <a href="/" class="logo">
             <svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg"><path d="M22 10v6M2 10l10-5 10 5-10 5z"></path><path d="M6 12v5c3 3 9 3 12 0v-5"></path></svg>
             Placement Management Portal
         </a>
+        <div class="institution-logo">
+            <img src="{{ url_for('static', filename='nitap_logo.png') }}" alt="NIT AP Logo" class="nitap-img">
+            <span>NIT AP</span>
+        </div>
     </nav>
 
-    <main class="hero">
-        <div class="badge">
-            <span></span> {{ global_settings.recruitment_title }}
+    <div class="container">
+        <div class="content-left">
+            <div class="badge">
+                <span></span> {{ global_settings.recruitment_title }}
+            </div>
+            <h1>Elevate Your<br><span>Career Journey</span></h1>
+            <p class="desc">The premium centralized platform bridging the gap between exceptional talent and industry-leading organizations.</p>
         </div>
-        <h1>Elevate Your <span>Career Journey</span></h1>
-        <p>The premium centralized platform bridging the gap between exceptional talent and industry-leading organizations.</p>
-        
-        <div class="login-options">
-            <!-- Student Portal -->
-            <a href="/student_login" class="portal-card student">
-                <div class="card-icon">
+
+        <div class="content-right">
+            <a href="/student_login" class="portal-option">
+                <div class="icon-wrapper">
                     <svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
                 </div>
-                <h2 class="card-title">Student Portal</h2>
-                <p class="card-desc">Access your personalized dashboard, apply for premium opportunities, and track your placements.</p>
-                <div class="card-btn">
-                    Login as Student
-                    <svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+                <div class="portal-info">
+                    <h2>Student Portal</h2>
+                    <p>Access your personalized dashboard, apply for premium opportunities, and track your placements.</p>
+                </div>
+                <div class="arrow-btn">
+                    <svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" height="20" width="20" xmlns="http://www.w3.org/2000/svg"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
                 </div>
             </a>
 
-            <!-- Faculty Portal -->
-            <a href="/faculty_login" class="portal-card faculty">
-                <div class="card-icon">
+            <a href="/faculty_login" class="portal-option">
+                <div class="icon-wrapper">
                     <svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
                 </div>
-                <h2 class="card-title">Admin Portal</h2>
-                <p class="card-desc">Manage recruitment drives, review student profiles, and oversee the placement lifecycle.</p>
-                <div class="card-btn">
-                    Login as TPO
-                    <svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+                <div class="portal-info">
+                    <h2>Admin Portal</h2>
+                    <p>Manage recruitment drives, review student profiles, and oversee the placement lifecycle.</p>
+                </div>
+                <div class="arrow-btn">
+                    <svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" height="20" width="20" xmlns="http://www.w3.org/2000/svg"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
                 </div>
             </a>
         </div>
-    </main>
-
-    <script>
-        // Subtle glare effect on hover for cards
-        document.querySelectorAll('.portal-card').forEach(card => {
-            card.addEventListener('mousemove', e => {
-                const rect = card.getBoundingClientRect();
-                const x = e.clientX - rect.left;
-                const y = e.clientY - rect.top;
-                
-                card.style.setProperty('--mouse-x', `${x}px`);
-                card.style.setProperty('--mouse-y', `${y}px`);
-                
-                const centerX = rect.width / 2;
-                const centerY = rect.height / 2;
-                const rotateX = ((y - centerY) / centerY) * -3;
-                const rotateY = ((x - centerX) / centerX) * 3;
-                
-                card.style.transform = `translateY(-8px) perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
-            });
-            
-            card.addEventListener('mouseleave', () => {
-                card.style.transform = '';
-            });
-        });
-
-        // Mouse follow glow effect
-        const cursorGlow = document.getElementById('cursorGlow');
-        document.addEventListener('mousemove', (e) => {
-            cursorGlow.style.opacity = '1';
-            cursorGlow.style.left = e.clientX + 'px';
-            cursorGlow.style.top = e.clientY + 'px';
-        });
-        document.addEventListener('mouseleave', () => {
-            cursorGlow.style.opacity = '0';
-        });
-    </script>
+    </div>
 </body>
 </html>
-

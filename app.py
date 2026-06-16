@@ -185,6 +185,11 @@ def init_database():
         except Exception:
             pass
 
+        try:
+            cursor.execute("ALTER TABLE applications ADD COLUMN status_updated_at DATETIME DEFAULT NULL")
+        except Exception:
+            pass
+
         # Create recruitment_rounds table (tracks number of rounds per job)
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS recruitment_rounds (
@@ -724,6 +729,9 @@ def student_dashboard():
     cursor.execute("SELECT COUNT(*) AS count FROM applications WHERE student_id = %s AND status = 'Interview'", (session["student_id"],))
     interview_count = cursor.fetchone()["count"]
 
+    cursor.execute("SELECT COUNT(*) AS count FROM applications WHERE student_id = %s AND status = 'Selected'", (session["student_id"],))
+    selected_count = cursor.fetchone()["count"]
+
     resume_score = session.get("resume_score", 0)
 
     # Recent applications for the dashboard card
@@ -758,6 +766,7 @@ def student_dashboard():
         eligible_count=eligible_count,
         applied_count=applied_count,
         interview_count=interview_count,
+        selected_count=selected_count,
         resume_score=resume_score,
         notifications=notifications,
         recent_applications=recent_applications
@@ -863,8 +872,10 @@ def eligible_companies():
         cursor.execute("SELECT * FROM jobs ORDER BY job_id DESC")
     all_jobs = cursor.fetchall()
    
+    from datetime import datetime, timedelta
     # Check eligibility for each job
-    jobs_list = []
+    active_jobs_list = []
+    past_jobs_list = []
     for job in all_jobs:
         job_tier_str = str(job.get('tier', 'Tier 3')).lower()
         job_tier_num = 1 if '1' in job_tier_str else (2 if '2' in job_tier_str else 3)
@@ -902,6 +913,7 @@ def eligible_companies():
         application = cursor.fetchone()
         applied = True if application else False
         status = application['status'] if application else None
+        status_updated_at = application['status_updated_at'] if application else None
        
         job_item = dict(job)
         job_item['is_eligible'] = is_eligible
@@ -914,15 +926,46 @@ def eligible_companies():
         job_item['max_backlogs'] = job.get('active_backlogs') or 0
         job_item['eligible_branches'] = job.get('branches') or ''
         job_item['deadline'] = str(job.get('deadline')) if job.get('deadline') else 'Ongoing'
+        job_item['job_description'] = job.get('description') or ''
+        job_item['required_skills'] = job.get('skills') or job.get('required_skills') or ''
 
         # Fetch number of rounds if set by faculty
         cursor.execute("SELECT num_rounds FROM recruitment_rounds WHERE job_id = %s", (job['job_id'],))
         r_round = cursor.fetchone()
         job_item['num_rounds'] = r_round['num_rounds'] if r_round else None
 
-        jobs_list.append(job_item)
-       
-    return render_template("student/eligible_companies.html", jobs=jobs_list, student=student)
+        is_past = False
+        deadline_date = None
+        if job.get('deadline'):
+            try:
+                deadline_date = datetime.strptime(str(job['deadline']), "%Y-%m-%d %H:%M:%S")
+            except ValueError:
+                try:
+                    deadline_date = datetime.strptime(str(job['deadline']), "%Y-%m-%dT%H:%M")
+                except ValueError:
+                    pass
+        
+        # Rule 1: If job deadline has passed → move immediately
+        deadline_expired = deadline_date and datetime.now() > deadline_date
+        job_item['is_expired'] = deadline_expired
+        if deadline_expired:
+            is_past = True
+            
+        # Rule 2: If student is Selected or Not Selected → wait 3 days after status was set
+        if status in ['Selected', 'Not Selected', 'Rejected'] and not is_past:
+            if status_updated_at:
+                if datetime.now() > status_updated_at + timedelta(days=3):
+                    is_past = True
+            else:
+                # No timestamp recorded yet (legacy row) → move immediately
+                is_past = True
+
+        if is_past:
+            past_jobs_list.append(job_item)
+        else:
+            active_jobs_list.append(job_item)
+        
+    return render_template("student/eligible_companies.html", active_jobs=active_jobs_list, past_jobs=past_jobs_list, student=student)
 
 @app.route("/apply_job", methods=["POST"])
 def apply_job():
@@ -1586,9 +1629,9 @@ def faculty_applications_update_status():
         
         # Update applications table
         if drive_link:
-            cursor.execute("UPDATE applications SET status = %s, drive_link = %s WHERE application_id = %s", (status, drive_link, app_id))
+            cursor.execute("UPDATE applications SET status = %s, drive_link = %s, status_updated_at = NOW() WHERE application_id = %s", (status, drive_link, app_id))
         else:
-            cursor.execute("UPDATE applications SET status = %s WHERE application_id = %s", (status, app_id))
+            cursor.execute("UPDATE applications SET status = %s, status_updated_at = NOW() WHERE application_id = %s", (status, app_id))
 
         # Check the job company and role/tier
         cursor.execute("SELECT company_name, role, tier FROM jobs WHERE job_id = %s", (job_db_id,))
@@ -1903,7 +1946,7 @@ def set_round_result():
         current_status = cur_app["status"] if cur_app else "Pending"
 
         if all_selected and len(round_map) == num_rounds and current_status != 'Selected':
-            cursor.execute("UPDATE applications SET status='Selected' WHERE student_id=%s AND job_id=%s", (student_id, job_id))
+            cursor.execute("UPDATE applications SET status='Selected', status_updated_at=NOW() WHERE student_id=%s AND job_id=%s", (student_id, job_id))
             # Update tier
             cursor.execute("SELECT tier FROM jobs WHERE job_id=%s", (job_id,))
             jt = cursor.fetchone()
@@ -2291,7 +2334,7 @@ def upload_recruitment_excel(job_id, round_num):
                 final_msg = None
                 if all_sel and current_status != 'Selected':
                     cursor.execute(
-                        "UPDATE applications SET status='Selected' WHERE student_id=%s AND job_id=%s",
+                        "UPDATE applications SET status='Selected', status_updated_at=NOW() WHERE student_id=%s AND job_id=%s",
                         (sid, job_id))
                     cursor.execute(
                         "UPDATE students SET selected_tier=%s WHERE student_id=%s",
@@ -2299,7 +2342,7 @@ def upload_recruitment_excel(job_id, round_num):
                     final_msg = f"🏆 Congratulations! You have been <strong>Selected</strong> by <strong>{cname}</strong> for the <strong>{rname}</strong> role! All {num_rounds} rounds cleared!"
                 elif any_not and current_status != 'Not Selected':
                     cursor.execute(
-                        "UPDATE applications SET status='Not Selected' WHERE student_id=%s AND job_id=%s",
+                        "UPDATE applications SET status='Not Selected', status_updated_at=NOW() WHERE student_id=%s AND job_id=%s",
                         (sid, job_id))
                     final_msg = f"Your application for <strong>{cname} - {rname}</strong> has been updated: <strong>Not Selected</strong>."
                 

@@ -29,6 +29,34 @@
         .quick-upload-zone:hover {
             border-color: var(--accent);
             background: rgba(245, 158, 11, 0.02);
+            transform: translateY(-2px);
+        }
+        
+        /* Premium Table Row Animations */
+        .stagger-row {
+            opacity: 0;
+            animation: slideInRight 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+            animation-delay: calc(0.1s + (var(--row-idx) * 0.08s));
+        }
+
+        @keyframes slideInRight {
+            from { opacity: 0; transform: translateX(20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .table-premium tbody tr {
+            transition: transform 0.3s ease, background-color 0.3s ease, box-shadow 0.3s ease;
+            position: relative;
+        }
+        
+        .table-premium tbody tr:hover {
+            transform: scale(1.01) translateX(4px);
+            box-shadow: -4px 0 0 0 var(--accent);
+            background-color: rgba(245, 158, 11, 0.04) !important;
+        }
+        
+        body.dark-mode .table-premium tbody tr:hover {
+            background-color: rgba(245, 158, 11, 0.1) !important;
         }
     </style>
 </head>
@@ -72,7 +100,7 @@
         <!-- Main Body Content -->
         <div class="main-content">
             <!-- Header bar -->
-            <div class="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom">
+            <div class="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom animate-header" style="position: relative; z-index: 1050;">
                 <div>
                     <h2 class="mb-1 text-primary fw-extrabold" style="font-family: var(--font-heading);">
                         <span id="greeting-text">Welcome</span> {{ name }}
@@ -109,7 +137,7 @@
 </button>
                     
                     <a href="/student_profile" class="d-flex align-items-center gap-2 text-decoration-none">
-                        <img src="{{ student.profile_photo or ('https://ui-avatars.com/api/?name=' ~ name|urlencode ~ '&background=random') }}" class="rounded-circle" style="width: 42px; height: 42px; object-fit: cover; border: 2px solid white; box-shadow: 0 4px 10px rgba(0,0,0,0.08);" alt="Profile">
+                        <img src="{{ student.profile_photo if student.profile_photo and student.profile_photo != '/static/default_avatar.png' and student.profile_photo != '/static/StudentLogin.png' else '/static/default_profile.png' }}" class="rounded-circle" style="width: 42px; height: 42px; object-fit: cover; border: 2px solid white; box-shadow: 0 4px 10px rgba(0,0,0,0.08); background-color: white;" alt="Profile">
                     </a>
                 </div>
             </div>
@@ -118,10 +146,10 @@
             <div class="row g-4 mb-5 animated-fade-in-up">
                 <!-- Stat Card 1 -->
                 <div class="col-xl-3 col-md-6">
-                    <div class="card glass-card p-4 h-100 d-flex flex-row justify-content-between align-items-center">
+                    <div class="card glass-card p-4 h-100 d-flex flex-row justify-content-between align-items-center premium-hover-scale">
                         <div>
                             <span class="text-muted small fw-semibold text-uppercase d-block mb-1">Eligible Drives</span>
-                            <h3 class="mb-0 fw-extrabold text-primary" style="font-size: 2.2rem;">{{ eligible_count }}</h3>
+                            <h3 class="mb-0 fw-extrabold text-primary counter-anim" data-target="{{ eligible_count }}" style="font-size: 2.2rem;">0</h3>
                         </div>
                         <div class="stat-card-icon">
                             <i class="bi bi-building"></i>
@@ -130,10 +158,10 @@
                 </div>
                 <!-- Stat Card 2 -->
                 <div class="col-xl-3 col-md-6">
-                    <div class="card glass-card p-4 h-100 d-flex flex-row justify-content-between align-items-center">
+                    <div class="card glass-card p-4 h-100 d-flex flex-row justify-content-between align-items-center premium-hover-scale">
                         <div>
                             <span class="text-muted small fw-semibold text-uppercase d-block mb-1">Applied Roles</span>
-                            <h3 class="mb-0 fw-extrabold text-primary" style="font-size: 2.2rem;">{{ applied_count }}</h3>
+                            <h3 class="mb-0 fw-extrabold text-primary counter-anim" data-target="{{ applied_count }}" style="font-size: 2.2rem;">0</h3>
                         </div>
                         <div class="stat-card-icon">
                             <i class="bi bi-file-earmark-check"></i>
@@ -142,25 +170,29 @@
                 </div>
                 <!-- Stat Card 3 -->
                 <div class="col-xl-3 col-md-6">
-                    <div class="card glass-card p-4 h-100 d-flex flex-row justify-content-between align-items-center">
+                    <div class="card glass-card p-4 h-100 d-flex flex-row justify-content-between align-items-center premium-hover-scale">
                         <div>
-                            <span class="text-muted small fw-semibold text-uppercase d-block mb-1">Interviews</span>
-                            <h3 class="mb-0 fw-extrabold text-primary" style="font-size: 2.2rem;">{{ interview_count }}</h3>
+                            <span class="text-muted small fw-semibold text-uppercase d-block mb-1">Selected Companies</span>
+                            <h3 class="mb-0 fw-extrabold text-primary counter-anim" data-target="{{ selected_count }}" style="font-size: 2.2rem;">0</h3>
                         </div>
                         <div class="stat-card-icon">
-                            <i class="bi bi-mic"></i>
+                            <i class="bi bi-award"></i>
                         </div>
                     </div>
                 </div>
                 <!-- Stat Card 4 (ATS Score Chart) -->
                 <div class="col-xl-3 col-md-6">
-                    <div class="card glass-card p-3 h-100 d-flex align-items-center justify-content-around">
+                    <div class="card glass-card p-3 h-100 d-flex align-items-center justify-content-around premium-hover-scale">
                         <div class="text-center text-xl-start">
                             <span class="text-muted small fw-semibold text-uppercase d-block mb-1">Resume score</span>
                             <small class="text-muted d-block" style="font-size: 0.75rem;">Resume Strength</small>
                         </div>
-                        <div class="progress-radial" style="--progress: {{ resume_score or 0 }}">
-                            <span>{{ resume_score or 'N/A' }}{% if resume_score %}%{% endif %}</span>
+                        <div class="progress-radial" data-progress="{{ resume_score or 0 }}" style="--progress: 0">
+                            {% if resume_score %}
+                                <span class="score-anim">0</span><span class="fs-5">%</span>
+                            {% else %}
+                                <span>N/A</span>
+                            {% endif %}
                         </div>
                     </div>
                 </div>
@@ -190,7 +222,7 @@
                                 <tbody>
                                     {% if upcoming_drives %}
                                         {% for drive in upcoming_drives %}
-                                        <tr>
+                                        <tr class="stagger-row" style="--row-idx: {{ loop.index0 }};">
                                             <td class="fw-bold text-dark">{{ drive.company_name }}</td>
                                             <td>{{ drive.role }}</td>
                                             <td class="fw-semibold text-primary">{{ drive.package_lpa }} LPA</td>
@@ -237,7 +269,7 @@
                                 <tbody>
                                     {% if recent_applications %}
                                         {% for app in recent_applications %}
-                                        <tr>
+                                        <tr class="stagger-row" style="--row-idx: {{ loop.index0 }};">
                                             <td class="fw-bold text-dark">{{ app.company_name }}</td>
                                             <td>{{ app.role }}</td>
                                             <td>{{ app.applied_date }}</td>
@@ -320,6 +352,59 @@
 
     <!-- Bootstrap Bundle JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Premium UI Animations
+        document.addEventListener("DOMContentLoaded", () => {
+            // Number Counter Animation
+            const counters = document.querySelectorAll('.counter-anim');
+            counters.forEach(counter => {
+                const target = +counter.getAttribute('data-target');
+                if (isNaN(target) || target === 0) {
+                    counter.innerText = counter.getAttribute('data-target');
+                    return;
+                }
+                const duration = 1200; // ms
+                const increment = target / (duration / 16); 
+                
+                let current = 0;
+                const updateCounter = () => {
+                    current += increment;
+                    if (current < target) {
+                        counter.innerText = Math.ceil(current);
+                        requestAnimationFrame(updateCounter);
+                    } else {
+                        counter.innerText = target;
+                    }
+                };
+                setTimeout(updateCounter, 200);
+            });
+
+            // Progress Radial Animation
+            const radial = document.querySelector('.progress-radial');
+            if (radial) {
+                const targetProgress = +radial.getAttribute('data-progress');
+                if (targetProgress > 0) {
+                    let currentProgress = 0;
+                    const duration = 1500;
+                    const increment = targetProgress / (duration / 16);
+                    const scoreSpan = radial.querySelector('.score-anim');
+                    
+                    const updateProgress = () => {
+                        currentProgress += increment;
+                        if (currentProgress < targetProgress) {
+                            radial.style.setProperty('--progress', currentProgress);
+                            if(scoreSpan) scoreSpan.innerText = Math.ceil(currentProgress);
+                            requestAnimationFrame(updateProgress);
+                        } else {
+                            radial.style.setProperty('--progress', targetProgress);
+                            if(scoreSpan) scoreSpan.innerText = targetProgress;
+                        }
+                    };
+                    setTimeout(updateProgress, 400); 
+                }
+            }
+        });
+    </script>
     <script>
         // Auto-refresh upcoming drives every 15 seconds silently
         setInterval(function() {
