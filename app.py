@@ -1,4 +1,4 @@
-from flask import Flask, request, render_template, redirect, session, jsonify, flash
+from flask import Flask, request, render_template, redirect, session, jsonify, flash, Response
 import pdfplumber
 import docx
 import mysql.connector
@@ -10,6 +10,7 @@ import pandas as pd
 import re
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
+import queue
 
 app = Flask(__name__)
 app.secret_key = "placement_portal_secret"
@@ -21,6 +22,51 @@ def add_header(r):
     r.headers["Pragma"] = "no-cache"
     r.headers["Expires"] = "0"
     return r
+
+# Real-Time SSE Streams Pub-Sub Queues
+student_queues = []
+faculty_queues = []
+
+def notify_students_realtime(data):
+    for q in list(student_queues):
+        try:
+            q.put_nowait(data)
+        except Exception:
+            pass
+
+def notify_faculty_realtime(data):
+    for q in list(faculty_queues):
+        try:
+            q.put_nowait(data)
+        except Exception:
+            pass
+
+@app.route("/stream")
+def sse_stream():
+    role = request.args.get("role")
+    def event_stream():
+        q = queue.Queue()
+        if role == "student":
+            student_queues.append(q)
+        elif role == "faculty":
+            faculty_queues.append(q)
+            
+        try:
+            yield "data: {\"type\": \"welcome\"}\n\n"
+            while True:
+                try:
+                    data = q.get(timeout=25)
+                    yield f"data: {json.dumps(data)}\n\n"
+                except queue.Empty:
+                    yield "data: {\"type\": \"ping\"}\n\n"
+        finally:
+            if role == "student" and q in student_queues:
+                student_queues.remove(q)
+            elif role == "faculty" and q in faculty_queues:
+                faculty_queues.remove(q)
+                
+    return Response(event_stream(), mimetype="text/event-stream")
+
 
 
 #MYSQL Connection
@@ -558,8 +604,7 @@ def upload():
 
 @app.route("/student_login")
 def student_login_page():
-    if "student_id" in session:
-        return redirect("/student_dashboard")
+    session.clear()
     return render_template("student/login.html")
 
 @app.route("/student_login_check", methods = ["POST"])
@@ -577,6 +622,7 @@ def student_login_check():
         return redirect("/student_dashboard")
     else :
         return render_template("student/login.html", error="Wrong password or invalid credentials.")
+
 
 @app.route("/google_login_check", methods=["POST"])
 def google_login_check():
@@ -971,6 +1017,8 @@ def eligible_companies():
 def apply_job():
     ensure_connection()
     if "student_id" not in session:
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or 'application/json' in request.accept_mimetypes.values():
+            return jsonify({"error": "Session expired. Please log in again."}), 401
         return redirect("/student_login")
    
     student_id = session["student_id"]
@@ -983,7 +1031,11 @@ def apply_job():
     cursor.execute("SELECT * FROM jobs WHERE job_id = %s", (job_id,))
     job = cursor.fetchone()
    
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest' or 'application/json' in request.accept_mimetypes.values()
+
     if not student or not job:
+        if is_ajax:
+            return jsonify({"error": "Invalid request. Student or job not found."}), 400
         return "Invalid request."
        
     # Check if deadline has passed
@@ -999,6 +1051,8 @@ def apply_job():
                 except Exception:
                     pass
         if isinstance(deadline, datetime) and datetime.now() > deadline:
+            if is_ajax:
+                return jsonify({"error": "Application deadline has passed for this job!"}), 400
             return """
             <script>
                 alert("Application deadline has passed for this job!");
@@ -1019,6 +1073,8 @@ def apply_job():
             tier_ok = False
            
     if not tier_ok:
+        if is_ajax:
+            return jsonify({"error": f"Policy Violation: You are already selected in a Tier {student_selected_tier} job. You cannot apply for Tier {job_tier_num} roles."}), 400
         return """
         <script>
             alert("Policy Violation: You are already selected in a Tier """ + str(student_selected_tier) + """ job. You cannot apply for Tier """ + str(job_tier_num) + """ roles.");
@@ -1030,6 +1086,8 @@ def apply_job():
     cursor.execute("SELECT * FROM applications WHERE student_id = %s AND job_id = %s", (student_id, job_id))
     existing = cursor.fetchone()
     if existing:
+        if is_ajax:
+            return jsonify({"error": "Already applied for this job!"}), 400
         return """
         <script>
             alert("Already applied for this job!");
@@ -1062,6 +1120,9 @@ def apply_job():
     cursor.execute(query, (next_id, student_id, job_id, drive_link, "Pending", extra_details_json))
     db.commit()
    
+    if is_ajax:
+        return jsonify({"success": True, "message": "Application submitted successfully!"})
+
     return """
     <script>
         alert("Application submitted successfully!");
@@ -1209,9 +1270,7 @@ def get_dashboard_stats():
 
 @app.route("/faculty_login")
 def faculty_login_page():
-    if "faculty_email" in session:
-        return redirect("/faculty_dashboard")
-    
+    session.clear()
     total_students, active_jobs, placement_rate = get_dashboard_stats()
     return render_template("faculty/login.html", total_students=total_students, active_jobs=active_jobs, placement_rate=placement_rate)
 
@@ -1227,14 +1286,12 @@ def faculty_login_check():
     if faculty:
         session["faculty_email"] = email
         session["faculty_name"] = faculty["name"]
-        session.permanent = True
         return redirect("/faculty_dashboard")
 
     # Fallback for hardcoded Dr. Shankar
     if email == "drshankar@gmail.com" and password == "shankar123":
         session["faculty_email"] = email
         session["faculty_name"] = "Dr. Shankar"
-        session.permanent = True
         return redirect("/faculty_dashboard")
 
     total_students, active_jobs, placement_rate = get_dashboard_stats()
@@ -1392,6 +1449,7 @@ def faculty_job_add():
         db.commit()
         # Notify all students about the new job
         notify_students_new_job(company, role)
+        notify_students_realtime({"type": "job_added", "message": f"New Job Posted: {company} is hiring for {role}!"})
         from flask import flash
         flash(f"Job opening for {company} added successfully!", "success")
     except Exception as e:
@@ -1464,6 +1522,7 @@ def faculty_job_edit():
                desc, req_aadhar, req_pan, req_other, deadline] + pdf_args + custom_values + [db_job_id])
        
         db.commit()
+        notify_students_realtime({"type": "job_updated", "message": f"Job details updated: {company} for {role}!"})
 
         from flask import flash
         flash(f"Job for {company} updated successfully!", "success")
@@ -1538,6 +1597,7 @@ def faculty_job_delete(job_db_id):
     try:
         cursor.execute("DELETE FROM jobs WHERE job_id=%s", (job_db_id,))
         db.commit()
+        notify_students_realtime({"type": "job_deleted", "message": "A job opening has been removed."})
         return jsonify({"success": True})
     except Exception as e:
         db.rollback()
@@ -1675,6 +1735,12 @@ def faculty_applications_update_status():
             cursor.execute("UPDATE students SET selected_tier = NULL WHERE student_id = %s", (student_id,))
 
         db.commit()
+        if old_status != status or drive_link:
+            notify_students_realtime({
+                "type": "status_updated",
+                "student_id": student_id,
+                "message": message
+            })
         return jsonify({"success": True})
     except Exception as e:
         db.rollback()
@@ -3057,6 +3123,438 @@ def reset_password():
             flash(f"An error occurred: {str(e)}", "error")
            
     return render_template("reset_password.html")
+
+# ─────────────────────────────────────────────────────────────
+#  LIVE DATA API — Real-time polling endpoints (no page refresh)
+# ─────────────────────────────────────────────────────────────
+
+@app.route("/api/live/student_data")
+def api_live_student_data():
+    """
+    Returns lightweight JSON for the student dashboard.
+    Polled every 7 seconds by the student browser — updates stats,
+    notifications, upcoming drives, and recent applications live.
+    """
+    ensure_connection()
+    if "student_id" not in session:
+        return jsonify({"error": "not_logged_in"}), 401
+
+    student_id = session["student_id"]
+    try:
+        cursor.execute("SELECT * FROM students WHERE student_id = %s", (student_id,))
+        student = cursor.fetchone()
+        if not student:
+            return jsonify({"error": "student_not_found"}), 404
+
+        # Eligible companies count
+        try:
+            cursor.execute("SELECT * FROM jobs ORDER BY id DESC")
+        except Exception:
+            cursor.execute("SELECT * FROM jobs ORDER BY job_id DESC")
+        all_jobs = cursor.fetchall()
+
+        eligible_count = 0
+        upcoming_drives = []
+        for job in all_jobs:
+            job_tier_str = str(job.get("tier", "Tier 3")).lower()
+            job_tier_num = 1 if "1" in job_tier_str else (2 if "2" in job_tier_str else 3)
+            eligible_branches = [normalize_branch(b) for b in job.get("branches", "").split(",")] if job.get("branches") else []
+            student_branch = normalize_branch(student["branch"]) if student["branch"] else ""
+            cgpa_ok = student["cgpa"] >= float(job.get("cgpa_cutoff") or 0)
+            backlogs_ok = student["backlogs"] <= int(job.get("active_backlogs") or 0)
+            branch_ok = student_branch in eligible_branches or not eligible_branches
+            student_selected_tier = student.get("selected_tier")
+            tier_ok = True
+            if student_selected_tier and student_selected_tier > 0:
+                if student_selected_tier == 1 and job_tier_num in [2, 3]:
+                    tier_ok = False
+                elif student_selected_tier == 2 and job_tier_num == 3:
+                    tier_ok = False
+            is_eligible = cgpa_ok and backlogs_ok and branch_ok and tier_ok
+            if is_eligible:
+                eligible_count += 1
+            upcoming_drives.append({
+                "company_name": job.get("company_name", ""),
+                "role": job.get("role", ""),
+                "package_lpa": job.get("ctc", ""),
+                "deadline": str(job.get("deadline")) if job.get("deadline") else "Ongoing",
+                "is_eligible": is_eligible,
+                "job_id": job.get("job_id", "")
+            })
+
+        # Applications count
+        cursor.execute("SELECT COUNT(*) AS count FROM applications WHERE student_id = %s", (student_id,))
+        applied_count = cursor.fetchone()["count"]
+
+        cursor.execute("SELECT COUNT(*) AS count FROM applications WHERE student_id = %s AND status = 'Interview'", (student_id,))
+        interview_count = cursor.fetchone()["count"]
+
+        # Unread notifications
+        cursor.execute("""
+            SELECT notif_id, message, link, is_read, created_at
+            FROM notifications WHERE student_id = %s AND is_read = 0
+            ORDER BY created_at DESC
+        """, (student_id,))
+        notifs = cursor.fetchall()
+        notifications = [{"notif_id": n["notif_id"], "message": n["message"], "link": n["link"] or "#"} for n in notifs]
+
+        # Recent applications
+        cursor.execute("""
+            SELECT a.status, j.company_name, j.role, a.applied_date
+            FROM applications a JOIN jobs j ON a.job_id = j.job_id
+            WHERE a.student_id = %s ORDER BY a.applied_date DESC LIMIT 5
+        """, (student_id,))
+        recent = cursor.fetchall()
+        recent_apps = [{"company_name": r["company_name"], "role": r["role"],
+                        "applied_date": str(r["applied_date"]), "status": r["status"]} for r in recent]
+
+        return jsonify({
+            "eligible_count": eligible_count,
+            "applied_count": applied_count,
+            "interview_count": interview_count,
+            "notification_count": len(notifications),
+            "notifications": notifications,
+            "upcoming_drives": upcoming_drives[:10],
+            "recent_applications": recent_apps
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/live/faculty_stats")
+def api_live_faculty_stats():
+    """
+    Returns lightweight JSON for the faculty dashboard.
+    Polled every 8 seconds — updates student activity and stats live.
+    """
+    ensure_connection()
+    if "faculty_email" not in session:
+        return jsonify({"error": "not_logged_in"}), 401
+
+    try:
+        cursor.execute("SELECT COUNT(*) AS c FROM students")
+        total_students = cursor.fetchone()["c"]
+
+        cursor.execute("SELECT COUNT(*) AS c FROM jobs")
+        active_jobs = cursor.fetchone()["c"]
+
+        placed_students = 0
+        placement_rate = 0.0
+        if total_students > 0:
+            cursor.execute("SELECT COUNT(DISTINCT student_id) as placed FROM applications WHERE status = 'Selected'")
+            placed_students = cursor.fetchone()["placed"]
+            placement_rate = round((placed_students / total_students * 100), 1)
+
+        cursor.execute("SELECT ctc FROM jobs WHERE ctc IS NOT NULL AND ctc != ''")
+        ctc_rows = cursor.fetchall()
+        import re as _re
+        total_lpa, count_lpa = 0, 0
+        for r in ctc_rows:
+            m = _re.search(r'([\d.]+)', str(r['ctc']))
+            if m:
+                total_lpa += float(m.group(1))
+                count_lpa += 1
+        avg_lpa = round(total_lpa / count_lpa, 1) if count_lpa > 0 else 0
+
+        # Recent student activity (last 10 applications)
+        cursor.execute("""
+            SELECT s.name, j.company_name, j.role, a.applied_date, a.status
+            FROM applications a
+            JOIN students s ON a.student_id = s.student_id
+            JOIN jobs j ON a.job_id = j.job_id
+            ORDER BY a.applied_date DESC LIMIT 10
+        """)
+        recent_activity = cursor.fetchall()
+        activity = [{"name": r["name"], "company_name": r["company_name"],
+                     "role": r["role"], "applied_date": str(r["applied_date"]),
+                     "status": r["status"]} for r in recent_activity]
+
+        # Total applications today
+        cursor.execute("SELECT COUNT(*) AS c FROM applications WHERE DATE(applied_date) = CURDATE()")
+        today_apps = cursor.fetchone()["c"]
+
+        return jsonify({
+            "total_students": total_students,
+            "active_jobs": active_jobs,
+            "placement_rate": placement_rate,
+            "avg_lpa": avg_lpa,
+            "placed_students": placed_students,
+            "today_applications": today_apps,
+            "recent_activity": activity
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/live/student_applications")
+def api_live_student_applications():
+    """
+    Returns the latest applications for a given job (for faculty applied_students page).
+    Polled by faculty browser — shows new student submissions live.
+    """
+    ensure_connection()
+    if "faculty_email" not in session:
+        return jsonify({"error": "not_logged_in"}), 401
+
+    job_id = request.args.get("job_id")
+    try:
+        if job_id:
+            cursor.execute("""
+                SELECT s.name, s.branch, s.cgpa, s.student_id,
+                       a.status, a.applied_date
+                FROM applications a
+                JOIN students s ON a.student_id = s.student_id
+                WHERE a.job_id = %s ORDER BY a.applied_date DESC
+            """, (job_id,))
+        else:
+            cursor.execute("""
+                SELECT s.name, s.branch, s.cgpa, a.job_id,
+                       j.company_name, a.status, a.applied_date
+                FROM applications a
+                JOIN students s ON a.student_id = s.student_id
+                JOIN jobs j ON a.job_id = j.job_id
+                ORDER BY a.applied_date DESC LIMIT 20
+            """)
+        rows = cursor.fetchall()
+        apps = [dict(r) for r in rows]
+        for a in apps:
+            if "applied_date" in a:
+                a["applied_date"] = str(a["applied_date"])
+        return jsonify({"applications": apps, "total": len(apps)})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/live/notifications")
+def api_live_notifications():
+    """Returns only the notification count + list for a student (lightweight poll)."""
+    ensure_connection()
+    if "student_id" not in session:
+        return jsonify({"count": 0, "notifications": []})
+    student_id = session["student_id"]
+    try:
+        cursor.execute("""
+            SELECT notif_id, message, link FROM notifications
+            WHERE student_id = %s AND is_read = 0 ORDER BY created_at DESC
+        """, (student_id,))
+        rows = cursor.fetchall()
+        notifs = [{"notif_id": r["notif_id"], "message": r["message"], "link": r["link"] or "#"} for r in rows]
+        return jsonify({"count": len(notifs), "notifications": notifs})
+    except Exception as e:
+        return jsonify({"count": 0, "notifications": []})
+
+
+@app.route("/api/student/eligible_companies")
+def api_student_eligible_companies():
+    ensure_connection()
+    if "student_id" not in session:
+        return jsonify({"error": "not_logged_in"}), 401
+    
+    student_id = session["student_id"]
+    cursor.execute("SELECT * FROM students WHERE student_id = %s", (student_id,))
+    student = cursor.fetchone()
+    if not student:
+        return jsonify({"error": "student_not_found"}), 404
+        
+    try:
+        cursor.execute("SELECT * FROM jobs ORDER BY id DESC")
+    except Exception:
+        cursor.execute("SELECT * FROM jobs ORDER BY job_id DESC")
+    all_jobs = cursor.fetchall()
+   
+    jobs_list = []
+    for job in all_jobs:
+        job_tier_str = str(job.get('tier', 'Tier 3')).lower()
+        job_tier_num = 1 if '1' in job_tier_str else (2 if '2' in job_tier_str else 3)
+
+        eligible_branches = [normalize_branch(b) for b in job.get('branches', '').split(',')] if job.get('branches') else []
+        student_branch = normalize_branch(student['branch']) if student['branch'] else ""
+       
+        cgpa_ok = student['cgpa'] >= float(job.get('cgpa_cutoff') or 0) if student['cgpa'] is not None else True
+        backlogs_ok = student['backlogs'] <= int(job.get('active_backlogs') or 0) if student['backlogs'] is not None else True
+        branch_ok = (student_branch in eligible_branches) or (not eligible_branches)
+       
+        # Tier check
+        student_selected_tier = student.get('selected_tier')
+        tier_ok = True
+        if student_selected_tier is not None and student_selected_tier > 0:
+            if student_selected_tier == 1 and job_tier_num in [2, 3]:
+                tier_ok = False
+            elif student_selected_tier == 2 and job_tier_num == 3:
+                tier_ok = False
+
+        reasons = []
+        if not cgpa_ok:
+            reasons.append(f"CGPA below requirement ({student['cgpa']} < {job.get('cgpa_cutoff')})")
+        if not backlogs_ok:
+            reasons.append(f"Backlogs exceed maximum allowed ({student['backlogs']} > {job.get('active_backlogs')})")
+        if not branch_ok:
+            reasons.append(f"Branch not eligible (Your branch: {student['branch'].upper()}, Eligible: {job.get('branches')})")
+        if not tier_ok:
+            reasons.append(f"Tier Policy restriction: Selected in Tier {student_selected_tier}, cannot apply for Tier {job_tier_num}")
+           
+        is_eligible = cgpa_ok and backlogs_ok and branch_ok and tier_ok
+        
+        # Check if already applied
+        cursor.execute("SELECT * FROM applications WHERE student_id = %s AND job_id = %s", (student_id, job['job_id']))
+        application = cursor.fetchone()
+        applied = True if application else False
+        status = application['status'] if application else None
+       
+        job_item = dict(job)
+        job_item['is_eligible'] = is_eligible
+        job_item['reasons'] = reasons
+        job_item['applied'] = applied
+        job_item['application_status'] = status
+       
+        job_item['package_lpa'] = job.get('ctc') or ''
+        job_item['min_cgpa'] = job.get('cgpa_cutoff') or 0
+        job_item['max_backlogs'] = job.get('active_backlogs') or 0
+        job_item['eligible_branches'] = job.get('branches') or ''
+        job_item['deadline'] = str(job.get('deadline')) if job.get('deadline') else 'Ongoing'
+
+        # Fetch number of rounds if set by faculty
+        cursor.execute("SELECT num_rounds FROM recruitment_rounds WHERE job_id = %s", (job['job_id'],))
+        r_round = cursor.fetchone()
+        job_item['num_rounds'] = r_round['num_rounds'] if r_round else None
+
+        jobs_list.append(job_item)
+        
+    student_dict = dict(student)
+    if 'created_at' in student_dict:
+        student_dict['created_at'] = str(student_dict['created_at'])
+        
+    return jsonify({"jobs": jobs_list, "student": student_dict})
+
+
+@app.route("/api/student/my_applications")
+def api_student_my_applications():
+    ensure_connection()
+    if "student_id" not in session:
+        return jsonify({"error": "not_logged_in"}), 401
+        
+    student_id = session["student_id"]
+    cursor.execute("SELECT * FROM students WHERE student_id = %s", (student_id,))
+    student = cursor.fetchone()
+    if not student:
+        return jsonify({"error": "student_not_found"}), 404
+        
+    query = """
+        SELECT a.applied_date, a.status, a.resume_path, a.job_id, a.drive_link,
+               j.company_name, j.role, j.ctc as package_lpa, j.tier, j.deadline,
+               (SELECT MAX(round_number) FROM round_results rr WHERE rr.job_id = a.job_id AND rr.student_id = a.student_id AND rr.result = 'Selected') as max_cleared_round,
+               (SELECT MAX(round_number) FROM round_results rr WHERE rr.job_id = a.job_id AND rr.student_id = a.student_id) as max_attempted_round,
+               (SELECT num_rounds FROM recruitment_rounds WHERE job_id = a.job_id) as total_rounds,
+               (SELECT result FROM round_results rr WHERE rr.job_id = a.job_id AND rr.student_id = a.student_id ORDER BY round_number DESC LIMIT 1) as latest_round_result,
+               (SELECT drive_link FROM round_results rr WHERE rr.job_id = a.job_id AND rr.student_id = a.student_id AND drive_link IS NOT NULL ORDER BY round_number DESC LIMIT 1) as latest_drive_link,
+               (SELECT round_number FROM round_results rr WHERE rr.job_id = a.job_id AND rr.student_id = a.student_id AND drive_link IS NOT NULL ORDER BY round_number DESC LIMIT 1) as latest_drive_round
+        FROM applications a
+        JOIN jobs j ON a.job_id = j.job_id
+        WHERE a.student_id = %s
+        ORDER BY a.applied_date DESC
+    """
+    cursor.execute(query, (student_id,))
+    apps = cursor.fetchall()
+    apps_list = []
+    
+    for app in apps:
+        app_dict = dict(app)
+        if app_dict.get('status') == 'Rejected':
+            app_dict['status'] = 'Not Selected'
+            
+        app_dict['pipeline_status'] = 'Reviewing'
+        if app_dict.get('status') == 'Selected':
+            app_dict['pipeline_status'] = 'Hired'
+        elif app_dict.get('status') == 'Not Selected':
+            app_dict['pipeline_status'] = 'Closed'
+        elif app_dict.get('max_cleared_round'):
+            next_round = app_dict['max_cleared_round'] + 1
+            if app_dict.get('total_rounds') and next_round > app_dict['total_rounds']:
+                app_dict['pipeline_status'] = f"Cleared Round {app_dict['max_cleared_round']}"
+            else:
+                app_dict['pipeline_status'] = f"Qualified for Round {next_round}"
+        elif app_dict.get('status') == 'Shortlisted' or app_dict.get('status') == 'Interview':
+            app_dict['pipeline_status'] = 'Interviewing'
+            
+        app_dict['applied_date'] = str(app_dict['applied_date']) if app_dict.get('applied_date') else ''
+        app_dict['deadline'] = str(app_dict['deadline']) if app_dict.get('deadline') else ''
+        apps_list.append(app_dict)
+
+    cursor.execute("""
+        SELECT job_id, round_number, drive_link 
+        FROM round_results 
+        WHERE student_id = %s AND drive_link IS NOT NULL AND drive_link != '' 
+        ORDER BY job_id, round_number ASC
+    """, (student_id,))
+    all_round_links = cursor.fetchall()
+    links_by_job = {}
+    for rl in all_round_links:
+        if rl['job_id'] not in links_by_job:
+            links_by_job[rl['job_id']] = []
+        
+        link_val = rl['drive_link'].strip()
+        is_url = link_val.startswith('http://') or link_val.startswith('https://') or link_val.startswith('www.')
+        if link_val.startswith('www.'):
+            link_val = 'https://' + link_val
+            
+        links_by_job[rl['job_id']].append({
+            "round_number": rl['round_number'], 
+            "raw_text": rl['drive_link'],
+            "is_url": is_url,
+            "url": link_val
+        })
+        
+    for app in apps_list:
+        app['round_links'] = links_by_job.get(app['job_id'], [])
+
+    student_dict = dict(student)
+    if 'created_at' in student_dict:
+        student_dict['created_at'] = str(student_dict['created_at'])
+        
+    return jsonify({"applications": apps_list, "student": student_dict})
+
+
+@app.route("/api/faculty/applied_students")
+def api_faculty_applied_students():
+    ensure_connection()
+    if "faculty_email" not in session:
+        return jsonify({"error": "not_logged_in"}), 401
+        
+    try:
+        cursor.execute("SELECT * FROM jobs ORDER BY id DESC")
+    except Exception:
+        cursor.execute("SELECT * FROM jobs ORDER BY job_id DESC")
+    jobs = cursor.fetchall()
+    
+    import json
+    result = {}
+    for j in jobs:
+        cursor.execute("""
+            SELECT s.student_id, s.name, s.branch, s.roll_number, s.phone_number, s.email, s.aadhar, s.pan, a.resume_path, a.applied_date, a.extra_details
+            FROM applications a
+            JOIN students s ON a.student_id = s.student_id
+            WHERE a.job_id = %s
+            ORDER BY a.applied_date DESC
+        """, (j['job_id'],))
+        applicants = cursor.fetchall()
+        
+        apps_list = []
+        for app in applicants:
+            app_dict = dict(app)
+            app_dict['applied_date'] = str(app_dict['applied_date']) if app_dict.get('applied_date') else ''
+            if app_dict.get('extra_details'):
+                try:
+                    app_dict['extra_dict'] = json.loads(app_dict['extra_details'])
+                except:
+                    app_dict['extra_dict'] = {}
+            else:
+                app_dict['extra_dict'] = {}
+            apps_list.append(app_dict)
+            
+        result[str(j['job_id'])] = apps_list
+        
+    return jsonify({"jobs_applicants": result})
+
 
 if __name__ == "__main__":
     app.run(debug=True)
