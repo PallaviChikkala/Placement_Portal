@@ -83,13 +83,13 @@ body.dark-mode h3.profile-name {
 }
     </style>
 </head>
-<body class="premium-animated-bg">
+<body>
 
     <div class="dashboard-layout">
         <!-- Sidebar Navigation -->
         <div class="sidebar">
             <div class="sidebar-logo">
-                <img src="/static/StudentLogin.png" width="45" height="45" alt="NIT AP Logo" class="premium-floating-element">
+                <img src="/static/StudentLogin.png" width="45" height="45" alt="NIT AP Logo">
                 <div>
                     <h5 class="mb-0 fw-bold" style="font-family: var(--font-heading); color: var(--primary);">NIT AP</h5>
                     <small class="text-muted" style="font-size: 0.75rem;">Placement Cell</small>
@@ -109,6 +109,11 @@ body.dark-mode h3.profile-name {
                 <a href="/my_applications" class="sidebar-link">
                     <i class="bi bi-file-earmark-text"></i> Placement History
                 </a>
+            </div>
+
+            <div style="background: linear-gradient(135deg, rgba(245,158,11,0.1), rgba(217,119,6,0.1)); border-left: 4px solid var(--accent); padding: 12px 16px; margin: 16px 20px; border-radius: 8px; font-size: 0.85rem; color: var(--text-muted); font-weight: 500; font-style: italic; display: flex; align-items: center; gap: 10px;">
+                <i class="bi bi-lightbulb-fill text-warning" style="font-size: 1.2rem;"></i>
+                <span id="funny-quote-box">Loading quote...</span>
             </div>
             
             <div class="sidebar-footer">
@@ -191,7 +196,7 @@ body.dark-mode h3.profile-name {
             
 
             <!-- Profile Info Cards -->
-            <div class="card glass-card border-0 profile-card-details mb-5 animated-fade-in-up">
+            <div class="card glass-card border-0 profile-card-details mb-5">
                 <!-- Cover -->
                 <div class="profile-cover"></div>
                 
@@ -387,6 +392,23 @@ document.addEventListener("DOMContentLoaded", function() {
 });
 
 {% endif %}
+
+const funnyQuotes = [
+    "It works on my machine.",
+    "I have not failed. I've just found 10,000 ways that won't work.",
+    "There is no place like 127.0.0.1",
+    "Programmer: A machine that turns coffee into code.",
+    "My code never has bugs, it just develops random unexpected features.",
+    "If at first you don't succeed; call it version 1.0"
+];
+function rotateQuotes() {
+    const qb = document.getElementById("funny-quote-box");
+    if(qb) {
+        qb.innerText = '"' + funnyQuotes[Math.floor(Math.random() * funnyQuotes.length)] + '"';
+    }
+}
+setInterval(rotateQuotes, 10000);
+setTimeout(rotateQuotes, 100);
 </script>
 
 </body>
