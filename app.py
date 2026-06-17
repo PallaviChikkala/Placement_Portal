@@ -24,123 +24,249 @@ def add_header(r):
 
 
 #MYSQL Connection
-def get_connection():
+global_db = None
+global_cursor = None
+
+def get_connection(db_name="placement_portal2"):
     return mysql.connector.connect(
         host="localhost",
         user="root",
-        password="Pallavi@2007",
-        database="placement_portal",
+        password="Hasini@1234",
+        database=db_name,
         connection_timeout=30,
         autocommit=False
     )
 
-db = get_connection()
-cursor = db.cursor(dictionary=True)
+def init_global_db():
+    conn = mysql.connector.connect(
+        host="localhost",
+        user="root",
+        password="Hasini@1234",
+    )
+    c = conn.cursor()
+    c.execute("CREATE DATABASE IF NOT EXISTS placement_portal_2025_2026")
+    c.execute("CREATE DATABASE IF NOT EXISTS placement_portal_2026_2027")
+    c.execute("CREATE DATABASE IF NOT EXISTS placement_portal2")
+    conn.commit()
+    conn.close()
+    
+    global global_db, global_cursor
+    global_db = get_connection("placement_portal_2025_2026")
+    global_cursor = global_db.cursor(dictionary=True)
+
+class CursorWrapper:
+    def __getattr__(self, name):
+        from flask import session, has_request_context, g
+        if has_request_context():
+            db_name = session.get('active_year_db', 'placement_portal_2025_2026')
+            if 'db' not in g:
+                 g.db = get_connection(db_name)
+                 g.cursor = g.db.cursor(dictionary=True)
+            return getattr(g.cursor, name)
+        return getattr(global_cursor, name)
+
+class DbWrapper:
+    def __getattr__(self, name):
+        from flask import session, has_request_context, g
+        if has_request_context():
+            db_name = session.get('active_year_db', 'placement_portal_2025_2026')
+            if 'db' not in g:
+                 g.db = get_connection(db_name)
+                 g.cursor = g.db.cursor(dictionary=True)
+            return getattr(g.db, name)
+        return getattr(global_db, name)
+
+init_global_db()
+cursor = CursorWrapper()
+db = DbWrapper()
+
+def switch_active_db(db_name, year_str):
+    from flask import g, session, has_request_context
+    if has_request_context():
+        session["active_year_db"] = db_name
+        session["active_year"] = year_str
+        if 'db' in g:
+            try:
+                g.cursor.close()
+            except:
+                pass
+            try:
+                g.db.close()
+            except:
+                pass
+            g.pop('db', None)
+            g.pop('cursor', None)
+
+@app.before_request
+def check_routes_and_master_sheet():
+    from flask import session, request, redirect, flash
+    import os
+
+    # Skip static file requests entirely
+    if request.path.startswith("/static"):
+        return None
+
+    # 1. Enforce student master sheet check on protected student pages
+    if "student_id" in session:
+        protected_prefixes = [
+            "/student_dashboard", "/eligible_companies", "/my_applications",
+            "/profile", "/change_password", "/apply_job",
+            "/update_profile", "/update_profile_details",
+            "/notifications", "/clear_notifications", "/upload_resume"
+        ]
+        is_protected = any(request.path.startswith(p) for p in protected_prefixes)
+        if is_protected:
+            active_year = session.get("active_year", "2025-2026")
+            upload_dir = os.path.join(app.static_folder, "uploads", active_year)
+            has_sheet = (
+                os.path.exists(os.path.join(upload_dir, "master_sheet.xlsx")) or
+                os.path.exists(os.path.join(upload_dir, "master_sheet.pdf")) or
+                os.path.exists(os.path.join(upload_dir, "master_sheet.csv"))
+            )
+            if not has_sheet:
+                session.clear()
+                return redirect("/student_login?error=Your+portal+is+currently+disabled.+Please+contact+faculty.")
+
+    # 2. Enforce faculty login and active year database check
+    is_faculty_route = (
+        request.path.startswith("/faculty") or
+        request.path.startswith("/api/faculty")
+    )
+    if is_faculty_route:
+        exempt = ["/faculty_login", "/faculty_login_check", "/faculty_logout"]
+        if request.path not in exempt:
+            if "faculty_email" not in session:
+                is_api = (request.path.startswith("/api/") or
+                          request.headers.get("X-Requested-With") == "XMLHttpRequest")
+                if is_api:
+                    return jsonify({"error": "Unauthorized"}), 401
+                return redirect("/faculty_login")
+
+            if "active_year_db" not in session:
+                year_exempt = (
+                    request.path.startswith("/faculty/select_year") or
+                    request.path.startswith("/faculty/set_year")
+                )
+                if not year_exempt:
+                    is_api = (request.path.startswith("/api/") or
+                              request.headers.get("X-Requested-With") == "XMLHttpRequest")
+                    if is_api:
+                        return jsonify({"error": "Select year required"}), 400
+                    return redirect("/faculty/select_year")
+
+@app.teardown_appcontext
+def close_db(error):
+    from flask import g
+    if 'cursor' in g:
+        g.cursor.close()
+    if 'db' in g:
+        g.db.close()
 
 def ensure_connection():
-    """Auto-reconnect if MySQL connection has gone away."""
-    global db, cursor
-    try:
-        db.ping(reconnect=True, attempts=3, delay=1)
-        if not cursor or cursor._connection is None:
-            cursor = db.cursor(dictionary=True)
-    except Exception:
-        try:
-            db = get_connection()
-            cursor = db.cursor(dictionary=True)
-        except Exception as e:
-            print("DB reconnect failed:", e)
+    pass
 
 # Database Tables & Mock Data Initialization
 def init_database():
+    global global_db, global_cursor
+    for db_name in ["placement_portal_2025_2026", "placement_portal_2026_2027"]:
+        try:
+            global_db = get_connection(db_name)
+            global_cursor = global_db.cursor(dictionary=True)
+            _init_database_single()
+        except Exception as e:
+            print(f"Failed to init {db_name}: {e}")
+    # Restore default global connection to 2025-2026
+    try:
+        global_db = get_connection("placement_portal_2025_2026")
+        global_cursor = global_db.cursor(dictionary=True)
+    except Exception as e:
+        print(f"Failed to restore default global DB: {e}")
+
+def _init_database_single():
     ensure_connection()
     try:
-        # Create students table
+        # ── Students table ──────────────────────────────────────────────────────
+        # Students are populated exclusively via Master Sheet uploads.
+        # Do NOT insert hardcoded mock students here — every new year
+        # brings a fresh set of students from the master sheet.
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS students (
-                student_id INT PRIMARY KEY,
-                name VARCHAR(50),
-                email VARCHAR(100),
-                password VARCHAR(50),
-                branch VARCHAR(50),
-                cgpa FLOAT,
-                backlogs INT,
-                skills TEXT,
+                student_id    INT AUTO_INCREMENT PRIMARY KEY,
+                name          VARCHAR(100),
+                email         VARCHAR(150) UNIQUE,
+                password      VARCHAR(100),
+                branch        VARCHAR(50),
+                cgpa          FLOAT DEFAULT 0,
+                backlogs      INT DEFAULT 0,
+                backlog_history INT DEFAULT 0,
+                tenth_score   FLOAT DEFAULT 0,
+                inter_score   FLOAT DEFAULT 0,
+                skills        TEXT,
                 selected_tier INT DEFAULT NULL,
-                batch INT,
-                roll_number VARCHAR(50) DEFAULT NULL,
-                phone_number VARCHAR(20) DEFAULT NULL,
-                aadhar VARCHAR(20) DEFAULT NULL,
-                pan VARCHAR(20) DEFAULT NULL
+                batch         INT,
+                roll_number   VARCHAR(50) DEFAULT NULL,
+                phone_number  VARCHAR(20) DEFAULT NULL,
+                aadhar        VARCHAR(20) DEFAULT NULL,
+                pan           VARCHAR(20) DEFAULT NULL,
+                profile_photo VARCHAR(255) DEFAULT '/static/default_avatar.png',
+                must_change_password TINYINT(1) DEFAULT 1
             )
         """)
-       
-        try:
-            cursor.execute("ALTER TABLE students ADD COLUMN profile_photo VARCHAR(255) DEFAULT '/static/default_avatar.png'")
-        except Exception:
-            pass
-           
+
+        # Safe column additions for databases created before this schema update
         for col_sql in [
+            "ALTER TABLE students ADD COLUMN backlog_history INT DEFAULT 0",
+            "ALTER TABLE students ADD COLUMN tenth_score FLOAT DEFAULT 0",
+            "ALTER TABLE students ADD COLUMN inter_score FLOAT DEFAULT 0",
+            "ALTER TABLE students ADD COLUMN profile_photo VARCHAR(255) DEFAULT '/static/default_avatar.png'",
+            "ALTER TABLE students ADD COLUMN must_change_password TINYINT(1) DEFAULT 1",
             "ALTER TABLE students ADD COLUMN roll_number VARCHAR(50) DEFAULT NULL",
             "ALTER TABLE students ADD COLUMN phone_number VARCHAR(20) DEFAULT NULL",
             "ALTER TABLE students ADD COLUMN aadhar VARCHAR(20) DEFAULT NULL",
             "ALTER TABLE students ADD COLUMN pan VARCHAR(20) DEFAULT NULL",
-            "ALTER TABLE students ADD COLUMN backlog_history INT DEFAULT 0",
-            "ALTER TABLE students ADD COLUMN must_change_password TINYINT(1) DEFAULT 1",
+            "ALTER TABLE students ADD COLUMN selected_tier INT DEFAULT NULL",
             "ALTER TABLE students ADD COLUMN course VARCHAR(20) DEFAULT 'B.Tech'"
         ]:
             try:
                 cursor.execute(col_sql)
             except Exception:
                 pass
-       
-        # Create faculty table
+
+        # ── Faculty table ────────────────────────────────────────────────────────
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS faculty (
-                faculty_id INT PRIMARY KEY,
-                name VARCHAR(50),
-                email VARCHAR(100),
-                password VARCHAR(50)
+                faculty_id INT AUTO_INCREMENT PRIMARY KEY,
+                name       VARCHAR(50),
+                email      VARCHAR(100) UNIQUE,
+                password   VARCHAR(50)
             )
         """)
-       
-        # Create recruiters table
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS recruiters (
-                recruiter_id INT PRIMARY KEY,
-                company_name VARCHAR(50),
-                email VARCHAR(100),
-                password VARCHAR(50)
-            )
-        """)
-       
-        # Create jobs table
+
+        # ── Jobs table ───────────────────────────────────────────────────────────
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS jobs (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                job_id VARCHAR(30) UNIQUE,
-                company_name VARCHAR(100),
-                role VARCHAR(100),
-                ctc VARCHAR(30),
-                location VARCHAR(100),
-                bond VARCHAR(50) DEFAULT 'None',
-                cgpa_cutoff DECIMAL(4,2) DEFAULT 0.0,
+                id              INT AUTO_INCREMENT PRIMARY KEY,
+                job_id          VARCHAR(30) UNIQUE,
+                company_name    VARCHAR(100),
+                role            VARCHAR(100),
+                ctc             VARCHAR(30),
+                location        VARCHAR(100),
+                bond            VARCHAR(50) DEFAULT 'None',
+                cgpa_cutoff     DECIMAL(4,2) DEFAULT 0.0,
                 active_backlogs INT DEFAULT 0,
                 backlog_history INT DEFAULT 0,
-                branches TEXT,
-                tier VARCHAR(20) DEFAULT 'Tier 1',
-                description TEXT,
-                req_aadhar TINYINT(1) DEFAULT 0,
-                req_pan TINYINT(1) DEFAULT 0,
-                req_other VARCHAR(200),
-                pdf_path VARCHAR(300),
-                deadline DATETIME DEFAULT NULL
+                branches        TEXT,
+                tier            VARCHAR(20) DEFAULT 'Tier 1',
+                description     TEXT,
+                req_aadhar      TINYINT(1) DEFAULT 0,
+                req_pan         TINYINT(1) DEFAULT 0,
+                req_other       VARCHAR(200),
+                pdf_path        VARCHAR(300),
+                deadline        DATETIME DEFAULT NULL
             )
         """)
-       
-        # Add missing columns for existing installs (including 'id' for older schemas)
+
         for col_sql in [
-            "ALTER TABLE jobs ADD COLUMN id INT AUTO_INCREMENT PRIMARY KEY",
             "ALTER TABLE jobs ADD COLUMN ctc VARCHAR(30)",
             "ALTER TABLE jobs ADD COLUMN location VARCHAR(100)",
             "ALTER TABLE jobs ADD COLUMN bond VARCHAR(50) DEFAULT 'None'",
@@ -158,130 +284,95 @@ def init_database():
                 cursor.execute(col_sql)
             except Exception:
                 pass
-       
-        # Create applications table
+
+        # ── Applications table ───────────────────────────────────────────────────
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS applications (
-                application_id INT PRIMARY KEY,
-                student_id INT,
-                job_id INT,
-                resume_path TEXT,
-                status VARCHAR(50),
-                applied_date DATE
+                application_id     INT AUTO_INCREMENT PRIMARY KEY,
+                student_id         INT,
+                job_id             VARCHAR(30),
+                resume_path        TEXT,
+                status             VARCHAR(50),
+                applied_date       DATE,
+                extra_details      TEXT,
+                drive_link         TEXT DEFAULT NULL,
+                status_updated_at  DATETIME DEFAULT NULL
             )
         """)
-       
-        try:
-            cursor.execute("ALTER TABLE applications ADD COLUMN extra_details TEXT")
-        except Exception:
-            pass
 
-        try:
-            cursor.execute("ALTER TABLE applications MODIFY COLUMN job_id VARCHAR(30)")
-        except Exception:
-            pass
+        for col_sql in [
+            "ALTER TABLE applications ADD COLUMN extra_details TEXT",
+            "ALTER TABLE applications MODIFY COLUMN job_id VARCHAR(30)",
+            "ALTER TABLE applications ADD COLUMN drive_link TEXT DEFAULT NULL",
+            "ALTER TABLE applications ADD COLUMN status_updated_at DATETIME DEFAULT NULL"
+        ]:
+            try:
+                cursor.execute(col_sql)
+            except Exception:
+                pass
 
-        try:
-            cursor.execute("ALTER TABLE applications ADD COLUMN drive_link TEXT DEFAULT NULL")
-        except Exception:
-            pass
-
-        try:
-            cursor.execute("ALTER TABLE applications ADD COLUMN status_updated_at DATETIME DEFAULT NULL")
-        except Exception:
-            pass
-
-        # Create recruitment_rounds table (tracks number of rounds per job)
+        # ── Recruitment rounds ───────────────────────────────────────────────────
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS recruitment_rounds (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                job_id VARCHAR(30),
+                id         INT AUTO_INCREMENT PRIMARY KEY,
+                job_id     VARCHAR(30),
                 num_rounds INT DEFAULT 1,
                 UNIQUE KEY unique_job (job_id)
             )
         """)
 
-        # Create round_results table (tracks per-student per-round status)
+        # ── Round results ────────────────────────────────────────────────────────
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS round_results (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                job_id VARCHAR(30),
-                student_id INT,
+                id           INT AUTO_INCREMENT PRIMARY KEY,
+                job_id       VARCHAR(30),
+                student_id   INT,
                 round_number INT,
-                result VARCHAR(20) DEFAULT 'Pending',
+                result       VARCHAR(20) DEFAULT 'Pending',
+                drive_link   TEXT DEFAULT NULL,
                 UNIQUE KEY unique_round_result (job_id, student_id, round_number)
             )
         """)
 
-        # Ensure drive_link column exists in round_results (added in v2)
         try:
             cursor.execute("ALTER TABLE round_results ADD COLUMN drive_link TEXT DEFAULT NULL")
         except Exception:
             pass
 
-       
-        # Create notifications table
+        # ── Notifications ────────────────────────────────────────────────────────
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS notifications (
-                notif_id INT AUTO_INCREMENT PRIMARY KEY,
+                notif_id   INT AUTO_INCREMENT PRIMARY KEY,
                 student_id INT,
-                message TEXT,
-                link TEXT,
-                is_read BOOLEAN DEFAULT FALSE,
+                message    TEXT,
+                link       TEXT,
+                is_read    BOOLEAN DEFAULT FALSE,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
-       
-        # Create faculty table
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS faculty (
-                faculty_id INT AUTO_INCREMENT PRIMARY KEY,
-                name VARCHAR(50),
-                email VARCHAR(100),
-                password VARCHAR(50)
-            )
-        """)
-        
-        # Create global_settings table
+
+        # ── Global settings ──────────────────────────────────────────────────────
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS global_settings (
-                setting_key VARCHAR(50) PRIMARY KEY,
+                setting_key   VARCHAR(50) PRIMARY KEY,
                 setting_value VARCHAR(255)
             )
         """)
         cursor.execute("INSERT IGNORE INTO global_settings (setting_key, setting_value) VALUES ('recruitment_year', '2025')")
-       
-        # Insert Dr. Shankar if not exists
-        cursor.execute("SELECT COUNT(*) as count FROM faculty")
+
+        # ── Faculty seed account ─────────────────────────────────────────────────
+        # Insert Dr. Shankar only if not already present.
+        # Students are intentionally NOT seeded here —
+        # they arrive exclusively via Master Sheet uploads each year.
+        cursor.execute("SELECT COUNT(*) as count FROM faculty WHERE email = 'drshankar@gmail.com'")
         if cursor.fetchone()["count"] == 0:
             cursor.execute("""
                 INSERT INTO faculty (name, email, password)
                 VALUES ('Dr. Shankar', 'drshankar@gmail.com', 'shankar123')
             """)
-       
-        # Check and insert default students if missing
-        cursor.execute("SELECT COUNT(*) as count FROM students")
-        if cursor.fetchone()["count"] == 0:
-            cursor.execute("""
-                INSERT INTO students (student_id, name, email, password, branch, cgpa, backlogs, skills, selected_tier, batch)
-                VALUES
-                (1, 'Pallavi', 'pallavi123@gmail.com', 'pallavi123', 'AI', 9.2, 0, 'Java, DSA, Full Stack Development', 1, 2028),
-                (2, 'linda', 'linda123@gmail.com', 'linda123', 'CSE', 9.1, 0, 'C, CPP, HTML, CSS, MySQL', 2, 2029)
-            """)
-           
-        # Check and insert default jobs if missing
-        cursor.execute("SELECT COUNT(*) as count FROM jobs")
-        if cursor.fetchone()["count"] == 0:
-            cursor.execute("""
-                INSERT INTO jobs (job_id, company_name, role, ctc, location, bond, cgpa_cutoff, active_backlogs, branches, tier, description)
-                VALUES
-                ('1', 'TCS', 'Software Developer', '7.00 LPA', 'Pune', 'None', 7.00, 0, 'AI, CSE, ECE, EEE', 'Tier 2', 'Join the TCS digital developer team to work on next-generation cloud architectures.'),
-                ('2', 'Infosys', 'Specialist Programmer', '20.00 LPA', 'Bangalore', 'None', 9.50, 0, 'CSE, IT', 'Tier 1', 'High performance developer role working on core software products and algorithmic scaling.'),
-                ('3', 'Wipro', 'Full Stack Developer', '8.00 LPA', 'Hyderabad', 'None', 6.50, 1, 'AI, CSE, ECE', 'Tier 2', 'Design and implement web interfaces and microservice endpoints in our digital unit.')
-            """)
-           
+
         db.commit()
-        print("Database tables and mock data initialized successfully.")
+        print("Database tables initialized successfully.")
     except Exception as e:
         print("Warning: Database initialization failed. Details:", e)
 
@@ -560,22 +651,43 @@ def upload():
 @app.route("/student_login")
 def student_login_page():
     # Always show the login form - never auto-redirect (user must explicitly log in)
-    return render_template("student/login.html")
+    error = request.args.get('error')
+    return render_template("student/login.html", error=error)
 
 @app.route("/student_login_check", methods = ["POST"])
 def student_login_check():
     email = request.form["email"]
     password = request.form["password"]
+    
+    # 1. Try 2025-2026
+    switch_active_db("placement_portal_2025_2026", "2025-2026")
+    ensure_connection()
     query = "SELECT * FROM students WHERE email = %s AND password = %s"
     cursor.execute(query, (email,password))
     student = cursor.fetchone()
 
+    if not student:
+        # 2. Try 2026-2027
+        switch_active_db("placement_portal_2026_2027", "2026-2027")
+        ensure_connection()
+        cursor.execute(query, (email,password))
+        student = cursor.fetchone()
+
     if student:
+        # Check if master sheet exists
+        upload_dir = os.path.join(app.static_folder, "uploads", session["active_year"])
+        has_xlsx = os.path.exists(os.path.join(upload_dir, "master_sheet.xlsx"))
+        has_pdf = os.path.exists(os.path.join(upload_dir, "master_sheet.pdf"))
+        if not (has_xlsx or has_pdf):
+            session.clear()
+            return render_template("student/login.html", error="Your portal is currently disabled (No Master Sheet uploaded by faculty).")
+
         session["student_id"] = student["student_id"]
         session["student_name"] = student["name"]
         session["must_change_password"] = student.get("must_change_password", 1)
         return redirect("/student_dashboard")
     else :
+        session.clear()
         return render_template("student/login.html", error="Wrong password or invalid credentials.")
 
 @app.route("/google_login_check", methods=["POST"])
@@ -599,18 +711,38 @@ def google_login_check():
         if not email:
             raise ValueError("Email not found in Google token")
            
+        # 1. Try 2025-2026
+        switch_active_db("placement_portal_2025_2026", "2025-2026")
+        ensure_connection()
         cursor.execute("SELECT * FROM students WHERE email = %s", (email,))
         student = cursor.fetchone()
        
+        if not student:
+            # 2. Try 2026-2027
+            switch_active_db("placement_portal_2026_2027", "2026-2027")
+            ensure_connection()
+            cursor.execute("SELECT * FROM students WHERE email = %s", (email,))
+            student = cursor.fetchone()
+
         if student:
+            # Check if master sheet exists
+            upload_dir = os.path.join(app.static_folder, "uploads", session["active_year"])
+            has_xlsx = os.path.exists(os.path.join(upload_dir, "master_sheet.xlsx"))
+            has_pdf = os.path.exists(os.path.join(upload_dir, "master_sheet.pdf"))
+            if not (has_xlsx or has_pdf):
+                session.clear()
+                return render_template("student/login.html", error="Your portal is currently disabled (No Master Sheet uploaded by faculty).")
+
             session["student_id"] = student["student_id"]
             session["student_name"] = student["name"]
             return redirect("/student_dashboard")
         else:
+            session.clear()
             return render_template("student/login.html", error=f"Email {email} is not registered. Please contact faculty.")
            
     except Exception as e:
         print("Google Auth Error:", e)
+        session.clear()
         return render_template("student/login.html", error="Google Sign-In verification failed.")
    
 @app.route("/change_password", methods=["POST"])
@@ -800,12 +932,13 @@ def update_profile():
         photo = request.files["profile_photo"]
         if photo.filename != "":
             filename = secure_filename(photo.filename)
-            upload_folder = os.path.join(app.root_path, "static", "uploads")
+            active_year = session.get("active_year", "2025-2026")
+            upload_folder = os.path.join(app.root_path, "static", "uploads", active_year)
             os.makedirs(upload_folder, exist_ok=True)
             filepath = os.path.join(upload_folder, f"student_{student_id}_{filename}")
             photo.save(filepath)
            
-            db_path = f"/static/uploads/student_{student_id}_{filename}"
+            db_path = f"/static/uploads/{active_year}/student_{student_id}_{filename}"
             cursor.execute("UPDATE students SET profile_photo = %s WHERE student_id = %s", (db_path, student_id))
             db.commit()
            
@@ -1207,6 +1340,8 @@ def student_logout():
 @app.context_processor
 def inject_global_settings():
     ensure_connection()
+    from flask import session
+    active_year = session.get("active_year", "2025-2026")
     try:
         cursor.execute("SELECT setting_key, setting_value FROM global_settings")
         rows = cursor.fetchall()
@@ -1214,10 +1349,10 @@ def inject_global_settings():
         for r in rows:
             settings[r["setting_key"]] = r["setting_value"]
         if 'recruitment_title' not in settings:
-            settings['recruitment_title'] = '2026 Recruitment Season Live'
-        return dict(global_settings=settings)
+            settings['recruitment_title'] = f'{active_year} Recruitment Season Live'
+        return dict(global_settings=settings, active_year=active_year)
     except Exception:
-        return dict(global_settings={'recruitment_title': '2026 Recruitment Season Live'})
+        return dict(global_settings={'recruitment_title': f'{active_year} Recruitment Season Live'}, active_year=active_year)
 
 @app.route("/faculty/update_settings", methods=["POST"])
 def faculty_update_settings():
@@ -1263,6 +1398,8 @@ def get_dashboard_stats():
 @app.route("/faculty_login")
 def faculty_login_page():
     if "faculty_email" in session:
+        if "active_year_db" not in session:
+            return redirect("/faculty/select_year")
         return redirect("/faculty_dashboard")
     
     total_students, active_jobs, placement_rate = get_dashboard_stats()
@@ -1274,21 +1411,31 @@ def faculty_login_check():
     email = request.form.get("email", "").strip()
     password = request.form.get("password", "").strip()
 
+    # 1. Try 2025-2026
+    switch_active_db("placement_portal_2025_2026", "2025-2026")
+    ensure_connection()
     cursor.execute("SELECT * FROM faculty WHERE email = %s AND password = %s", (email, password))
     faculty = cursor.fetchone()
+
+    if not faculty:
+        # 2. Try 2026-2027
+        switch_active_db("placement_portal_2026_2027", "2026-2027")
+        ensure_connection()
+        cursor.execute("SELECT * FROM faculty WHERE email = %s AND password = %s", (email, password))
+        faculty = cursor.fetchone()
 
     if faculty:
         session["faculty_email"] = email
         session["faculty_name"] = faculty["name"]
         session.permanent = True
-        return redirect("/faculty_dashboard")
+        return redirect("/faculty/select_year")
 
     # Fallback for hardcoded Dr. Shankar
     if email == "drshankar@gmail.com" and password == "shankar123":
         session["faculty_email"] = email
         session["faculty_name"] = "Dr. Shankar"
         session.permanent = True
-        return redirect("/faculty_dashboard")
+        return redirect("/faculty/select_year")
 
     total_students, active_jobs, placement_rate = get_dashboard_stats()
     return render_template("faculty/login.html", error="Invalid email or password.",
@@ -1299,6 +1446,8 @@ def faculty_required():
     """Returns None if faculty is logged in, else a redirect response."""
     if "faculty_email" not in session:
         return redirect("/faculty_login")
+    if "active_year_db" not in session and request.endpoint not in ["faculty_select_year", "faculty_set_year"]:
+        return redirect("/faculty/select_year")
     return None
 
 
@@ -1331,11 +1480,13 @@ def faculty_dashboard():
     placed_students = cursor.fetchone()["placed"]
     placement_rate = round((placed_students / total_students * 100), 1) if total_students > 0 else 0.0
 
-    # Check if master sheet file exists (pdf or xlsx)
-    upload_dir = os.path.join(app.static_folder, "uploads")
+    # Check if master sheet file exists (pdf, xlsx, or csv)
+    active_year = session.get("active_year", "2025-2026")
+    upload_dir = os.path.join(app.static_folder, "uploads", active_year)
     master_sheet_status = "Empty"
     if os.path.exists(os.path.join(upload_dir, "master_sheet.pdf")) or \
-       os.path.exists(os.path.join(upload_dir, "master_sheet.xlsx")):
+       os.path.exists(os.path.join(upload_dir, "master_sheet.xlsx")) or \
+       os.path.exists(os.path.join(upload_dir, "master_sheet.csv")):
         master_sheet_status = "Uploaded"
 
     return render_template(
@@ -1353,7 +1504,78 @@ def faculty_dashboard():
 def faculty_logout():
     session.pop("faculty_email", None)
     session.pop("faculty_name", None)
+    session.pop("active_year", None)
+    session.pop("active_year_db", None)
     return redirect("/faculty_login")
+
+
+@app.route("/faculty/select_year")
+def faculty_select_year():
+    ensure_connection()
+    if "faculty_email" not in session:
+        return redirect("/faculty_login")
+    return render_template("faculty/select_year.html")
+
+
+@app.route("/faculty/set_year/<year>")
+def faculty_set_year(year):
+    ensure_connection()
+    if "faculty_email" not in session:
+        return redirect("/faculty_login")
+    
+    if year not in ["2025-2026", "2026-2027"]:
+        flash("Invalid year batch selection.", "error")
+        return redirect("/faculty/select_year")
+        
+    db_name = f"placement_portal_{year.replace('-', '_')}"
+    switch_active_db(db_name, year)
+    
+    flash(f"Switched to {year} Batch successfully.", "success")
+    return redirect("/faculty_dashboard")
+
+
+@app.route("/faculty/reset_batch", methods=["POST"])
+def faculty_reset_batch():
+    ensure_connection()
+    redir = faculty_required()
+    if redir: return redir
+    
+    confirm_checkbox = request.form.get("confirm_save")
+    if not confirm_checkbox:
+        flash("You must confirm that you have saved student data before resetting.", "error")
+        return redirect("/faculty/master_sheet")
+        
+    active_year = session.get("active_year", "2025-2026")
+    
+    # 1. Delete all uploaded files for this year (profile photos, job PDFs, master sheets)
+    import shutil
+    upload_dir = os.path.join(app.static_folder, "uploads", active_year)
+    if os.path.exists(upload_dir):
+        try:
+            shutil.rmtree(upload_dir)
+        except Exception as e:
+            print(f"Error removing upload dir {upload_dir}: {e}")
+            
+    # 2. Clear all tables in the active year database (except faculty)
+    try:
+        cursor.execute("SET FOREIGN_KEY_CHECKS = 0")
+        cursor.execute("DELETE FROM round_results")
+        cursor.execute("DELETE FROM recruitment_rounds")
+        cursor.execute("DELETE FROM applications")
+        cursor.execute("DELETE FROM notifications")
+        cursor.execute("DELETE FROM students")
+        cursor.execute("DELETE FROM jobs")
+        cursor.execute("DELETE FROM global_settings")
+        cursor.execute("INSERT INTO global_settings (setting_key, setting_value) VALUES ('recruitment_title', %s)", (f"{active_year} Recruitment Season",))
+        cursor.execute("SET FOREIGN_KEY_CHECKS = 1")
+        db.commit()
+        
+        flash(f"Database for batch {active_year} has been reset. All student data and files were removed.", "success")
+    except Exception as e:
+        db.rollback()
+        flash(f"Error resetting database: {str(e)}", "error")
+        
+    return redirect("/faculty/master_sheet")
 
 
 # ─── FACULTY: JOBS ───────────────────────────────────────────────────────────
@@ -1425,11 +1647,12 @@ def faculty_job_add():
     pdf_path = None
     pdf_file = request.files.get("pdf_file")
     if pdf_file and pdf_file.filename:
-        upload_dir = os.path.join(app.static_folder, "uploads", "job_pdfs")
+        active_year = session.get("active_year", "2025-2026")
+        upload_dir = os.path.join(app.static_folder, "uploads", active_year, "job_pdfs")
         os.makedirs(upload_dir, exist_ok=True)
         fname = secure_filename(f"{job_id}_{pdf_file.filename}")
         pdf_file.save(os.path.join(upload_dir, fname))
-        pdf_path = f"/static/uploads/job_pdfs/{fname}"
+        pdf_path = f"/static/uploads/{active_year}/job_pdfs/{fname}"
 
     try:
         col_sql = f", {custom_cols_str}" if custom_cols_str else ""
@@ -1497,12 +1720,13 @@ def faculty_job_edit():
     pdf_update_sql = ""
     pdf_args = []
     if pdf_file and pdf_file.filename:
-        upload_dir = os.path.join(app.static_folder, "uploads", "job_pdfs")
+        active_year = session.get("active_year", "2025-2026")
+        upload_dir = os.path.join(app.static_folder, "uploads", active_year, "job_pdfs")
         os.makedirs(upload_dir, exist_ok=True)
         fname = secure_filename(f"job_{db_job_id}_{pdf_file.filename}")
         pdf_file.save(os.path.join(upload_dir, fname))
         pdf_update_sql = ", pdf_path=%s"
-        pdf_args = [f"/static/uploads/job_pdfs/{fname}"]
+        pdf_args = [f"/static/uploads/{active_year}/job_pdfs/{fname}"]
 
     try:
         cursor.execute(f"""
@@ -2995,7 +3219,8 @@ def faculty_master_sheet():
     if redir: return redir
 
     import os
-    upload_dir = os.path.join(app.static_folder, "uploads")
+    active_year = session.get("active_year", "2025-2026")
+    upload_dir = os.path.join(app.static_folder, "uploads", active_year)
     current_file = None
     file_type = None
     file_size = 0
@@ -3008,15 +3233,18 @@ def faculty_master_sheet():
         current_file = "master_sheet.pdf"
         file_type = "PDF Document"
         file_size = round(os.path.getsize(os.path.join(upload_dir, current_file)) / 1024)
+    elif os.path.exists(os.path.join(upload_dir, "master_sheet.csv")):
+        current_file = "master_sheet.csv"
+        file_type = "CSV Document"
+        file_size = round(os.path.getsize(os.path.join(upload_dir, current_file)) / 1024)
 
     return render_template("faculty/master_sheet.html", current_file=current_file, file_type=file_type, file_size=file_size)
 
 @app.route("/faculty/upload_master_sheet", methods=["POST"])
 def faculty_upload_master_sheet():
     ensure_connection()
-
-    if "faculty_email" not in session:
-        return redirect("/faculty_login")
+    redir = faculty_required()
+    if redir: return redir
 
     file = request.files.get("master_file")
 
@@ -3025,19 +3253,29 @@ def faculty_upload_master_sheet():
         return redirect("/faculty/master_sheet")
 
     filename = secure_filename(file.filename)
-    upload_folder = os.path.join(app.static_folder, "uploads")
+    active_year = session.get("active_year", "2025-2026")
+    upload_folder = os.path.join(app.static_folder, "uploads", active_year)
     os.makedirs(upload_folder, exist_ok=True)
 
-    file_path = os.path.join(upload_folder, filename)
+    ext = filename.split('.')[-1].lower()
+    master_name = f"master_sheet.{ext}"
+
+    for ext_del in ["xlsx", "csv", "pdf"]:
+        old_path = os.path.join(upload_folder, f"master_sheet.{ext_del}")
+        if os.path.exists(old_path):
+            try: os.remove(old_path)
+            except: pass
+
+    file_path = os.path.join(upload_folder, master_name)
     file.save(file_path)
 
-    if filename.lower().endswith(".xlsx"):
+    if ext == "xlsx":
         df = pd.read_excel(file_path)
 
-    elif filename.lower().endswith(".csv"):
+    elif ext == "csv":
         df = pd.read_csv(file_path)
 
-    elif filename.lower().endswith(".pdf"):
+    elif ext == "pdf":
         all_rows = []
 
         with pdfplumber.open(file_path) as pdf:
@@ -3096,8 +3334,22 @@ def faculty_upload_master_sheet():
         active_backlogs = int(float(row.get("active_backlogs", 0) or 0))
         backlog_history = int(float(row.get("backlog_history", 0) or 0))
         batch = int(float(row.get("graduation_batch", 0) or 0))
-        tenth_score = float(row.get("10th_score", 0) or 0)
-        inter_score = float(row.get("inter_score", 0) or 0)
+
+        # Accept many real-world column name variants for 10th and 12th scores
+        def _score(row, *keys):
+            for k in keys:
+                v = row.get(k)
+                if v is not None and str(v).strip() not in ("", "nan", "None"):
+                    try: return float(v)
+                    except: pass
+            return 0.0
+
+        tenth_score = _score(row,
+            "10th_score", "10_score", "tenth_score", "10th score",
+            "ssc_score", "ssc", "x_score", "x_marks")
+        inter_score = _score(row,
+            "inter_score", "12thscore", "12th_score", "12_score",
+            "inter score", "hsc_score", "hsc", "xii_score", "xii_marks")
 
         cursor.execute("SELECT * FROM students WHERE LOWER(email) = %s", (email,))
         existing_student = cursor.fetchone()
@@ -3173,14 +3425,18 @@ def faculty_download_master_sheet():
     if redir: return redir
 
     from flask import send_file
-    upload_dir = os.path.join(app.static_folder, "uploads")
+    active_year = session.get("active_year", "2025-2026")
+    upload_dir = os.path.join(app.static_folder, "uploads", active_year)
     pdf_path = os.path.join(upload_dir, "master_sheet.pdf")
     xlsx_path = os.path.join(upload_dir, "master_sheet.xlsx")
+    csv_path = os.path.join(upload_dir, "master_sheet.csv")
 
     if os.path.exists(pdf_path):
         return send_file(pdf_path, as_attachment=True, download_name="master_sheet.pdf")
     elif os.path.exists(xlsx_path):
         return send_file(xlsx_path, as_attachment=True, download_name="master_sheet.xlsx")
+    elif os.path.exists(csv_path):
+        return send_file(csv_path, as_attachment=True, download_name="master_sheet.csv")
     else:
         from flask import flash
         flash("No master sheet file found.", "error")
@@ -3194,15 +3450,16 @@ def faculty_delete_master_sheet():
     if redir: return redir
 
     from flask import flash
-    upload_dir = os.path.join(app.static_folder, "uploads")
+    active_year = session.get("active_year", "2025-2026")
+    upload_dir = os.path.join(app.static_folder, "uploads", active_year)
     deleted = False
-    for fname in ["master_sheet.pdf", "master_sheet.xlsx"]:
+    for fname in ["master_sheet.pdf", "master_sheet.xlsx", "master_sheet.csv"]:
         fpath = os.path.join(upload_dir, fname)
         if os.path.exists(fpath):
             os.remove(fpath)
             deleted = True
     if deleted:
-        flash("Master sheet deleted successfully.", "success")
+        flash("Master sheet deleted successfully. Student portals are now disabled.", "success")
     else:
         flash("No master sheet found to delete.", "error")
     return redirect("/faculty/master_sheet")

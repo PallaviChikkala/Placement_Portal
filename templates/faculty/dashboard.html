@@ -236,6 +236,10 @@ body { min-height: 100vh; font-family: 'DM Sans', sans-serif; background: var(--
       <p>Placement dashboard · manage students &amp; placements</p>
     </div>
     <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
+      <div class="badge-date" style="background: var(--badge-bg); border-color: var(--header-border); font-weight: 600;">
+        <i class="ti ti-calendar-event"></i> Active Batch: <strong>{{ active_year }}</strong>
+      </div>
+      <a href="/faculty/select_year" class="logout-btn" style="border-color: var(--text-accent); color: var(--text-accent);"><i class="ti ti-arrows-exchange"></i> Change Batch</a>
       <form action="/faculty/update_settings" method="POST" style="display:flex; gap:8px; align-items:center; background: var(--input-bg); border: 1px solid var(--input-border); border-radius: 30px; padding: 4px 4px 4px 16px;">
         <input type="text" name="recruitment_title" value="{{ global_settings.recruitment_title }}" placeholder="Recruitment Season" required style="background: transparent; border: none; color: var(--text-main); font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 600; outline: none; width: 200px;">
         <button type="submit" style="background: var(--button-gradient); color: white; border: none; padding: 6px 16px; border-radius: 24px; font-weight: 700; font-size: 13px; cursor: pointer; transition: opacity 0.2s;" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">Save</button>
