@@ -4,10 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Student Dashboard - Placement Portal</title>
+    <!-- Bootstrap & Icons -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <!-- Custom Style System -->
     <link rel="stylesheet" href="/static/css/style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
     <style>
         .stat-card-icon {
             font-size: 2.2rem;
@@ -59,292 +60,298 @@
         }
     </style>
 </head>
-<body>
+<body class="premium-animated-bg">
 
-<div class="dashboard-layout">
-    <!-- Sidebar -->
-    <div class="sidebar">
-        <div class="sidebar-logo">
-            <img src="/static/StudentLogin.png" width="45" height="45" alt="NIT AP Logo">
-            <div>
-                <h5 class="mb-0 fw-bold" style="font-family:var(--font-heading);color:var(--primary);">NIT AP</h5>
-                <small class="text-muted" style="font-size:0.75rem;">Placement Cell</small>
-            </div>
-        </div>
-
-        <div class="sidebar-menu">
-            <a href="/student_dashboard" class="sidebar-link active">
-                <i class="bi bi-speedometer2"></i> Dashboard
-            </a>
-            <a href="/student_profile" class="sidebar-link">
-                <i class="bi bi-person"></i> Profile
-            </a>
-            <a href="/eligible_companies" class="sidebar-link">
-                <i class="bi bi-building"></i> Eligible Companies
-            </a>
-            <a href="/my_applications" class="sidebar-link">
-                <i class="bi bi-file-earmark-text"></i> Placement History
-            </a>
-        </div>
-
-        <div style="background: linear-gradient(135deg, rgba(245,158,11,0.1), rgba(217,119,6,0.1)); border-left: 4px solid var(--accent); padding: 12px 16px; margin: 16px 20px; border-radius: 8px; font-size: 0.85rem; color: var(--text-muted); font-weight: 500; font-style: italic; display: flex; align-items: center; gap: 10px;">
-            <i class="bi bi-lightbulb-fill text-warning" style="font-size: 1.2rem;"></i>
-            <span id="funny-quote-box">Loading quote...</span>
-        </div>
-
-        <div class="sidebar-footer">
-            <hr style="background-color:rgba(255,255,255,0.1);margin-bottom:20px;">
-            <a href="/student_logout" class="sidebar-link" style="color:#ef4444;">
-                <i class="bi bi-box-arrow-right"></i> Logout
-            </a>
-        </div>
-    </div>
-
-    <!-- Main Content -->
-    <div class="main-content">
-        <!-- Header -->
-        <div class="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom animate-header" style="position: relative; z-index: 1050;">
-            <div>
-                <h2 class="mb-1 text-primary fw-extrabold" style="font-family:var(--font-heading);">
-                    <span id="greeting-text">Welcome</span> {{ name }}
-                    <img src="/static/sign.png" style="width:50px;height:50px;vertical-align:middle;padding-right:6px;margin-left:5px;" alt="Hello">
-                </h2>
-                <p class="text-muted mb-0 small">Class of {{ student.batch or '2028' }} | {{ student.branch or 'Computer Science' }} Department</p>
-            </div>
-            <div class="d-flex align-items-center gap-3">
-                <!-- bell -->
-                <div class="position-relative" id="notifBellWrapper">
-                    <button class="btn btn-outline-secondary rounded-circle p-2" type="button" id="notifButton" data-bs-toggle="dropdown" aria-expanded="false" style="width:42px;height:42px;position:relative;">
-                        <i class="bi bi-bell fs-5"></i>
-                    </button>
-                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" id="notifCountBadge" style="font-size:0.65rem;display:{% if notifications|length > 0 %}flex{% else %}none{% endif %};">
-                        <span id="notifCountNum">{{ notifications|length }}</span>
-                    </span>
-                    <ul class="dropdown-menu dropdown-menu-end shadow border-0 mt-2 p-2" aria-labelledby="notifButton" style="width:300px;border-radius:var(--radius-sm);" id="notifList">
-                        <li class="p-2 border-bottom"><strong class="small text-primary">🔔 Notifications</strong></li>
-                        {% if notifications %}
-                            {% for notif in notifications %}
-                            <li><a class="dropdown-item small py-2 text-wrap" href="{{ notif.link or '#' }}"><i class="bi bi-info-circle text-warning me-2"></i>{{ notif.message|safe }}</a></li>
-                            {% endfor %}
-                            <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item text-center small text-muted py-1" href="#" onclick="clearNotifications(event)">Clear All</a></li>
-                        {% else %}
-                            <li><div class="dropdown-item small py-3 text-muted text-center">No new notifications 😴</div></li>
-                        {% endif %}
-                    </ul>
+    <div class="dashboard-layout">
+        <!-- Sidebar Navigation -->
+        <div class="sidebar">
+            <div class="sidebar-logo">
+                <img src="/static/StudentLogin.png" width="45" height="45" alt="NIT AP Logo" class="premium-floating-element">
+                <div>
+                    <h5 class="mb-0 fw-bold" style="font-family: var(--font-heading); color: var(--primary);">NIT AP</h5>
+                    <small class="text-muted" style="font-size: 0.75rem;">Placement Cell</small>
                 </div>
-
-                <button class="btn btn-outline-secondary rounded-circle p-2" onclick="toggleDarkMode()" id="themeBtn" style="width:42px;height:42px;">
-                    <i class="bi bi-moon"></i>
-                </button>
-
-                <a href="/student_profile" class="d-flex align-items-center gap-2 text-decoration-none">
-                    <img src="{{ student.profile_photo if student.profile_photo and student.profile_photo != '/static/default_avatar.png' and student.profile_photo != '/static/StudentLogin.png' else '/static/default_profile.png' }}" class="rounded-circle" style="width:42px;height:42px;object-fit:cover;border:2px solid white;box-shadow:0 4px 10px rgba(0,0,0,0.08); background-color: white;" alt="Profile">
+            </div>
+            
+            
+            <div class="sidebar-menu">
+                <a href="/student_dashboard" class="sidebar-link active">
+                    <i class="bi bi-speedometer2"></i> Dashboard
+                </a>
+                <a href="/student_profile" class="sidebar-link">
+                    <i class="bi bi-person"></i> Profile
+                </a>
+                <a href="/eligible_companies" class="sidebar-link">
+                    <i class="bi bi-building"></i> Eligible Companies
+                </a>
+                <a href="/my_applications" class="sidebar-link">
+                    <i class="bi bi-file-earmark-text"></i> Placement History
+                </a>
+            </div>
+            
+            <div class="sidebar-footer">
+                <hr style="background-color: rgba(255,255,255,0.1); margin-bottom: 20px;">
+                <a href="/student_logout" class="sidebar-link" style="color: #ef4444;">
+                    <i class="bi bi-box-arrow-right"></i> Logout
                 </a>
             </div>
         </div>
 
-        <!-- Stats grid row -->
-        <div class="row g-4 mb-5">
-            <!-- Stat Card 1 -->
-            <div class="col-xl-3 col-md-6">
-                <div class="card glass-card p-4 h-100 d-flex flex-row justify-content-between align-items-center premium-hover-scale">
-                    <div>
-                        <span class="text-muted small fw-semibold text-uppercase d-block mb-1">Eligible Drives</span>
-                        <h3 class="mb-0 fw-extrabold text-primary counter-anim" data-target="{{ eligible_count }}" style="font-size: 2.2rem;" id="statEligible">0</h3>
+        <!-- Main Body Content -->
+        <div class="main-content">
+            <!-- Header bar -->
+            <div class="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom animate-header" style="position: relative; z-index: 1050;">
+                <div>
+                    <h2 class="mb-1 text-primary fw-extrabold" style="font-family: var(--font-heading);">
+                        <span id="greeting-text">Welcome</span> {{ name }}
+                        <img src="/static/sign.png" style="width: 50px; height: 50px; vertical-align: middle; padding-right: 6px;margin-left: 5px;" alt="Hello">
+                    </h2>
+                    <p class="text-muted mb-0 small">Class of {{ student.batch or '2028' }} | {{ student.branch or 'Computer Science' }} Department</p>
+                </div>
+                <div class="d-flex align-items-center gap-3">
+                    <div class="position-relative">
+                        <button class="btn btn-outline-secondary rounded-circle p-2" type="button" id="notifButton" data-bs-toggle="dropdown" aria-expanded="false" style="width: 42px; height: 42px;">
+                            <i class="bi bi-bell fs-5"></i>
+                            {% if notifications|length > 0 %}
+                            <span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle" id="notifBadge"></span>
+                            {% endif %}
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end shadow border-0 mt-2 p-2" aria-labelledby="notifButton" style="width: 300px; border-radius: var(--radius-sm);" id="notifList">
+                            <li class="p-2 border-bottom"><strong class="small text-primary">Notifications</strong></li>
+                            {% if notifications %}
+                                {% for notif in notifications %}
+                                <li><a class="dropdown-item small py-2 text-wrap" href="{{ notif.link or '#' }}"><i class="bi bi-info-circle text-warning me-2"></i> {{ notif.message|safe }}</a></li>
+                                {% endfor %}
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item text-center small text-muted py-1" href="#" onclick="clearNotifications(event)">Clear All</a></li>
+                            {% else %}
+                                <li><div class="dropdown-item small py-3 text-wrap text-muted text-center">No new notifications</div></li>
+                            {% endif %}
+                        </ul>
                     </div>
-                    <div class="stat-card-icon">
-                        <i class="bi bi-building"></i>
-                    </div>
+                    <button class="btn btn-outline-secondary rounded-circle p-2"
+        onclick="toggleDarkMode()"
+        id="themeBtn"
+        style="width:42px; height:42px;">
+    <i class="bi bi-moon"></i>
+</button>
+                    
+                    <a href="/student_profile" class="d-flex align-items-center gap-2 text-decoration-none">
+                        <img src="{{ student.profile_photo if student.profile_photo and student.profile_photo != '/static/default_avatar.png' and student.profile_photo != '/static/StudentLogin.png' else '/static/default_profile.png' }}" class="rounded-circle" style="width: 42px; height: 42px; object-fit: cover; border: 2px solid white; box-shadow: 0 4px 10px rgba(0,0,0,0.08); background-color: white;" alt="Profile">
+                    </a>
                 </div>
             </div>
-            <!-- Stat Card 2 -->
-            <div class="col-xl-3 col-md-6">
-                <div class="card glass-card p-4 h-100 d-flex flex-row justify-content-between align-items-center premium-hover-scale">
-                    <div>
-                        <span class="text-muted small fw-semibold text-uppercase d-block mb-1">Applied Roles</span>
-                        <h3 class="mb-0 fw-extrabold text-primary counter-anim" data-target="{{ applied_count }}" style="font-size: 2.2rem;" id="statApplied">0</h3>
-                    </div>
-                    <div class="stat-card-icon">
-                        <i class="bi bi-file-earmark-check"></i>
-                    </div>
-                </div>
-            </div>
-            <!-- Stat Card 3 -->
-            <div class="col-xl-3 col-md-6">
-                <div class="card glass-card p-4 h-100 d-flex flex-row justify-content-between align-items-center premium-hover-scale">
-                    <div>
-                        <span class="text-muted small fw-semibold text-uppercase d-block mb-1">Selected Companies</span>
-                        <h3 class="mb-0 fw-extrabold text-primary counter-anim" data-target="{{ selected_count }}" style="font-size: 2.2rem;" id="statInterviews">0</h3>
-                    </div>
-                    <div class="stat-card-icon">
-                        <i class="bi bi-award"></i>
+
+            <!-- Stats grid row -->
+            <div class="row g-4 mb-5 animated-fade-in-up">
+                <!-- Stat Card 1 -->
+                <div class="col-xl-3 col-md-6">
+                    <div class="card glass-card p-4 h-100 d-flex flex-row justify-content-between align-items-center premium-hover-scale">
+                        <div>
+                            <span class="text-muted small fw-semibold text-uppercase d-block mb-1">Eligible Drives</span>
+                            <h3 class="mb-0 fw-extrabold text-primary counter-anim" data-target="{{ eligible_count }}" style="font-size: 2.2rem;">0</h3>
+                        </div>
+                        <div class="stat-card-icon">
+                            <i class="bi bi-building"></i>
+                        </div>
                     </div>
                 </div>
-            </div>
-            <!-- Stat Card 4 (ATS Score Chart) -->
-            <div class="col-xl-3 col-md-6">
-                <div class="card glass-card p-3 h-100 d-flex align-items-center justify-content-around premium-hover-scale">
-                    <div class="text-center text-xl-start">
-                        <span class="text-muted small fw-semibold text-uppercase d-block mb-1">Resume score</span>
-                        <small class="text-muted d-block" style="font-size: 0.75rem;">Resume Strength</small>
+                <!-- Stat Card 2 -->
+                <div class="col-xl-3 col-md-6">
+                    <div class="card glass-card p-4 h-100 d-flex flex-row justify-content-between align-items-center premium-hover-scale">
+                        <div>
+                            <span class="text-muted small fw-semibold text-uppercase d-block mb-1">Applied Roles</span>
+                            <h3 class="mb-0 fw-extrabold text-primary counter-anim" data-target="{{ applied_count }}" style="font-size: 2.2rem;">0</h3>
+                        </div>
+                        <div class="stat-card-icon">
+                            <i class="bi bi-file-earmark-check"></i>
+                        </div>
                     </div>
-                    <div class="progress-radial" data-progress="{{ resume_score or 0 }}" style="--progress: 0">
-                        {% if resume_score %}
+                </div>
+                <!-- Stat Card 3 -->
+                <div class="col-xl-3 col-md-6">
+                    <div class="card glass-card p-4 h-100 d-flex flex-row justify-content-between align-items-center premium-hover-scale">
+                        <div>
+                            <span class="text-muted small fw-semibold text-uppercase d-block mb-1">Selected Companies</span>
+                            <h3 class="mb-0 fw-extrabold text-primary counter-anim" data-target="{{ selected_count }}" style="font-size: 2.2rem;">0</h3>
+                        </div>
+                        <div class="stat-card-icon">
+                            <i class="bi bi-award"></i>
+                        </div>
+                    </div>
+                </div>
+                <!-- Stat Card 4 (ATS Score Chart) -->
+                <div class="col-xl-3 col-md-6">
+                    <div class="card glass-card p-3 h-100 d-flex align-items-center justify-content-around premium-hover-scale">
+                        <div class="text-center text-xl-start">
+                            <span class="text-muted small fw-semibold text-uppercase d-block mb-1">Resume score</span>
+                            <small class="text-muted d-block" style="font-size: 0.75rem;">Resume Strength</small>
+                        </div>
+                        <div class="progress-radial" data-progress="{{ resume_score or 0 }}" style="--progress: 0">
+                            {% if resume_score %}
                                 <span class="score-anim">0</span><span class="fs-5">%</span>
                             {% else %}
                                 <span>N/A</span>
                             {% endif %}
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
 
-        <!-- Main body -->
-        <div class="row g-4 mb-4">
-            <div class="col-lg-8">
-                <!-- Upcoming Drives Card -->
-                <div class="card glass-card p-4 mb-4">
-                    <div class="d-flex justify-content-between align-items-center mb-4">
-                        <h5 class="mb-0 text-primary fw-bold" style="font-family:var(--font-heading);">
-                            <i class="bi bi-calendar2-week text-warning me-2"></i> Upcoming Placement Drives
-                        </h5>
-                        <a href="/eligible_companies" class="btn btn-premium-outline btn-sm py-1 px-3" style="font-size:0.8rem;">View All Jobs 🚀</a>
-                    </div>
-                    <div class="custom-table-container" id="upcomingDrivesContainer">
-                        <table class="table-premium" id="drivesTable">
-                            <thead>
-                                <tr>
-                                    <th>Company</th>
-                                    <th>Role Offered</th>
-                                    <th>Package (LPA)</th>
-                                    <th>Deadline</th>
-                                    <th>Status</th>
-                                </tr>
-                            </thead>
-                            <tbody id="drivesTableBody">
-                                {% if upcoming_drives %}
-                                    {% for drive in upcoming_drives %}
-                                    <tr class="stagger-row" style="--row-idx: {{ loop.index0 }};">
-                                        <td class="fw-bold text-dark">{{ drive.company_name }}</td>
-                                        <td>{{ drive.role }}</td>
-                                        <td class="fw-semibold text-primary">{{ drive.package_lpa }} LPA</td>
-                                        <td>{{ drive.deadline }}</td>
-                                        <td>
-                                            {% if drive.is_eligible %}
-                                                <span class="badge-custom badge-eligible">Eligible ✅</span>
-                                            {% else %}
-                                                <span class="badge-custom badge-ineligible">Ineligible</span>
-                                            {% endif %}
-                                        </td>
-                                    </tr>
-                                    {% endfor %}
-                                {% else %}
-                                    <tr id="emptyDrivesRow">
-                                        <td colspan="5" class="text-center text-muted py-4">
-                                            <div class="small">No drives available yet.</div>
-                                        </td>
-                                    </tr>
-                                {% endif %}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <!-- Recent Applications -->
-                <div class="card glass-card p-4">
-                    <div class="d-flex justify-content-between align-items-center mb-4">
-                        <h5 class="mb-0 text-primary fw-bold" style="font-family:var(--font-heading);">
-                            <i class="bi bi-clock-history text-warning me-2"></i> Recent Applications
-                        </h5>
-                        <a href="/my_applications" class="btn btn-premium-outline btn-sm py-1 px-3" style="font-size:0.8rem;">Application Status</a>
-                    </div>
-                    <div class="custom-table-container">
-                        <table class="table-premium">
-                            <thead>
-                                <tr><th>Company</th><th>Role</th><th>Applied Date</th><th>Status</th></tr>
-                            </thead>
-                            <tbody id="recentAppsBody">
-                                {% if recent_applications %}
-                                    {% for app in recent_applications %}
-                                    <tr class="stagger-row" style="--row-idx: {{ loop.index0 }};">
-                                        <td class="fw-bold text-dark">{{ app.company_name }}</td>
-                                        <td>{{ app.role }}</td>
-                                        <td>{{ app.applied_date }}</td>
-                                        <td>
-                                            {% if app.status == 'Pending' %}
-                                                <span class="badge-custom badge-pending">Pending ⏳</span>
-                                            {% elif app.status == 'Shortlisted' %}
-                                                <span class="badge-custom badge-shortlisted">Shortlisted 🌟</span>
-                                            {% elif app.status == 'Selected' %}
-                                                <span class="badge-custom badge-selected">Selected 🎉</span>
-                                            {% elif app.status in ['Not Selected','Rejected'] %}
-                                                <span class="badge-custom badge-rejected">Not Selected 😢</span>
-                                            {% else %}
-                                                <span class="badge-custom badge-pending">{{ app.status }}</span>
-                                            {% endif %}
-                                        </td>
-                                    </tr>
-                                    {% endfor %}
-                                {% else %}
+            <!-- Double-column layout: Upcoming drives & quick analyzer -->
+            <div class="row g-4 mb-4">
+                <div class="col-lg-8">
+                    <!-- Upcoming Drives Card -->
+                    <div class="card glass-card p-4 mb-4 animated-fade-in-up delay-100">
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <h5 class="mb-0 text-primary fw-bold" style="font-family: var(--font-heading);"><i class="bi bi-calendar2-week text-warning me-2"></i> Upcoming Placement Drives</h5>
+                            <a href="/eligible_companies" class="btn btn-premium-outline btn-sm py-1 px-3" style="font-size: 0.8rem;">View All Jobs</a>
+                        </div>
+                        
+                        <div class="custom-table-container" id="upcomingDrivesContainer">
+                            <table class="table-premium">
+                                <thead>
                                     <tr>
-                                        <td colspan="4" class="text-center text-muted py-4">
-                                            <div class="small">You haven't submitted any applications yet.</div>
-                                        </td>
+                                        <th>Company</th>
+                                        <th>Role Offered</th>
+                                        <th>Package (LPA)</th>
+                                        <th>Deadline</th>
+                                        <th>Status</th>
                                     </tr>
-                                {% endif %}
-                            </tbody>
-                        </table>
+                                </thead>
+                                <tbody>
+                                    {% if upcoming_drives %}
+                                        {% for drive in upcoming_drives %}
+                                        <tr class="stagger-row" style="--row-idx: {{ loop.index0 }};">
+                                            <td class="fw-bold text-dark">{{ drive.company_name }}</td>
+                                            <td>{{ drive.role }}</td>
+                                            <td class="fw-semibold text-primary">{{ drive.package_lpa }} LPA</td>
+                                            <td>{{ drive.deadline }}</td>
+                                            <td>
+                                                {% if drive.is_eligible %}
+                                                    <span class="badge-custom badge-eligible">Eligible</span>
+                                                {% else %}
+                                                    <span class="badge-custom badge-ineligible">Ineligible</span>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    {% else %}
+                                        <tr>
+                                            <td colspan="5" class="text-center text-muted py-4">
+                                                <i class="bi bi-info-circle fs-4 d-block mb-2"></i>
+                                                No upcoming drives currently listed.
+                                            </td>
+                                        </tr>
+                                    {% endif %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Recent Applications Card -->
+                    <div class="card glass-card p-4 animated-fade-in-up delay-200">
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <h5 class="mb-0 text-primary fw-bold" style="font-family: var(--font-heading);"><i class="bi bi-clock-history text-warning me-2"></i> Recent Applications</h5>
+                            <a href="/my_applications" class="btn btn-premium-outline btn-sm py-1 px-3" style="font-size: 0.8rem;">Application Status</a>
+                        </div>
+                        
+                        <div class="custom-table-container">
+                            <table class="table-premium">
+                                <thead>
+                                    <tr>
+                                        <th>Company</th>
+                                        <th>Role</th>
+                                        <th>Applied Date</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% if recent_applications %}
+                                        {% for app in recent_applications %}
+                                        <tr class="stagger-row" style="--row-idx: {{ loop.index0 }};">
+                                            <td class="fw-bold text-dark">{{ app.company_name }}</td>
+                                            <td>{{ app.role }}</td>
+                                            <td>{{ app.applied_date }}</td>
+                                            <td>
+                                                {% if app.status == 'Pending' %}
+                                                    <span class="badge-custom badge-pending">Pending</span>
+                                                {% elif app.status == 'Shortlisted' %}
+                                                    <span class="badge-custom badge-shortlisted">Shortlisted</span>
+                                                {% elif app.status == 'Selected' %}
+                                                    <span class="badge-custom badge-selected">Selected</span>
+                                                {% elif app.status == 'Not Selected' or app.status == 'Rejected' %}
+                                                    <span class="badge-custom badge-rejected">Not Selected</span>
+                                                {% else %}
+                                                    <span class="badge-custom badge-pending">{{ app.status }}</span>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    {% else %}
+                                        <tr>
+                                            <td colspan="4" class="text-center text-muted py-4">
+                                                <i class="bi bi-journal-x fs-4 d-block mb-2"></i>
+                                                You haven't applied to any drives yet.
+                                            </td>
+                                        </tr>
+                                    {% endif %}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <!-- Right: Resume Analyzer -->
-            <div class="col-lg-4">
-                <div class="card glass-card p-4 h-100">
-                    <div class="text-center mb-4">
-                        <div class="p-3 bg-warning-subtle rounded-circle d-inline-flex mb-3">
-                            <i class="bi bi-cpu fs-2 text-warning"></i>
+                <!-- Right sidebar inside main: Quick ATS Resume analyzer -->
+                <div class="col-lg-4">
+                    <div class="card glass-card p-4 h-100 animated-fade-in-up delay-300">
+                        <div class="text-center mb-4">
+                            <div class="p-3 bg-warning-subtle rounded-circle d-inline-flex mb-3">
+                                <i class="bi bi-cpu fs-2 text-warning"></i>
+                            </div>
+                            <h5 class="fw-bold text-primary mb-2" style="font-family: var(--font-heading);">Resume Analyzer</h5>
+                            <p class="text-muted small">Analyze your resume and gain insights to strengthen your professional profile.</p>
                         </div>
-                        <h5 class="fw-bold text-primary mb-2" style="font-family:var(--font-heading);">Resume Analyzer 🤖</h5>
-                        <p class="text-muted small">Let our robot overlord judge your resume.<br><em style="font-size:0.75rem;">(it's actually helpful, we promise 😂)</em></p>
-                    </div>
-                    <form action="/upload" method="POST" enctype="multipart/form-data">
-                        <div class="mb-3">
-                            <label class="form-label text-muted small fw-semibold">Target Job Role or JD</label>
-                            <select name="role" class="form-select form-premium w-100 mb-2" required id="roleSelect" onchange="toggleCustomJD()">
-                                <option value="" disabled selected>Select a job profile...</option>
-                                <option>Frontend Developer</option>
-                                <option>Backend Developer</option>
-                                <option>Full Stack Developer</option>
-                                <option>Data Analyst</option>
-                                <option>AI/ML Engineer</option>
-                                <option value="Custom">Paste Custom Job Description</option>
-                            </select>
-                            <textarea name="custom_jd" id="customJdFile" class="form-control form-premium d-none mb-3" rows="3" placeholder="Paste Job Description here..."></textarea>
-                        </div>
-                        <div class="mb-4">
-                            <label class="form-label text-muted small fw-semibold">Upload CV/Resume</label>
-                            <div class="quick-upload-zone p-4 text-center cursor-pointer position-relative" style="border:2px dashed rgba(245,158,11,0.3);border-radius:12px;background:rgba(255,255,255,0.5);transition:all 0.3s ease;">
-                                <input type="file" name="resume" class="position-absolute top-0 start-0 w-100 h-100 opacity-0 cursor-pointer" style="z-index:2;" required id="resume-file">
-                                <div>
-                                    <i class="bi bi-cloud-arrow-up fs-3 text-warning d-block mb-2"></i>
-                                    <span class="small text-muted d-block" id="file-name-placeholder">Drag & Drop or click to browse</span>
-                                    <span class="text-muted-50" style="font-size:0.7rem;">Only PDF & DOCX allowed</span>
+                        
+                        <form action="/upload" method="POST" enctype="multipart/form-data" class="quick-upload-form">
+                            <div class="mb-3">
+                                <label class="form-label text-muted small fw-semibold">Target Job Role or JD</label>
+                                <select name="role" class="form-select form-premium w-100 mb-2" required id="roleSelect" onchange="toggleCustomJD()">
+                                    <option value="" disabled selected>Select a job profile...</option>
+                                    <option>Frontend Developer</option>
+                                    <option>Backend Developer</option>
+                                    <option>Full Stack Developer</option>
+                                    <option>Data Analyst</option>
+                                    <option>AI/ML Engineer</option>
+                                    <option value="Custom">Paste Custom Job Description</option>
+                                </select>
+                                <textarea name="custom_jd" id="customJdFile" class="form-control form-premium d-none mb-3" rows="3" placeholder="Paste Job Description here..."></textarea>
+                            </div>
+                            
+                            <div class="mb-4">
+                                <label class="form-label text-muted small fw-semibold">Upload CV/Resume</label>
+                                <div class="quick-upload-zone p-4 text-center cursor-pointer position-relative">
+                                    <input type="file" name="resume" class="position-absolute top-0 start-0 w-100 h-100 opacity-0 cursor-pointer" style="z-index:2;" required id="resume-file">
+                                    <div class="upload-prompt">
+                                        <i class="bi bi-cloud-arrow-up fs-3 text-warning d-block mb-2"></i>
+                                        <span class="small text-muted d-block" id="file-name-placeholder">Drag & Drop or click to browse</span>
+                                        <span class="text-muted-50" style="font-size: 0.7rem;">Only PDF & DOCX allowed</span>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                        <button type="submit" class="btn btn-premium w-100 py-2">
-                            <i class="bi bi-stars me-2"></i> Run Analysis 🔍
-                        </button>
-                    </form>
+                            
+                            <button type="submit" class="btn btn-premium w-100 py-2">
+                                <i class="bi bi-stars me-2"></i> Run Analysis
+                            </button>
+                        </form>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
-</div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Bootstrap Bundle JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         // Premium UI Animations
         document.addEventListener("DOMContentLoaded", () => {
@@ -398,153 +405,148 @@
             }
         });
     </script>
-<script>
-// ─── Real-time Live Polling ─────────────────────────────────────
-let prevData = {
-    eligible_count: {{ eligible_count }},
-    applied_count: {{ applied_count }},
-    interview_count: {{ interview_count }},
-    notification_count: {{ notifications|length }},
-    drives_hash: '{{ upcoming_drives|length }}'
-};
-
-function updateDrivesBadge(status, isEligible) {
-    return isEligible ? `<span class="badge bg-success">Eligible</span>` : `<span class="badge bg-secondary">Ineligible</span>`;
-}
-
-function renderAppStatus(status) {
-    return status;
-}
-
-async function pollLiveData() {
-    try {
-        const res = await fetch('/api/live/student_data', {credentials:'same-origin'});
-        if (!res.ok) return;
-        const data = await res.json();
-        if (data.error) return;
-
-        const el = document.getElementById('statEligible');
-        const ea = document.getElementById('statApplied');
-        const ei = document.getElementById('statInterviews');
-
-        if (el && data.eligible_count !== prevData.eligible_count) {
-            el.textContent = data.eligible_count;
-            prevData.eligible_count = data.eligible_count;
-        }
-        if (ea && data.applied_count !== prevData.applied_count) {
-            ea.textContent = data.applied_count;
-            prevData.applied_count = data.applied_count;
-        }
-        if (ei && data.interview_count !== prevData.interview_count) {
-            ei.textContent = data.interview_count;
-            prevData.interview_count = data.interview_count;
-        }
-
-        if (data.notification_count !== prevData.notification_count) {
-            updateNotifDropdown(data.notifications);
-            prevData.notification_count = data.notification_count;
-        }
-
-        if (data.upcoming_drives && data.upcoming_drives.length !== parseInt(prevData.drives_hash)) {
-            const tbody = document.getElementById('drivesTableBody');
-            if (tbody && data.upcoming_drives.length > 0) {
-                tbody.innerHTML = data.upcoming_drives.map(d => `
-                    <tr>
-                        <td class="fw-bold">${d.company_name}</td>
-                        <td>${d.role}</td>
-                        <td>${d.package_lpa} LPA</td>
-                        <td>${d.deadline}</td>
-                        <td>${updateDrivesBadge(d.status, d.is_eligible)}</td>
-                    </tr>
-                `).join('');
-                prevData.drives_hash = String(data.upcoming_drives.length);
-            }
-        }
-
-        if (data.recent_applications && data.recent_applications.length > 0) {
-            const tbody = document.getElementById('recentAppsBody');
-            if (tbody) {
-                const newHtml = data.recent_applications.map(a => `
-                    <tr>
-                        <td class="fw-bold">${a.company_name}</td>
-                        <td>${a.role}</td>
-                        <td>${a.applied_date}</td>
-                        <td>${renderAppStatus(a.status)}</td>
-                    </tr>
-                `).join('');
-                if (tbody.innerHTML !== newHtml) tbody.innerHTML = newHtml;
-            }
-        }
-    } catch(e) { }
-}
-
-function updateNotifDropdown(notifs) {
-    const list = document.getElementById('notifList');
-    if (!list) return;
-    let html = '<li class="p-2 border-bottom"><strong>Notifications</strong></li>';
-    notifs.forEach(n => {
-        html += `<li><a class="dropdown-item" href="${n.link}">${n.message}</a></li>`;
-    });
-    html += `<li><hr class="dropdown-divider"></li><li><a class="dropdown-item text-center" href="#" onclick="clearNotifications(event)">Clear All</a></li>`;
-    list.innerHTML = html;
-}
-
-setInterval(pollLiveData, 7000);
-
-function toggleCustomJD() {
-    const v = document.getElementById('roleSelect').value;
-    const el = document.getElementById('customJdFile');
-    if (v==='Custom') { el.classList.remove('d-none'); el.required=true; }
-    else { el.classList.add('d-none'); el.required=false; el.value=''; }
-}
-
-function clearNotifications(e) {
-    e.preventDefault();
-    fetch('/clear_notifications', {method:'POST'})
-    .then(r => r.json()).then(d => {
-        if(d.success) {
-            const list = document.getElementById('notifList');
-            if (list) list.innerHTML = '<li><div class="dropdown-item small py-3 text-muted text-center">No new notifications 😴</div></li>';
-            const badge = document.getElementById('notifCountBadge');
-            if (badge) badge.style.display = 'none';
-        }
-    });
-}
-
+    <script>
+        // Auto-refresh upcoming drives every 15 seconds silently
+        setInterval(function() {
+            if (document.querySelector('.modal.show')) return;
+            fetch(window.location.href)
+                .then(res => res.text())
+                .then(html => {
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(html, 'text/html');
+                    const newGrid = doc.getElementById('upcomingDrivesContainer');
+                    const oldGrid = document.getElementById('upcomingDrivesContainer');
+                    if (oldGrid && newGrid) {
+                        oldGrid.innerHTML = newGrid.innerHTML;
+                    }
+                })
+                .catch(err => console.error("Auto-refresh failed", err));
+        }, 15000);
+    </script>
+    <script>
 function toggleDarkMode() {
     document.body.classList.toggle("dark-mode");
-    const isDark = document.body.classList.contains("dark-mode");
-    localStorage.setItem("theme", isDark ? "dark" : "light");
+
     const icon = document.querySelector("#themeBtn i");
-    if(icon) {
-        icon.className = isDark ? "bi bi-sun" : "bi bi-moon";
+
+    if (document.body.classList.contains("dark-mode")) {
+        localStorage.setItem("theme", "dark");
+        icon.className = "bi bi-sun";
+    } else {
+        localStorage.setItem("theme", "light");
+        icon.className = "bi bi-moon";
     }
 }
-
 window.onload = function() {
     if (localStorage.getItem("theme") === "dark") {
         document.body.classList.add("dark-mode");
-        const icon = document.querySelector("#themeBtn i");
-        if(icon) icon.className = "bi bi-sun";
-    }
-};
 
-const funnyQuotes = [
-    "It works on my machine.",
-    "I have not failed. I've just found 10,000 ways that won't work.",
-    "There is no place like 127.0.0.1",
-    "Programmer: A machine that turns coffee into code.",
-    "My code never has bugs, it just develops random unexpected features.",
-    "If at first you don't succeed; call it version 1.0"
-];
-function rotateQuotes() {
-    const qb = document.getElementById("funny-quote-box");
-    if(qb) {
-        qb.innerText = '"' + funnyQuotes[Math.floor(Math.random() * funnyQuotes.length)] + '"';
+        const icon = document.querySelector("#themeBtn i");
+        if (icon) {
+            icon.className = "bi bi-sun";
+        }
     }
 }
-setInterval(rotateQuotes, 10000);
-setTimeout(rotateQuotes, 100);
-</script>
+        
+        // Update greeting based on time of day
+        const hr = new Date().getHours();
+        let greeting = "Welcome";
+        if (hr < 12) {
+            greeting = "Good Morning,";
+        } else if (hr < 16) {
+            greeting = "Good Afternoon,";
+        } else {
+            greeting = "Good Evening,";
+        }
+        document.getElementById("greeting-text").innerText = greeting;
+
+        // Display selected file name in custom drag-drop area
+        document.getElementById("resume-file").addEventListener("change", function(e) {
+            const fileName = e.target.files[0]?.name || "Drag & Drop or click to browse";
+            document.getElementById("file-name-placeholder").innerHTML = `<strong>${fileName}</strong>`;
+        });
+
+        function toggleCustomJD() {
+            const roleSelect = document.getElementById("roleSelect");
+            const customJdFile = document.getElementById("customJdFile");
+            if (roleSelect.value === "Custom") {
+                customJdFile.classList.remove("d-none");
+                customJdFile.required = true;
+            } else {
+                customJdFile.classList.add("d-none");
+                customJdFile.required = false;
+                customJdFile.value = "";
+            }
+        }
+
+        function clearNotifications(e) {
+            e.preventDefault();
+            fetch('/clear_notifications', { method: 'POST' })
+            .then(response => response.json())
+            .then(data => {
+                if(data.success) {
+                    const notifList = document.getElementById('notifList');
+                    notifList.innerHTML = '<li class="p-2 border-bottom"><strong class="small text-primary">Notifications</strong></li><li><div class="dropdown-item small py-3 text-wrap text-muted text-center">No new notifications</div></li>';
+                    const badge = document.getElementById('notifBadge');
+                    if(badge) badge.remove();
+                }
+            });
+        }
+    </script>
+
+    <!-- Active Notification Popup Modal -->
+    <div class="modal fade" id="notifPopupModal" tabindex="-1" aria-labelledby="notifPopupLabel" aria-hidden="true" style="z-index: 1055;">
+      <div class="modal-dialog modal-dialog-centered" style="margin: auto; max-width: 500px;">
+        <div class="modal-content shadow-lg" style="border-radius:18px; border: 1.5px solid rgba(245,158,11,0.3); background: var(--card-bg); backdrop-filter: blur(16px);">
+          <div class="modal-header" style="border-bottom: 1px solid rgba(245,158,11,0.15);">
+            <h5 class="modal-title fw-bold" id="notifPopupLabel" style="color: var(--accent);"><i class="bi bi-bell-fill me-2"></i>New Update from Placement Cell</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body" id="notifPopupBody" style="padding: 1.5rem; line-height: 1.8; color: var(--text-main);">
+          </div>
+          <div class="modal-footer" style="border-top: 1px solid rgba(245,158,11,0.15);">
+            <a href="/eligible_companies" class="btn btn-premium btn-sm px-4"><i class="bi bi-building me-1"></i>View Eligible Companies</a>
+            <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal" onclick="markNotifRead()">Dismiss</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+    // Show active notification popups for unread notifications on page load (once per session)
+    (function() {
+        var notifications = {{ notifications | tojson }};
+        if (notifications && notifications.length > 0) {
+            var unread = notifications.filter(function(n) { return !n.is_read; });
+            if (unread.length > 0 && !sessionStorage.getItem('notifPopupShown')) {
+                var bodyEl = document.getElementById('notifPopupBody');
+                if (bodyEl) {
+                    var html = '';
+                    if (unread.length > 1) {
+                        html += '<div class="mb-3 p-2 rounded" style="background: rgba(245,158,11,0.09); font-size:0.82rem; color: var(--text-muted);"><i class="bi bi-info-circle me-1"></i>You have <strong>' + unread.length + '</strong> new update(s). Showing latest:</div>';
+                    }
+                    html += '<div style="font-size:1rem; font-weight:500;">' + unread[0].message + '</div>';
+                    if (unread.length > 1) {
+                        html += '<div class="mt-3">';
+                        for (var i = 1; i < Math.min(unread.length, 4); i++) {
+                            html += '<div class="py-2 border-bottom" style="font-size:0.88rem; color: var(--text-muted);">' + unread[i].message + '</div>';
+                        }
+                        html += '</div>';
+                    }
+                    bodyEl.innerHTML = html;
+                }
+                var modal = new bootstrap.Modal(document.getElementById('notifPopupModal'), { backdrop: 'static', keyboard: false });
+                setTimeout(function() { 
+                    modal.show(); 
+                    sessionStorage.setItem('notifPopupShown', 'true');
+                }, 800);
+            }
+        }
+    })();
+
+    function markNotifRead() {
+        fetch('/clear_notifications', { method: 'POST' });
+    }
+    </script>
 </body>
 </html>

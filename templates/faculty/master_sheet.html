@@ -128,8 +128,11 @@ body { min-height:100vh; font-family:'DM Sans',sans-serif; background:var(--bg-g
 
 <div class="page-body">
   <div class="page-header">
-    <h1><i class="ti ti-file-spreadsheet"></i> Master Sheet Manager</h1>
-    <a href="/faculty_dashboard" class="back-home-btn"><i class="ti ti-home"></i> Back to Dashboard</a>
+    <h1><i class="ti ti-file-spreadsheet"></i> Master Sheet Manager <span class="badge bg-warning text-dark ms-2" style="font-size: 14px; border-radius: 12px; font-weight:700;">{{ active_year }} Batch</span></h1>
+    <div>
+      <a href="/faculty/select_year" class="back-home-btn me-2" style="border-color: var(--text-accent); color: var(--text-accent);"><i class="ti ti-arrows-exchange"></i> Change Batch</a>
+      <a href="/faculty_dashboard" class="back-home-btn"><i class="ti ti-home"></i> Back to Dashboard</a>
+    </div>
   </div>
 
   <div class="container-fluid px-0">
@@ -146,34 +149,63 @@ body { min-height:100vh; font-family:'DM Sans',sans-serif; background:var(--bg-g
       {% endif %}
     {% endwith %}
 
-    <div class="row g-4">
+    <div class="row g-4 justify-content-center">
       <!-- Upload Excel/CSV -->
-      <div class="col-lg-6 mx-auto">
+      <div class="col-lg-6">
         <div class="card-custom h-100 d-flex flex-column text-center align-items-center justify-content-center">
           <i class="ti ti-file-spreadsheet mb-3" style="font-size: 48px; color: #d97706;"></i>
           <h3 style="font-family:'Syne',sans-serif; font-size:20px; color:#78350f; font-weight:800; margin-bottom:12px;">Upload Master Sheet</h3>
           <p style="font-size:13px; color:#b97f10; margin-bottom:24px;">
-  Upload the master sheet in <strong>.xlsx, .csv, or .pdf</strong> format for student data management and record keeping.
-</p>
-          <form action="{{ url_for('faculty_upload_master_sheet') }}" method="POST" enctype="multipart/form-data" class="w-100" style="max-width:320px;">
+            Upload the master sheet in <strong>.xlsx, .csv, or .pdf</strong> format for student data management and record keeping.
+          </p>
+          <form action="{{ url_for('faculty_upload_master_sheet') }}" method="POST" enctype="multipart/form-data" class="w-100 mb-4" style="max-width:320px;">
             <input type="file" name="master_file" accept=".xlsx,.csv,.pdf" class="form-control mb-3" style="border-radius:10px; border-color:rgba(253,230,138,0.8);" required />
             <button type="submit" class="edit-action-btn w-100 justify-content-center">
               <i class="ti ti-upload"></i>&nbsp; Upload & Notify Students
             </button>
           </form>
+
+          {% if current_file %}
+          <div class="w-100 pt-3" style="border-top: 1px dashed var(--card-border); max-width: 380px;">
+            <h4 style="font-family:'Syne',sans-serif; font-size:15px; color:#78350f; font-weight:800; margin-bottom:8px;">Current Master Sheet</h4>
+            <p style="font-size:12px; color:#5c3b1a; margin-bottom:12px;"><strong>Type:</strong> {{ file_type }} | <strong>Size:</strong> {{ file_size }} KB</p>
+            <div class="d-flex justify-content-center gap-2">
+              <a href="{{ url_for('faculty_download_master_sheet') }}" class="back-home-btn" style="border-color:#d97706; color:#d97706; padding: 6px 14px; font-size: 12px; height: 36px; display: inline-flex; align-items: center; justify-content: center;">
+                <i class="ti ti-download"></i> Download
+              </a>
+              <form action="{{ url_for('faculty_delete_master_sheet') }}" method="POST" style="display:inline;">
+                <button type="submit" class="btn btn-outline-danger" style="border-radius:40px; padding: 6px 14px; font-size: 12px; font-weight:600; height: 36px;">
+                  <i class="ti ti-trash"></i> Delete Sheet Only
+                </button>
+              </form>
+            </div>
+          </div>
+          {% endif %}
         </div>
       </div>
 
-    {% if current_file %}
-    <div class="mt-4 card-custom text-center">
-      <h3 style="font-family:'Syne',sans-serif; font-size:18px; color:#78350f; font-weight:800; margin-bottom:12px;">Current Master Sheet Available</h3>
-      <p style="font-size:14px; color:#5c3b1a; margin-bottom:16px;"><strong>Type:</strong> {{ file_type }} | <strong>Size:</strong> {{ file_size }} KB</p>
-      <a href="{{ url_for('faculty_download_master_sheet') }}" class="back-home-btn" style="border-color:#d97706; color:#d97706;">
-        <i class="ti ti-download"></i> Download {{ current_file }}
-      </a>
+      <!-- Reset Batch Data Card -->
+      <div class="col-lg-6">
+        <div class="card-custom h-100 d-flex flex-column text-center align-items-center justify-content-center" style="border-color: rgba(239, 68, 68, 0.25); background: rgba(254, 242, 242, 0.35);">
+          <i class="ti ti-alert-triangle mb-3" style="font-size: 48px; color: #ef4444;"></i>
+          <h3 style="font-family:'Syne',sans-serif; font-size:20px; color:#991b1b; font-weight:800; margin-bottom:12px;">Reset {{ active_year }} Batch</h3>
+          <p style="font-size:13px; color:#b91c1c; margin-bottom:24px; max-width: 400px;">
+            Permanently delete all students, jobs, applications, round results, notifications, and master sheet files for the <strong>{{ active_year }}</strong> batch. This action is irreversible.
+          </p>
+          <form action="/faculty/reset_batch" method="POST" class="w-100" style="max-width:360px;" id="resetForm">
+            <div class="form-check text-start mb-3" style="font-size: 13px; color: var(--text-main); background: rgba(255,255,255,0.7); padding: 10px 12px 10px 32px; border-radius: 10px; border: 1px solid rgba(239, 68, 68, 0.2);">
+              <input class="form-check-input" type="checkbox" id="confirmSaveCheck" name="confirm_save" value="yes" required onchange="toggleResetButton()">
+              <label class="form-check-label" for="confirmSaveCheck">
+                I warn/confirm that I have saved all the students' data for this batch.
+              </label>
+            </div>
+            <button type="submit" id="resetSubmitBtn" class="btn btn-danger w-100 justify-content-center" disabled style="border-radius:40px; padding: 10px 24px; font-weight:700; font-size:14px; display:inline-flex; align-items:center; gap:8px;">
+              <i class="ti ti-refresh"></i> Reset All Batch Data
+            </button>
+          </form>
+        </div>
+      </div>
     </div>
-    {% endif %}
-
   </div>
 
 <script>
@@ -196,6 +228,12 @@ if (themeToggle) {
   if (icon) {
     icon.className = currentTheme === 'dark' ? 'ti ti-sun' : 'ti ti-moon';
   }
+}
+
+function toggleResetButton() {
+  const checkbox = document.getElementById('confirmSaveCheck');
+  const btn = document.getElementById('resetSubmitBtn');
+  btn.disabled = !checkbox.checked;
 }
 </script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
