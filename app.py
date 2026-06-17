@@ -27,11 +27,11 @@ def add_header(r):
 global_db = None
 global_cursor = None
 
-def get_connection(db_name="placement_portal2"):
+def get_connection(db_name="placement_portal"):
     return mysql.connector.connect(
         host="localhost",
         user="root",
-        password="Hasini@1234",
+        password="Pallavi@2007",
         database=db_name,
         connection_timeout=30,
         autocommit=False
@@ -41,7 +41,7 @@ def init_global_db():
     conn = mysql.connector.connect(
         host="localhost",
         user="root",
-        password="Hasini@1234",
+        password="Pallavi@2007",
     )
     c = conn.cursor()
     c.execute("CREATE DATABASE IF NOT EXISTS placement_portal_2025_2026")
