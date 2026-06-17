@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Placement History - Placement Portal</title>
+    <title>Ongoing Rounds - Placement Portal</title>
     <!-- Bootstrap & Icons -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
@@ -118,10 +118,10 @@
                 <a href="/eligible_companies" class="sidebar-link">
                     <i class="bi bi-building"></i> Eligible Companies
                 </a>
-                <a href="/ongoing_rounds" class="sidebar-link">
+                <a href="/ongoing_rounds" class="sidebar-link active">
                     <i class="bi bi-arrow-repeat"></i> Ongoing Rounds
                 </a>
-                <a href="/my_applications" class="sidebar-link active">
+                <a href="/my_applications" class="sidebar-link">
                     <i class="bi bi-file-earmark-text"></i> Placement History
                 </a>
             </div>
@@ -139,8 +139,8 @@
             <!-- Header bar -->
             <div class="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom">
                 <div>
-                    <h2 class="mb-1 text-primary fw-extrabold" style="font-family: var(--font-heading);">Placement History</h2>
-                    <p class="text-muted mb-0 small">Track the timeline and status of all roles you have applied for.</p>
+                    <h2 class="mb-1 text-primary fw-extrabold" style="font-family: var(--font-heading);">Ongoing Rounds</h2>
+                    <p class="text-muted mb-0 small">Track applications that are currently in progress.</p>
                 </div>
             </div>
 
@@ -174,9 +174,6 @@
                                             <span class="badge-custom badge-shortlisted">Shortlisted</span>
                                         {% elif app.status == 'Selected' %}
                                             <span class="badge-custom badge-selected">Selected</span>
-                                            <div style="margin-top: 6px; padding: 4px 10px; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; border-radius: 8px; font-size: 11px; font-weight: 700; display: inline-block;">
-                                                🏆 Hired — {{ app.tier or 'Tier' }}
-                                            </div>
                                         {% elif app.status == 'Not Selected' or app.status == 'Rejected' %}
                                             <span class="badge-custom badge-rejected">Not Selected</span>
                                         {% else %}

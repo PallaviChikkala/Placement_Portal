@@ -141,9 +141,47 @@ tr:hover td { background-color:rgba(253,230,138,0.12); }
     <a href="/faculty_dashboard" class="back-home-btn"><i class="ti ti-home"></i> Back to Dashboard</a>
   </div>
 
+  <div class="student-table-panel mb-4" style="padding: 24px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+      <h4 style="margin: 0;"><i class="ti ti-upload"></i> Upload Selected Students (Excel)</h4>
+      <a id="downloadBtn" href="/faculty/download_selected_students_template?course=all&branch=all" class="btn" style="background: var(--button-gradient); color: white; border: none; padding: 8px 16px; border-radius: 8px; font-weight: 600; text-decoration: none;"><i class="ti ti-download"></i> Download Excel</a>
+    </div>
+    <form id="uploadExcelForm" enctype="multipart/form-data" style="display: flex; gap: 16px; align-items: center; flex-wrap: wrap;">
+      <input type="file" name="file" accept=".xlsx, .xls, .csv" required style="padding: 8px; border: 1px solid var(--input-border); border-radius: 8px; background: var(--input-bg); color: var(--text-main);">
+      <button type="submit" style="background: var(--button-gradient); color: white; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer;"><i class="ti ti-file-upload"></i> Upload</button>
+      <div id="uploadStatus" style="font-size: 14px; font-weight: 600;"></div>
+    </form>
+  </div>
+
   <div class="student-table-panel">
     <div class="table-header">
-      <h3>Placed Students Directory ({{ placed_students|length }})</h3>
+      <h3>Placed Students Directory (<span id="countDisplay">{{ placed_students|length }}</span>)</h3>
+      <div style="display: flex; gap: 12px;">
+        <select id="branchFilter" style="padding: 8px 12px; border-radius: 8px; border: 1px solid var(--input-border); background: var(--input-bg); color: var(--text-main);">
+          <option value="All">All Branches</option>
+          <optgroup label="B.TECH BRANCHES">
+            <option value="biotechnology">Biotechnology</option>
+            <option value="chemical engineering">Chemical Engineering</option>
+            <option value="civil engineering">Civil Engineering</option>
+            <option value="computer science and engineering">Computer Science and Engineering</option>
+            <option value="electrical and electronics engineering">Electrical and Electronics Engineering</option>
+            <option value="electronics and communication engineering">Electronics and Communication Engineering</option>
+            <option value="mechanical engineering">Mechanical Engineering</option>
+            <option value="metallurgical and materials engineering">Metallurgical and Materials Engineering</option>
+          </optgroup>
+          <optgroup label="M.TECH BRANCHES">
+            <option value="advanced communication systems">Advanced Communication Systems & Signal Processing</option>
+            <option value="bioprocess engineering">Bioprocess Engineering</option>
+            <option value="chemical engineering (m.tech)">Chemical Engineering (M.Tech)</option>
+            <option value="computer science and data analytics">Computer Science and Data Analytics</option>
+            <option value="geotechnical engineering">Geotechnical Engineering</option>
+            <option value="manufacturing engineering">Manufacturing Engineering</option>
+            <option value="materials technology">Materials Technology</option>
+            <option value="power electronics">Power Electronics & Drives</option>
+            <option value="thermal engineering">Thermal Engineering</option>
+          </optgroup>
+        </select>
+      </div>
     </div>
     <div class="table-wrapper">
       <table>
@@ -152,29 +190,33 @@ tr:hover td { background-color:rgba(253,230,138,0.12); }
             <th>S.No</th>
             <th>Roll Number</th>
             <th>Name</th>
-            <th>Phone Number</th>
-            <th>Email</th>
+            <th>Course</th>
             <th>Branch</th>
+            <th>Job ID</th>
+            <th>Company Name</th>
+            <th>CTC</th>
             <th style="text-align: center;">Tier 1</th>
             <th style="text-align: center;">Tier 2</th>
             <th style="text-align: center;">Tier 3</th>
           </tr>
         </thead>
-        <tbody>
+        <tbody id="studentsTableBody">
           {% if placed_students %}
             {% for s in placed_students %}
-            <tr>
-              <td>{{ loop.index }}</td>
+            <tr class="student-row" data-course="{{ s.course or 'B.Tech' }}" data-branch="{{ s.branch|lower }}">
+              <td class="sno-cell">{{ loop.index }}</td>
               <td><strong>{{ s.roll_number or s.student_id or '—' }}</strong></td>
               <td><strong>{{ s.name }}</strong></td>
-              <td>{{ s.phone_number or '—' }}</td>
-              <td>{{ s.email }}</td>
+              <td>{{ s.course or 'B.Tech' }}</td>
               <td><span style="background: rgba(217, 119, 6, 0.08); padding: 4px 10px; border-radius: 12px; font-weight: 600; font-size: 12px;">{{ s.branch }}</span></td>
+              <td>{{ s.job_id }}</td>
+              <td>{{ s.company_name }}</td>
+              <td>{{ s.ctc }}</td>
               
               <!-- Tier 1 Selection -->
               <td style="text-align: center;">
                 {% if '1' in s.tier %}
-                  <span class="tick-mark"><i class="ti ti-circle-check-filled"></i> <span class="company-tag">{{ s.company_name }}</span></span>
+                  <span class="tick-mark"><i class="ti ti-circle-check-filled"></i></span>
                 {% else %}
                   <span class="cross-mark"><i class="ti ti-circle-x-filled"></i></span>
                 {% endif %}
@@ -183,7 +225,7 @@ tr:hover td { background-color:rgba(253,230,138,0.12); }
               <!-- Tier 2 Selection -->
               <td style="text-align: center;">
                 {% if '2' in s.tier %}
-                  <span class="tick-mark"><i class="ti ti-circle-check-filled"></i> <span class="company-tag">{{ s.company_name }}</span></span>
+                  <span class="tick-mark"><i class="ti ti-circle-check-filled"></i></span>
                 {% else %}
                   <span class="cross-mark"><i class="ti ti-circle-x-filled"></i></span>
                 {% endif %}
@@ -192,7 +234,7 @@ tr:hover td { background-color:rgba(253,230,138,0.12); }
               <!-- Tier 3 Selection -->
               <td style="text-align: center;">
                 {% if '3' in s.tier or ('1' not in s.tier and '2' not in s.tier) %}
-                  <span class="tick-mark"><i class="ti ti-circle-check-filled"></i> <span class="company-tag">{{ s.company_name }}</span></span>
+                  <span class="tick-mark"><i class="ti ti-circle-check-filled"></i></span>
                 {% else %}
                   <span class="cross-mark"><i class="ti ti-circle-x-filled"></i></span>
                 {% endif %}
@@ -200,10 +242,10 @@ tr:hover td { background-color:rgba(253,230,138,0.12); }
             </tr>
             {% endfor %}
           {% else %}
-            <tr>
-              <td colspan="9" class="empty-state">
+            <tr id="emptyRow">
+              <td colspan="11" class="empty-state">
                 <i class="ti ti-mood-empty" style="font-size:32px;display:block;margin-bottom:8px;"></i>
-                No students selected yet. Move applicant status to "Selected" to see them here.
+                No students selected yet. Upload an excel sheet or move applicant status to "Selected" to see them here.
               </td>
             </tr>
           {% endif %}
@@ -213,6 +255,103 @@ tr:hover td { background-color:rgba(253,230,138,0.12); }
   </div>
 </div>
 <script>
+// Map: dropdown value → possible db values (data-branch attribute)
+const BRANCH_MAP = {
+  // B.Tech
+  'biotechnology':                              ['biotech','bio-technology','biotechnology','bt'],
+  'chemical engineering':                       ['chemical','chem','chemical engineering'],
+  'civil engineering':                          ['civil','ce','civil engineering'],
+  'computer science and engineering':           ['cse','cs','computer science','computer science and engineering'],
+  'electrical and electronics engineering':     ['eee','ee','electrical','electrical and electronics','electrical and electronics engineering'],
+  'electronics and communication engineering':  ['ece','ec','electronics','electronics and communication','electronics and communication engineering'],
+  'mechanical engineering':                     ['mech','me','mechanical','mechanical engineering'],
+  'metallurgical and materials engineering':    ['mme','metallurgy','metallurgical','metallurgical and materials','metallurgical and materials engineering'],
+  // M.Tech
+  'advanced communication systems':             ['acs','advanced communication','advanced communication systems','advanced communication systems & signal processing'],
+  'bioprocess engineering':                     ['bioprocess','bioprocess engineering'],
+  'chemical engineering (m.tech)':              ['chemical','chem','chemical engineering'],
+  'computer science and data analytics':        ['csda','cs data analytics','computer science and data analytics'],
+  'geotechnical engineering':                   ['geo','geotechnical','geotechnical engineering'],
+  'manufacturing engineering':                  ['manufacturing','manuf','manufacturing engineering'],
+  'materials technology':                       ['materials','mt','materials technology'],
+  'power electronics':                          ['pe','power electronics','power electronics & drives'],
+  'thermal engineering':                        ['thermal','th','thermal engineering']
+};
+
+function applyFilters() {
+  const branchFilter = document.getElementById('branchFilter').value.toLowerCase().trim();
+  
+  // Update download link to export only filtered rows
+  const dlBtn = document.getElementById('downloadBtn');
+  if (dlBtn) {
+      dlBtn.href = `/faculty/download_selected_students_template?course=all&branch=${encodeURIComponent(branchFilter)}`;
+  }
+
+  // 'all' or 'All' both mean show everything
+  const allowedAliases = (branchFilter === 'all') ? null : (BRANCH_MAP[branchFilter] || [branchFilter]);
+
+  const rows = document.querySelectorAll('.student-row');
+  let visibleCount = 0;
+  
+  rows.forEach(row => {
+    const branch = row.getAttribute('data-branch').toLowerCase().trim();
+    
+    let branchMatch = false;
+    if (!allowedAliases) {
+      branchMatch = true; // "All Branches" selected
+    } else {
+      branchMatch = allowedAliases.some(alias => branch === alias);
+    }
+    
+    if (branchMatch) {
+      row.style.display = '';
+      visibleCount++;
+      row.querySelector('.sno-cell').textContent = visibleCount;
+    } else {
+      row.style.display = 'none';
+    }
+  });
+  
+  document.getElementById('countDisplay').textContent = visibleCount;
+  const emptyRow = document.getElementById('emptyRow');
+  if (emptyRow) {
+      emptyRow.style.display = visibleCount === 0 ? '' : 'none';
+  }
+}
+
+document.getElementById('branchFilter').addEventListener('change', applyFilters);
+
+// Excel Upload
+document.getElementById('uploadExcelForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const form = e.target;
+  const formData = new FormData(form);
+  const statusDiv = document.getElementById('uploadStatus');
+  
+  statusDiv.textContent = "Uploading and processing...";
+  statusDiv.style.color = "var(--text-muted)";
+  
+  try {
+    const response = await fetch('/faculty/upload_selected_students_excel', {
+      method: 'POST',
+      body: formData
+    });
+    
+    const result = await response.json();
+    if (result.success) {
+      statusDiv.textContent = "Success! " + result.message;
+      statusDiv.style.color = "#10b981";
+      setTimeout(() => location.reload(), 2000);
+    } else {
+      statusDiv.textContent = "Error: " + result.error;
+      statusDiv.style.color = "#ef4444";
+    }
+  } catch (error) {
+    statusDiv.textContent = "An error occurred during upload.";
+    statusDiv.style.color = "#ef4444";
+  }
+});
+
 // Theme Toggle
 const themeToggle = document.getElementById('themeToggleBtn');
 if (themeToggle) {

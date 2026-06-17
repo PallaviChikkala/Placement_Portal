@@ -86,7 +86,8 @@ def init_database():
             "ALTER TABLE students ADD COLUMN aadhar VARCHAR(20) DEFAULT NULL",
             "ALTER TABLE students ADD COLUMN pan VARCHAR(20) DEFAULT NULL",
             "ALTER TABLE students ADD COLUMN backlog_history INT DEFAULT 0",
-            "ALTER TABLE students ADD COLUMN must_change_password TINYINT(1) DEFAULT 1"
+            "ALTER TABLE students ADD COLUMN must_change_password TINYINT(1) DEFAULT 1",
+            "ALTER TABLE students ADD COLUMN course VARCHAR(20) DEFAULT 'B.Tech'"
         ]:
             try:
                 cursor.execute(col_sql)
@@ -558,8 +559,7 @@ def upload():
 
 @app.route("/student_login")
 def student_login_page():
-    if "student_id" in session:
-        return redirect("/student_dashboard")
+    # Always show the login form - never auto-redirect (user must explicitly log in)
     return render_template("student/login.html")
 
 @app.route("/student_login_check", methods = ["POST"])
@@ -1074,11 +1074,11 @@ def my_applications():
     ensure_connection()
     if "student_id" not in session:
         return redirect("/student_login")
-       
+        
     student_id = session["student_id"]
     cursor.execute("SELECT * FROM students WHERE student_id = %s", (student_id,))
     student = cursor.fetchone()
-   
+    
     query = """
         SELECT a.applied_date, a.status, a.resume_path, a.job_id, a.drive_link,
                j.company_name, j.role, j.ctc as package_lpa, j.tier, j.deadline,
@@ -1095,13 +1095,11 @@ def my_applications():
     """
     cursor.execute(query, (student_id,))
     apps = cursor.fetchall()
-    # Replace 'Rejected' with 'Not Selected' and determine pipeline status text
     for app in apps:
         if app.get('status') == 'Rejected':
             app['status'] = 'Not Selected'
             
-        # Determine pipeline status text for UI
-        app['pipeline_status'] = 'Reviewing'
+        app['pipeline_status'] = 'Applied'
         if app.get('status') == 'Selected':
             app['pipeline_status'] = 'Hired'
         elif app.get('status') == 'Not Selected':
@@ -1114,8 +1112,64 @@ def my_applications():
                 app['pipeline_status'] = f"Qualified for Round {next_round}"
         elif app.get('status') == 'Shortlisted' or app.get('status') == 'Interview':
             app['pipeline_status'] = 'Interviewing'
+        elif app.get('status') == 'Pending':
+            app['pipeline_status'] = 'Applied'
 
-    # Fetch all round links for this student
+    cursor.execute("""
+        SELECT job_id, round_number, drive_link 
+        FROM round_results 
+        WHERE student_id = %s AND drive_link IS NOT NULL
+        ORDER BY round_number ASC
+    """, (student_id,))
+    links_data = cursor.fetchall()
+    
+    round_links_map = {}
+    for row in links_data:
+        jid = row['job_id']
+        if jid not in round_links_map:
+            round_links_map[jid] = []
+        round_links_map[jid].append({'round_number': row['round_number'], 'link': row['drive_link']})
+
+    return render_template("student/my_applications.html", applications=apps, student=student, round_links_map=round_links_map)
+
+@app.route("/ongoing_rounds")
+def ongoing_rounds():
+    ensure_connection()
+    if "student_id" not in session:
+        return redirect("/student_login")
+        
+    student_id = session["student_id"]
+    cursor.execute("SELECT * FROM students WHERE student_id = %s", (student_id,))
+    student = cursor.fetchone()
+    
+    query = """
+        SELECT a.applied_date, a.status, a.resume_path, a.job_id, a.drive_link,
+               j.company_name, j.role, j.ctc as package_lpa, j.tier, j.deadline,
+               (SELECT MAX(round_number) FROM round_results rr WHERE rr.job_id = a.job_id AND rr.student_id = a.student_id AND rr.result = 'Selected') as max_cleared_round,
+               (SELECT MAX(round_number) FROM round_results rr WHERE rr.job_id = a.job_id AND rr.student_id = a.student_id) as max_attempted_round,
+               (SELECT num_rounds FROM recruitment_rounds WHERE job_id = a.job_id) as total_rounds,
+               (SELECT result FROM round_results rr WHERE rr.job_id = a.job_id AND rr.student_id = a.student_id ORDER BY round_number DESC LIMIT 1) as latest_round_result,
+               (SELECT drive_link FROM round_results rr WHERE rr.job_id = a.job_id AND rr.student_id = a.student_id AND drive_link IS NOT NULL ORDER BY round_number DESC LIMIT 1) as latest_drive_link,
+               (SELECT round_number FROM round_results rr WHERE rr.job_id = a.job_id AND rr.student_id = a.student_id AND drive_link IS NOT NULL ORDER BY round_number DESC LIMIT 1) as latest_drive_round
+        FROM applications a
+        JOIN jobs j ON a.job_id = j.job_id
+        WHERE a.student_id = %s AND a.status NOT IN ('Selected', 'Rejected', 'Not Selected')
+        ORDER BY a.applied_date DESC
+    """
+    cursor.execute(query, (student_id,))
+    apps = cursor.fetchall()
+    
+    for app in apps:
+        app['pipeline_status'] = 'Reviewing'
+        if app.get('max_cleared_round'):
+            next_round = app['max_cleared_round'] + 1
+            if app.get('total_rounds') and next_round > app['total_rounds']:
+                app['pipeline_status'] = f"Cleared Round {app['max_cleared_round']}"
+            else:
+                app['pipeline_status'] = f"Qualified for Round {next_round}"
+        elif app.get('status') == 'Shortlisted' or app.get('status') == 'Interview':
+            app['pipeline_status'] = 'Interviewing'
+
     cursor.execute("""
         SELECT job_id, round_number, drive_link 
         FROM round_results 
@@ -1128,7 +1182,6 @@ def my_applications():
         if rl['job_id'] not in links_by_job:
             links_by_job[rl['job_id']] = []
         
-        # Check if text is a link or just plain text
         link_val = rl['drive_link'].strip()
         is_url = link_val.startswith('http://') or link_val.startswith('https://') or link_val.startswith('www.')
         if link_val.startswith('www.'):
@@ -1144,7 +1197,7 @@ def my_applications():
     for app in apps:
         app['round_links'] = links_by_job.get(app['job_id'], [])
 
-    return render_template("student/my_applications.html", applications=apps, student=student)
+    return render_template("student/ongoing_rounds.html", applications=apps, student=student)
 
 @app.route("/student_logout")
 def student_logout():
@@ -1681,6 +1734,310 @@ def faculty_applications_update_status():
         return jsonify({"success": False, "error": str(e)})
 
 
+@app.route("/faculty/upload_selected_students_excel", methods=["POST"])
+def faculty_upload_selected_students_excel():
+    ensure_connection()
+    redir = faculty_required()
+    if redir: return redir
+
+    if 'file' not in request.files:
+        return jsonify({"success": False, "error": "No file uploaded"})
+    
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({"success": False, "error": "No file selected"})
+        
+    try:
+        if file.filename.endswith('.csv'):
+            df = pd.read_csv(file)
+        else:
+            df = pd.read_excel(file)
+            
+        required_cols = ['Roll Number', 'Job ID', 'Company Name', 'CTC']
+        for col in required_cols:
+            if col not in df.columns:
+                return jsonify({"success": False, "error": f"Missing required column: {col}"})
+                
+        updated_count = 0
+        for index, row in df.iterrows():
+            roll_number = str(row['Roll Number']).strip()
+            job_id = str(row['Job ID']).strip()
+            
+            # Skip blank / filler rows (e.g. the 5 empty rows at the bottom of the template)
+            if not roll_number or roll_number.lower() in ('nan', 'none', '') or \
+               not job_id or job_id.lower() in ('nan', 'none', ''):
+                continue
+            company_name = str(row['Company Name']).strip()
+            ctc_val = row['CTC']
+            
+            cursor.execute("SELECT student_id FROM students WHERE roll_number = %s", (roll_number,))
+            student = cursor.fetchone()
+            if not student:
+                continue
+                
+            student_id = student['student_id']
+            
+            # --- Determine tier ---
+            # Priority: read Tier 1/Tier 2/Tier 3 columns from Excel (as edited by admin)
+            # Fall back to CTC-based calculation if those columns don't exist
+            has_tier_cols = 'Tier 1' in df.columns or 'Tier 2' in df.columns or 'Tier 3' in df.columns
+            t1 = str(row.get('Tier 1', '')).strip().lower() if 'Tier 1' in df.columns else ''
+            t2 = str(row.get('Tier 2', '')).strip().lower() if 'Tier 2' in df.columns else ''
+            t3 = str(row.get('Tier 3', '')).strip().lower() if 'Tier 3' in df.columns else ''
+            
+            is_selected_in_excel = False
+            tier = None
+            if t1 in ('yes', '1', 'true', '✓', 'tick', 'y'):
+                tier = 'Tier 1'
+                is_selected_in_excel = True
+            elif t2 in ('yes', '1', 'true', '✓', 'tick', 'y'):
+                tier = 'Tier 2'
+                is_selected_in_excel = True
+            elif t3 in ('yes', '1', 'true', '✓', 'tick', 'y'):
+                tier = 'Tier 3'
+                is_selected_in_excel = True
+
+            if has_tier_cols and not is_selected_in_excel:
+                # The admin cleared the tiers for this student for this job. Unselect them.
+                cursor.execute("UPDATE applications SET status = 'Not Selected' WHERE student_id = %s AND job_id = %s", (student_id, job_id))
+                db.commit()
+                
+                # Recalculate student's selected tier
+                cursor.execute("""
+                    SELECT j.tier
+                    FROM applications a
+                    JOIN jobs j ON a.job_id = j.job_id
+                    WHERE a.student_id = %s AND a.status = 'Selected'
+                """, (student_id,))
+                selected_apps = cursor.fetchall()
+                
+                highest_tier_num = 3
+                if selected_apps:
+                    for sa in selected_apps:
+                        t_str = sa["tier"] or "Tier 3"
+                        t_num = 1 if '1' in t_str else (2 if '2' in t_str else 3)
+                        if t_num < highest_tier_num:
+                            highest_tier_num = t_num
+                cursor.execute("UPDATE students SET selected_tier = %s WHERE student_id = %s", (highest_tier_num, student_id))
+                db.commit()
+                
+                updated_count += 1
+                continue
+                
+            if not has_tier_cols:
+                # Fallback: calculate from CTC
+                ctc_num = 0.0
+                if isinstance(ctc_val, (int, float)):
+                    ctc_num = float(ctc_val)
+                else:
+                    import re
+                    match = re.search(r'(\d+(\.\d+)?)', str(ctc_val).lower())
+                    if match:
+                        ctc_num = float(match.group(1))
+                if ctc_num < 7.0:
+                    tier = 'Tier 3'
+                elif 7.0 <= ctc_num <= 17.0:
+                    tier = 'Tier 2'
+                else:
+                    tier = 'Tier 1'
+                
+            ctc_str = str(ctc_val) + (" LPA" if isinstance(ctc_val, (int, float)) else "")
+            
+            # --- Upsert the job ---
+            cursor.execute("SELECT id FROM jobs WHERE job_id = %s", (job_id,))
+            job = cursor.fetchone()
+            if not job:
+                cursor.execute("""
+                    INSERT INTO jobs (job_id, company_name, ctc, tier, role)
+                    VALUES (%s, %s, %s, %s, %s)
+                """, (job_id, company_name, ctc_str, tier, "Selected Role"))
+            else:
+                # Update the tier on the existing job so table reflects the edited tier
+                cursor.execute("UPDATE jobs SET tier = %s WHERE job_id = %s", (tier, job_id))
+            db.commit()
+                
+            cursor.execute("SELECT application_id FROM applications WHERE student_id = %s AND job_id = %s", (student_id, job_id))
+            app = cursor.fetchone()
+            if app:
+                cursor.execute("UPDATE applications SET status = 'Selected' WHERE application_id = %s", (app['application_id'],))
+            else:
+                cursor.execute("SELECT MAX(application_id) as max_id FROM applications")
+                max_row = cursor.fetchone()
+                next_id = (max_row['max_id'] or 0) + 1
+                
+                from datetime import datetime
+                today = datetime.today().strftime('%Y-%m-%d')
+                cursor.execute("""
+                    INSERT INTO applications (application_id, student_id, job_id, status, applied_date)
+                    VALUES (%s, %s, %s, %s, %s)
+                """, (next_id, student_id, job_id, 'Selected', today))
+                
+            db.commit()
+            
+            # --- Update student's highest selected tier ---
+            cursor.execute("""
+                SELECT j.tier
+                FROM applications a
+                JOIN jobs j ON a.job_id = j.job_id
+                WHERE a.student_id = %s AND a.status = 'Selected'
+            """, (student_id,))
+            selected_apps = cursor.fetchall()
+           
+            if selected_apps:
+                highest_tier_num = 3
+                for sa in selected_apps:
+                    t_str = sa["tier"] or "Tier 3"
+                    t_num = 1 if '1' in t_str else (2 if '2' in t_str else 3)
+                    if t_num < highest_tier_num:
+                        highest_tier_num = t_num
+                cursor.execute("UPDATE students SET selected_tier = %s WHERE student_id = %s", (highest_tier_num, student_id))
+            
+            # --- Send notification to student ---
+            tier_label = tier.replace('Tier ', 'Tier ')
+            notif_msg = f"🏆 Congratulations! You have been <strong>Selected</strong> by <strong>{company_name}</strong> under <strong>{tier_label}</strong> (CTC: {ctc_val} LPA). Your tier eligibility has been updated."
+            cursor.execute("INSERT INTO notifications (student_id, message, link) VALUES (%s, %s, %s)",
+                           (student_id, notif_msg, "/my_applications"))
+            
+            db.commit()
+                
+            updated_count += 1
+            
+        return jsonify({"success": True, "message": f"Successfully updated {updated_count} records."})
+    except Exception as e:
+        db.rollback()
+        import traceback
+        traceback.print_exc()
+        return jsonify({"success": False, "error": str(e)})
+
+@app.route("/faculty/download_selected_students_template")
+def faculty_download_selected_students_template():
+    ensure_connection()
+    redir = faculty_required()
+    if redir: return redir
+
+    course_filter = request.args.get("course", "all").lower()
+    branch_filter = request.args.get("branch", "all").lower()
+
+    try:
+        import io
+        from flask import send_file
+        import openpyxl
+        from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
+        
+        query = """
+            SELECT s.roll_number, s.name, s.course, s.branch,
+                   j.job_id, j.company_name, j.ctc, j.tier
+            FROM students s
+            JOIN applications a ON s.student_id = a.student_id
+            JOIN jobs j ON a.job_id = j.job_id
+            WHERE a.status = 'Selected'
+            ORDER BY s.name ASC
+        """
+        cursor.execute(query)
+        rows = cursor.fetchall()
+
+        BRANCH_MAP = {
+            'biotechnology':                              ['biotech','bio-technology','biotechnology','bt'],
+            'chemical engineering':                       ['chemical','chem','chemical engineering'],
+            'civil engineering':                          ['civil','ce','civil engineering'],
+            'computer science and engineering':           ['cse','cs','computer science','computer science and engineering'],
+            'electrical and electronics engineering':     ['eee','ee','electrical','electrical and electronics','electrical and electronics engineering'],
+            'electronics and communication engineering':  ['ece','ec','electronics','electronics and communication','electronics and communication engineering'],
+            'mechanical engineering':                     ['mech','me','mechanical','mechanical engineering'],
+            'metallurgical and materials engineering':    ['mme','metallurgy','metallurgical','metallurgical and materials','metallurgical and materials engineering'],
+            'advanced communication systems':             ['acs','advanced communication','advanced communication systems'],
+            'bioprocess engineering':                     ['bioprocess','bioprocess engineering'],
+            'chemical engineering (m.tech)':              ['chemical','chem','chemical engineering'],
+            'computer science and data analytics':        ['csda','computer science and data analytics'],
+            'geotechnical engineering':                   ['geo','geotechnical','geotechnical engineering'],
+            'manufacturing engineering':                  ['manufacturing','manuf','manufacturing engineering'],
+            'materials technology':                       ['materials','mt','materials technology'],
+            'power electronics':                          ['pe','power electronics','power electronics & drives'],
+            'thermal engineering':                        ['thermal','th','thermal engineering']
+        }
+        allowed_aliases = None if branch_filter == 'all' else BRANCH_MAP.get(branch_filter, [branch_filter])
+
+        # Build data rows
+        data_rows = []
+        for r in rows:
+            c = (r['course'] or 'b.tech').lower()
+            b = (r['branch'] or '').lower().strip()
+            c_match = (course_filter == 'all') or (c == course_filter)
+            b_match = True if allowed_aliases is None else (b in allowed_aliases)
+            if not (c_match and b_match):
+                continue
+            tier = str(r['tier'] or '')
+            t1 = 'Yes' if '1' in tier else 'No'
+            t2 = 'Yes' if '2' in tier else 'No'
+            t3 = 'Yes' if ('3' in tier or ('1' not in tier and '2' not in tier)) else 'No'
+            data_rows.append([
+                len(data_rows) + 1,
+                r['roll_number'],
+                r['name'],
+                r['course'],
+                r['branch'],
+                r['job_id'],
+                r['company_name'],
+                r['ctc'],
+                t1, t2, t3
+            ])
+
+        # Add 5 blank rows at the end for admin to fill new entries
+        for _ in range(5):
+            data_rows.append([''] * 11)
+
+        # Build workbook with styling
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = 'Selected Students'
+
+        headers = ['S.No', 'Roll Number', 'Name', 'Course', 'Branch',
+                   'Job ID', 'Company Name', 'CTC', 'Tier 1', 'Tier 2', 'Tier 3']
+
+        # Header style
+        header_font = Font(bold=True, size=11, color='FFFFFF')
+        header_fill = PatternFill(fill_type='solid', fgColor='B8540A')   # dark amber
+        center_align = Alignment(horizontal='center', vertical='center', wrap_text=True)
+        thin = Side(style='thin', color='CCCCCC')
+        border = Border(left=thin, right=thin, top=thin, bottom=thin)
+
+        col_widths = [6, 14, 22, 10, 28, 10, 22, 8, 8, 8, 8]
+
+        for col_idx, (header, width) in enumerate(zip(headers, col_widths), start=1):
+            cell = ws.cell(row=1, column=col_idx, value=header)
+            cell.font = header_font
+            cell.fill = header_fill
+            cell.alignment = center_align
+            cell.border = border
+            ws.column_dimensions[cell.column_letter].width = width
+
+        ws.row_dimensions[1].height = 20
+
+        # Data rows
+        data_font = Font(size=10)
+        data_center = Alignment(horizontal='center', vertical='center')
+        alt_fill = PatternFill(fill_type='solid', fgColor='FFF8EE')
+
+        for row_idx, row_data in enumerate(data_rows, start=2):
+            fill = alt_fill if row_idx % 2 == 0 else PatternFill()
+            for col_idx, value in enumerate(row_data, start=1):
+                cell = ws.cell(row=row_idx, column=col_idx, value=value)
+                cell.font = data_font
+                cell.alignment = data_center
+                cell.border = border
+                cell.fill = fill
+
+        ws.freeze_panes = 'A2'  # freeze header row
+
+        output = io.BytesIO()
+        wb.save(output)
+        output.seek(0)
+        return send_file(output, as_attachment=True, download_name="Selected_Students.xlsx",
+                         mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    except Exception as e:
+        import traceback; traceback.print_exc()
+        return f"Error creating Excel: {str(e)}", 500
+
 @app.route("/faculty/selected_students")
 def faculty_selected_students():
     ensure_connection()
@@ -1689,8 +2046,8 @@ def faculty_selected_students():
 
     # Query all students who are selected for any job
     query = """
-        SELECT s.student_id, s.name, s.email, s.branch, s.roll_number, s.phone_number,
-               a.status, j.company_name, j.tier, j.job_id
+        SELECT s.student_id, s.name, s.email, s.branch, s.course, s.roll_number, s.phone_number,
+               a.status, j.company_name, j.tier, j.job_id, j.ctc
         FROM students s
         JOIN applications a ON s.student_id = a.student_id
         JOIN jobs j ON a.job_id = j.job_id
