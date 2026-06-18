@@ -1,0 +1,16 @@
+[
+  {
+    "id": "2025-2026",
+    "name": "2025 - 2026 Batch",
+    "desc": "Manage recruitment drives, student details, eligibility criteria, and outcomes for the graduating batch of 2026.",
+    "db": "placement_portal_2025_2026",
+    "icon": "ti-calendar-stats"
+  },
+  {
+    "id": "2026-2027",
+    "name": "2026 - 2027 Batch",
+    "desc": "Manage recruitment drives, student details, eligibility criteria, and outcomes for the graduating batch of 2027.",
+    "db": "placement_portal_2026_2027",
+    "icon": "ti-calendar-plus"
+  }
+]

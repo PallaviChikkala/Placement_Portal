@@ -58,6 +58,38 @@
         body.dark-mode .table-premium tbody tr:hover {
             background-color: rgba(245, 158, 11, 0.1) !important;
         }
+
+        /* Calendar Widget Styles */
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 5px;
+            text-align: center;
+        }
+        .calendar-day-header {
+            padding: 5px 0;
+        }
+        .calendar-day {
+            padding: 8px 0;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            color: var(--text-main);
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+        .calendar-day:hover:not(.empty) {
+            background-color: rgba(245, 158, 11, 0.1);
+            color: var(--accent);
+        }
+        .calendar-day.active {
+            background-color: var(--accent);
+            color: white;
+            font-weight: bold;
+            box-shadow: 0 4px 10px rgba(245, 158, 11, 0.3);
+        }
+        .calendar-day.empty {
+            cursor: default;
+        }
     </style>
 </head>
 <body class="premium-animated-bg">
@@ -109,7 +141,7 @@
                         <span id="greeting-text">Welcome</span> {{ name }}
                         <img src="/static/sign.png" style="width: 50px; height: 50px; vertical-align: middle; padding-right: 6px;margin-left: 5px;" alt="Hello">
                     </h2>
-                    <p class="text-muted mb-0 small">Class of {{ student.batch or '2028' }} | {{ student.branch or 'Computer Science' }} Department</p>
+                    <p class="text-muted mb-0 small">Class of {{ student.batch or '2028' }} | {{ student.branch | upper or 'COMPUTER SCIENCE' }} Department</p>
                 </div>
                 <div class="d-flex align-items-center gap-3">
                     <div class="position-relative">
@@ -348,6 +380,30 @@
                             </button>
                         </form>
                     </div>
+
+                    <!-- Calendar Widget -->
+                    <div class="card glass-card p-4 mt-4 animated-fade-in-up delay-400" id="calendarWidget">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="fw-bold text-primary mb-0" style="font-family: var(--font-heading);"><i class="bi bi-calendar3 text-warning me-2"></i> Calendar</h5>
+                            <div class="d-flex gap-2">
+                                <button class="btn btn-sm btn-outline-primary px-2 py-1" id="prevMonth" style="border-radius: 8px;"><i class="bi bi-chevron-left"></i></button>
+                                <button class="btn btn-sm btn-outline-primary px-2 py-1" id="nextMonth" style="border-radius: 8px;"><i class="bi bi-chevron-right"></i></button>
+                            </div>
+                        </div>
+                        <h6 id="currentMonthYear" class="text-center fw-bold mb-3" style="color: var(--text-main);"></h6>
+                        <div class="calendar-grid">
+                            <div class="calendar-day-header text-muted small fw-bold">Su</div>
+                            <div class="calendar-day-header text-muted small fw-bold">Mo</div>
+                            <div class="calendar-day-header text-muted small fw-bold">Tu</div>
+                            <div class="calendar-day-header text-muted small fw-bold">We</div>
+                            <div class="calendar-day-header text-muted small fw-bold">Th</div>
+                            <div class="calendar-day-header text-muted small fw-bold">Fr</div>
+                            <div class="calendar-day-header text-muted small fw-bold">Sa</div>
+                        </div>
+                        <div class="calendar-grid" id="calendarDays">
+                            <!-- Days populated by JS -->
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -406,6 +462,58 @@
                     setTimeout(updateProgress, 400); 
                 }
             }
+
+            // Calendar Logic
+            const calendarDays = document.getElementById('calendarDays');
+            const currentMonthYear = document.getElementById('currentMonthYear');
+            let date = new Date();
+            let currMonth = date.getMonth();
+            let currYear = date.getFullYear();
+
+            const renderCalendar = () => {
+                let firstDayofMonth = new Date(currYear, currMonth, 1).getDay();
+                let lastDateofMonth = new Date(currYear, currMonth + 1, 0).getDate();
+                let lit = "";
+
+                const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+                currentMonthYear.innerText = `${months[currMonth]} ${currYear}`;
+
+                for (let i = 0; i < firstDayofMonth; i++) {
+                    lit += `<div class="calendar-day empty"></div>`;
+                }
+
+                for (let i = 1; i <= lastDateofMonth; i++) {
+                    let isToday = i === date.getDate() && currMonth === new Date().getMonth() && currYear === new Date().getFullYear() ? "active" : "";
+                    lit += `<div class="calendar-day ${isToday}">${i}</div>`;
+                }
+                calendarDays.innerHTML = lit;
+            }
+
+            renderCalendar();
+
+            document.getElementById('prevMonth').addEventListener('click', () => {
+                currMonth = currMonth - 1;
+                if (currMonth < 0) {
+                    date = new Date(currYear, currMonth, new Date().getDate());
+                    currYear = date.getFullYear();
+                    currMonth = date.getMonth();
+                } else {
+                    date = new Date();
+                }
+                renderCalendar();
+            });
+
+            document.getElementById('nextMonth').addEventListener('click', () => {
+                currMonth = currMonth + 1;
+                if (currMonth > 11) {
+                    date = new Date(currYear, currMonth, new Date().getDate());
+                    currYear = date.getFullYear();
+                    currMonth = date.getMonth();
+                } else {
+                    date = new Date();
+                }
+                renderCalendar();
+            });
         });
     </script>
     <script>

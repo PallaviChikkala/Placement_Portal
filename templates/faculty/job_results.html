@@ -336,7 +336,7 @@ function renderTables() {
       <tr>
         <td style="font-weight:700;">${s.roll_number || 'N/A'}</td>
         <td>${s.name}</td>
-        <td><span style="background:var(--badge-bg); padding:4px 8px; border-radius:10px; font-size:11px; color:var(--text-accent); font-weight:700;">${s.branch}</span></td>
+        <td><span style="background:var(--badge-bg); padding:4px 8px; border-radius:10px; font-size:11px; color:var(--text-accent); font-weight:700;">${(s.branch||'').toUpperCase()}</span></td>
         <td>${s.email}</td>
         <td>${s.phone_number || 'N/A'}</td>
       </tr>

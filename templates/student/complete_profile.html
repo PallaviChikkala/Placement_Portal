@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Complete Your Profile - NIT AP Placement Portal</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="/static/css/style.css">
+    <style>
+        .onboarding-container {
+            max-width: 780px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        .onboarding-card {
+            background: rgba(255,255,255,0.92);
+            border-radius: 24px;
+            padding: 40px 36px;
+            box-shadow: 0 12px 40px rgba(0,0,0,0.08);
+            border: 1px solid rgba(253, 230, 138, 0.4);
+        }
+        .onboarding-header {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+        .onboarding-header h2 {
+            font-family: var(--font-heading, 'Poppins', sans-serif);
+            color: var(--primary, #78350f);
+            font-weight: 800;
+            font-size: 26px;
+            margin-bottom: 8px;
+        }
+        .onboarding-header p {
+            color: #92400e;
+            font-size: 14px;
+        }
+        .faculty-info {
+            background: linear-gradient(135deg, rgba(253,230,138,0.3), rgba(245,158,11,0.1));
+            border: 1px solid rgba(253,230,138,0.5);
+            border-radius: 16px;
+            padding: 20px 24px;
+            margin-bottom: 28px;
+        }
+        .faculty-info h6 {
+            color: #92400e;
+            font-weight: 700;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 14px;
+        }
+        .faculty-info .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 10px;
+        }
+        .faculty-info .info-item {
+            font-size: 13px;
+        }
+        .faculty-info .info-item strong {
+            color: #78350f;
+        }
+        .section-title {
+            font-family: var(--font-heading, 'Poppins', sans-serif);
+            color: var(--primary, #78350f);
+            font-weight: 700;
+            font-size: 17px;
+            margin-bottom: 16px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid rgba(253,230,138,0.5);
+        }
+        .form-label-custom {
+            font-size: 13px;
+            font-weight: 600;
+            color: #78350f;
+            margin-bottom: 4px;
+        }
+        .form-control-custom {
+            border-radius: 10px;
+            border: 1.5px solid rgba(253,230,138,0.6);
+            padding: 10px 14px;
+            font-size: 14px;
+            transition: border-color 0.2s;
+        }
+        .form-control-custom:focus {
+            border-color: #f59e0b;
+            box-shadow: 0 0 0 3px rgba(245,158,11,0.15);
+        }
+        .warning-box {
+            background: #fef3c7;
+            border: 1px solid #fcd34d;
+            border-radius: 12px;
+            padding: 14px 18px;
+            margin-bottom: 24px;
+            font-size: 13px;
+            color: #92400e;
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+        }
+        .warning-box i {
+            font-size: 18px;
+            color: #d97706;
+            flex-shrink: 0;
+            margin-top: 1px;
+        }
+        .submit-btn {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: white;
+            border: none;
+            padding: 13px 32px;
+            border-radius: 40px;
+            font-weight: 700;
+            font-size: 15px;
+            cursor: pointer;
+            transition: opacity 0.2s, transform 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .submit-btn:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+        .pc-fields { display: none; }
+    </style>
+</head>
+<body class="premium-animated-bg">
+    <div class="onboarding-container">
+        <div class="onboarding-card">
+            <div class="onboarding-header">
+                <img src="/static/StudentLogin.png" width="60" height="60" alt="NIT AP" style="margin-bottom: 12px;">
+                <h2>Complete Your Profile</h2>
+                <p>Welcome, <strong>{{ student.name }}</strong>! Please fill in the following details carefully.<br>
+                <span style="color:#dc2626; font-weight:600;">Once submitted, these details cannot be edited.</span></p>
+            </div>
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert" style="border-radius:12px; font-size:14px;">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+                {% endfor %}
+            {% endif %}
+            {% endwith %}
+
+            <!-- Faculty-provided info (read-only) -->
+            <div class="faculty-info">
+                <h6><i class="bi bi-mortarboard me-1"></i> Your Academic Details (from Faculty)</h6>
+                <div class="info-grid">
+                    <div class="info-item"><strong>Roll No:</strong> {{ student.roll_number or '—' }}</div>
+                    <div class="info-item"><strong>Name:</strong> {{ student.name }}</div>
+                    <div class="info-item"><strong>Branch:</strong> {{ student.branch }}</div>
+                    <div class="info-item"><strong>CGPA:</strong> {{ student.cgpa }}</div>
+                    <div class="info-item"><strong>Backlogs:</strong> {{ student.backlogs }}</div>
+                    <div class="info-item"><strong>Email:</strong> {{ student.email }}</div>
+                </div>
+            </div>
+
+            <div class="warning-box">
+                <i class="bi bi-exclamation-triangle-fill"></i>
+                <span>Please enter all details correctly. You will <strong>NOT</strong> be able to change these after submission. Contact faculty if you make a mistake.</span>
+            </div>
+
+            <form action="/student/complete_profile" method="POST" id="profileForm">
+                <!-- Section: Scores -->
+                <h5 class="section-title"><i class="bi bi-journal-check me-2"></i>Academic Scores</h5>
+                <div class="row g-3 mb-4">
+                    <div class="col-md-6">
+                        <label class="form-label form-label-custom">10th Score (%)</label>
+                        <input type="number" step="0.01" min="0" max="100" name="tenth_score" class="form-control form-control-custom" placeholder="e.g. 92.5" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label form-label-custom">12th Score (%)</label>
+                        <input type="number" step="0.01" min="0" max="100" name="inter_score" class="form-control form-control-custom" placeholder="e.g. 88.3" required>
+                    </div>
+                </div>
+
+                <!-- Section: Personal -->
+                <h5 class="section-title"><i class="bi bi-person-fill me-2"></i>Personal Information</h5>
+                <div class="row g-3 mb-4">
+                    <div class="col-md-4">
+                        <label class="form-label form-label-custom">Date of Birth</label>
+                        <input type="date" name="dob" class="form-control form-control-custom" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label form-label-custom">Gender</label>
+                        <select name="gender" class="form-control form-control-custom" required>
+                            <option value="">Select</option>
+                            <option value="Male">Male</option>
+                            <option value="Female">Female</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label form-label-custom">Category</label>
+                        <select name="category" class="form-control form-control-custom" required>
+                            <option value="">Select</option>
+                            <option value="General">General</option>
+                            <option value="OBC">OBC</option>
+                            <option value="SC">SC</option>
+                            <option value="ST">ST</option>
+                            <option value="EWS">EWS</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label form-label-custom">Physically Challenged?</label>
+                        <select name="physically_challenged" id="pcSelect" class="form-control form-control-custom" required onchange="togglePC()">
+                            <option value="No">No</option>
+                            <option value="Yes">Yes</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6 pc-fields" id="pcPercentageField">
+                        <label class="form-label form-label-custom">Disability Percentage (%)</label>
+                        <input type="number" step="0.1" min="0" max="100" name="pc_percentage" class="form-control form-control-custom" placeholder="e.g. 40">
+                    </div>
+                </div>
+
+                <!-- Section: Contact -->
+                <h5 class="section-title"><i class="bi bi-telephone-fill me-2"></i>Contact Information</h5>
+                <div class="row g-3 mb-4">
+                    <div class="col-md-6">
+                        <label class="form-label form-label-custom">Phone Number</label>
+                        <input type="tel" name="phone_number" class="form-control form-control-custom" placeholder="10-digit number" pattern="[0-9]{10}" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label form-label-custom">Alternate Phone Number</label>
+                        <input type="tel" name="alt_phone_number" class="form-control form-control-custom" placeholder="10-digit number" pattern="[0-9]{10}" required>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label form-label-custom">Home Address</label>
+                        <textarea name="home_address" rows="2" class="form-control form-control-custom" placeholder="Full home address" required></textarea>
+                    </div>
+                </div>
+
+                <!-- Section: Admission -->
+                <h5 class="section-title"><i class="bi bi-award-fill me-2"></i>Admission & Gap Details</h5>
+                <div class="row g-3 mb-4">
+                    <div class="col-md-4">
+                        <label class="form-label form-label-custom">JEE Rank</label>
+                        <input type="text" name="jee_rank" class="form-control form-control-custom" placeholder="e.g. 15000" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label form-label-custom">Internships Completed</label>
+                        <input type="number" min="0" name="internships_count" class="form-control form-control-custom" placeholder="0" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label form-label-custom">Academic Year Gap</label>
+                        <input type="text" name="academic_gap" class="form-control form-control-custom" placeholder="e.g. 0 / 1 year after 12th" required>
+                    </div>
+                </div>
+
+                <div class="text-center mt-4">
+                    <button type="submit" class="submit-btn" onclick="return confirm('Are you sure? Once submitted, these details CANNOT be changed.')">
+                        <i class="bi bi-check-circle-fill"></i> Submit & Continue
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+    function togglePC() {
+        const sel = document.getElementById('pcSelect');
+        const field = document.getElementById('pcPercentageField');
+        field.style.display = sel.value === 'Yes' ? 'block' : 'none';
+    }
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

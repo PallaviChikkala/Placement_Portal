@@ -211,7 +211,7 @@ td { padding:10px 10px; color:var(--text-main); border-bottom:1px solid var(--ta
                   <td>{{ loop.index }}</td>
                   <td><strong>{{ a.roll_number or a.student_id or '—' }}</strong></td>
                   <td><strong>{{ a.name }}</strong></td>
-                  <td>{{ a.branch }}</td>
+                  <td>{{ a.branch | upper }}</td>
                   <td>{{ a.aadhar or '—' }}</td>
                   <td>{{ a.pan or '—' }}</td>
                   <td>{{ a.email }}</td>
@@ -270,7 +270,7 @@ td { padding:10px 10px; color:var(--text-main); border-bottom:1px solid var(--ta
                   <td>{{ loop.index }}</td>
                   <td><strong>{{ a.roll_number or a.student_id or '—' }}</strong></td>
                   <td><strong>{{ a.name }}</strong></td>
-                  <td>{{ a.branch }}</td>
+                  <td>{{ a.branch | upper }}</td>
                   <td>{{ a.email }}</td>
                   <td>{{ a.phone_number or '—' }}</td>
                   <td>

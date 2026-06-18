@@ -27,11 +27,11 @@ def add_header(r):
 global_db = None
 global_cursor = None
 
-def get_connection(db_name="placement_portal2"):
+def get_connection(db_name="placement_portal"):
     return mysql.connector.connect(
         host="localhost",
         user="root",
-        password="Hasini@1234",
+        password="Pallavi@2007",
         database=db_name,
         connection_timeout=30,
         autocommit=False
@@ -41,11 +41,20 @@ def init_global_db():
     conn = mysql.connector.connect(
         host="localhost",
         user="root",
-        password="Hasini@1234",
+        password="Pallavi@2007",
     )
     c = conn.cursor()
-    c.execute("CREATE DATABASE IF NOT EXISTS placement_portal_2025_2026")
-    c.execute("CREATE DATABASE IF NOT EXISTS placement_portal_2026_2027")
+    
+    batches_file = os.path.join(app.root_path, "database", "batches.json")
+    if os.path.exists(batches_file):
+        with open(batches_file, "r") as f:
+            batches = json.load(f)
+            for batch in batches:
+                c.execute(f"CREATE DATABASE IF NOT EXISTS {batch['db']}")
+    else:
+        c.execute("CREATE DATABASE IF NOT EXISTS placement_portal_2025_2026")
+        c.execute("CREATE DATABASE IF NOT EXISTS placement_portal_2026_2027")
+        
     c.execute("CREATE DATABASE IF NOT EXISTS placement_portal2")
     conn.commit()
     conn.close()
@@ -126,6 +135,7 @@ def check_routes_and_master_sheet():
             if not has_sheet:
                 session.clear()
                 return redirect("/student_login?error=Your+portal+is+currently+disabled.+Please+contact+faculty.")
+            
 
     # 2. Enforce faculty login and active year database check
     is_faculty_route = (
@@ -168,16 +178,25 @@ def ensure_connection():
 # Database Tables & Mock Data Initialization
 def init_database():
     global global_db, global_cursor
-    for db_name in ["placement_portal_2025_2026", "placement_portal_2026_2027"]:
+    
+    db_names = ["placement_portal_2025_2026", "placement_portal_2026_2027"]
+    batches_file = os.path.join(app.root_path, "database", "batches.json")
+    if os.path.exists(batches_file):
+        with open(batches_file, "r") as f:
+            batches = json.load(f)
+            db_names = [b["db"] for b in batches]
+
+    for db_name in db_names:
         try:
             global_db = get_connection(db_name)
             global_cursor = global_db.cursor(dictionary=True)
             _init_database_single()
         except Exception as e:
             print(f"Failed to init {db_name}: {e}")
-    # Restore default global connection to 2025-2026
+            
+    # Restore default global connection to the first batch or fallback
     try:
-        global_db = get_connection("placement_portal_2025_2026")
+        global_db = get_connection(db_names[0] if db_names else "placement_portal_2025_2026")
         global_cursor = global_db.cursor(dictionary=True)
     except Exception as e:
         print(f"Failed to restore default global DB: {e}")
@@ -199,8 +218,6 @@ def _init_database_single():
                 cgpa          FLOAT DEFAULT 0,
                 backlogs      INT DEFAULT 0,
                 backlog_history INT DEFAULT 0,
-                tenth_score   FLOAT DEFAULT 0,
-                inter_score   FLOAT DEFAULT 0,
                 skills        TEXT,
                 selected_tier INT DEFAULT NULL,
                 batch         INT,
@@ -209,15 +226,31 @@ def _init_database_single():
                 aadhar        VARCHAR(20) DEFAULT NULL,
                 pan           VARCHAR(20) DEFAULT NULL,
                 profile_photo VARCHAR(255) DEFAULT '/static/default_avatar.png',
-                must_change_password TINYINT(1) DEFAULT 1
+                must_change_password TINYINT(1) DEFAULT 1,
+                profile_complete TINYINT(1) DEFAULT 0,
+                tenth_score   FLOAT DEFAULT NULL,
+                inter_score   FLOAT DEFAULT NULL,
+                dob           DATE DEFAULT NULL,
+                gender        VARCHAR(20) DEFAULT NULL,
+                category      VARCHAR(20) DEFAULT NULL,
+                physically_challenged VARCHAR(5) DEFAULT 'No',
+                pc_percentage FLOAT DEFAULT NULL,
+                internships_count INT DEFAULT 0,
+                home_address  TEXT DEFAULT NULL,
+                jee_rank      VARCHAR(30) DEFAULT NULL,
+                academic_gap  TEXT DEFAULT NULL,
+                alt_phone_number VARCHAR(20) DEFAULT NULL,
+                tier_1        VARCHAR(100) DEFAULT NULL,
+                tier_2        VARCHAR(100) DEFAULT NULL,
+                tier_3        VARCHAR(100) DEFAULT NULL,
+                career_option VARCHAR(100) DEFAULT NULL,
+                personal_email VARCHAR(150) DEFAULT NULL
             )
         """)
 
         # Safe column additions for databases created before this schema update
         for col_sql in [
             "ALTER TABLE students ADD COLUMN backlog_history INT DEFAULT 0",
-            "ALTER TABLE students ADD COLUMN tenth_score FLOAT DEFAULT 0",
-            "ALTER TABLE students ADD COLUMN inter_score FLOAT DEFAULT 0",
             "ALTER TABLE students ADD COLUMN profile_photo VARCHAR(255) DEFAULT '/static/default_avatar.png'",
             "ALTER TABLE students ADD COLUMN must_change_password TINYINT(1) DEFAULT 1",
             "ALTER TABLE students ADD COLUMN roll_number VARCHAR(50) DEFAULT NULL",
@@ -225,7 +258,25 @@ def _init_database_single():
             "ALTER TABLE students ADD COLUMN aadhar VARCHAR(20) DEFAULT NULL",
             "ALTER TABLE students ADD COLUMN pan VARCHAR(20) DEFAULT NULL",
             "ALTER TABLE students ADD COLUMN selected_tier INT DEFAULT NULL",
-            "ALTER TABLE students ADD COLUMN course VARCHAR(20) DEFAULT 'B.Tech'"
+            "ALTER TABLE students ADD COLUMN course VARCHAR(20) DEFAULT 'B.Tech'",
+            "ALTER TABLE students ADD COLUMN profile_complete TINYINT(1) DEFAULT 0",
+            "ALTER TABLE students ADD COLUMN tenth_score FLOAT DEFAULT NULL",
+            "ALTER TABLE students ADD COLUMN inter_score FLOAT DEFAULT NULL",
+            "ALTER TABLE students ADD COLUMN dob DATE DEFAULT NULL",
+            "ALTER TABLE students ADD COLUMN gender VARCHAR(20) DEFAULT NULL",
+            "ALTER TABLE students ADD COLUMN category VARCHAR(20) DEFAULT NULL",
+            "ALTER TABLE students ADD COLUMN physically_challenged VARCHAR(5) DEFAULT 'No'",
+            "ALTER TABLE students ADD COLUMN pc_percentage FLOAT DEFAULT NULL",
+            "ALTER TABLE students ADD COLUMN internships_count INT DEFAULT 0",
+            "ALTER TABLE students ADD COLUMN home_address TEXT DEFAULT NULL",
+            "ALTER TABLE students ADD COLUMN jee_rank VARCHAR(30) DEFAULT NULL",
+            "ALTER TABLE students ADD COLUMN academic_gap TEXT DEFAULT NULL",
+            "ALTER TABLE students ADD COLUMN alt_phone_number VARCHAR(20) DEFAULT NULL",
+            "ALTER TABLE students ADD COLUMN tier_1 VARCHAR(100) DEFAULT NULL",
+            "ALTER TABLE students ADD COLUMN tier_2 VARCHAR(100) DEFAULT NULL",
+            "ALTER TABLE students ADD COLUMN tier_3 VARCHAR(100) DEFAULT NULL",
+            "ALTER TABLE students ADD COLUMN career_option VARCHAR(100) DEFAULT NULL",
+            "ALTER TABLE students ADD COLUMN personal_email VARCHAR(150) DEFAULT NULL"
         ]:
             try:
                 cursor.execute(col_sql)
@@ -382,20 +433,20 @@ def normalize_branch(branch_name):
     if not branch_name: return ""
     b = branch_name.lower().strip()
     if b in ["cse", "computer science", "computer science engineering", "computer science and engineering", "computer science & engineering"]:
-        return "cse"
+        return "CSE"
     elif b in ["ece", "electronics", "electronics and communication", "electronics and communication engineering", "electronics & communication engineering"]:
-        return "ece"
+        return "ECE"
     elif b in ["eee", "electrical", "electrical and electronics", "electrical and electronics engineering"]:
-        return "eee"
+        return "EEE"
     elif b in ["me", "mech", "mechanical", "mechanical engineering"]:
-        return "mech"
+        return "MECH"
     elif b in ["ce", "civil", "civil engineering"]:
-        return "civil"
+        return "CIVIL"
     elif b in ["it", "information technology"]:
-        return "it"
+        return "IT"
     elif b in ["ai", "aiml", "artificial intelligence", "ai & ds", "artificial intelligence and data science"]:
-        return "ai"
-    return b
+        return "AI"
+    return b.upper()
 
 def notify_students_new_job(company_name, role):
     """
@@ -836,12 +887,22 @@ def student_dashboard():
         branch_ok = student_branch in eligible_branches or not eligible_branches
 
         student_selected_tier = student.get("selected_tier")
+        
+        tier_1_val = student.get("tier_1")
+        tier_2_val = student.get("tier_2")
+        tier_3_val = student.get("tier_3")
+        offers_count = sum(1 for t in [tier_1_val, tier_2_val, tier_3_val] if t and str(t).strip())
+        
         tier_ok = True
-
-        if student_selected_tier is not None and student_selected_tier > 0:
-            if student_selected_tier == 1 and job_tier_num in [2, 3]:
+        
+        if offers_count >= 2:
+            tier_ok = False
+        elif student_selected_tier is not None and student_selected_tier > 0:
+            if student_selected_tier == 1:
                 tier_ok = False
-            elif student_selected_tier == 2 and job_tier_num == 3:
+            elif student_selected_tier == 2 and job_tier_num in [2, 3]:
+                tier_ok = False
+            elif student_selected_tier == 3 and job_tier_num == 3:
                 tier_ok = False
 
         is_eligible = cgpa_ok and backlogs_ok and branch_ok and tier_ok
@@ -957,8 +1018,12 @@ def update_profile_details():
    
     try:
         from flask import flash
-        flash("Profile edits are restricted to Faculty Master Sheet uploads.", "error")
+        # Allow updating phone number only
+        cursor.execute("UPDATE students SET phone_number = %s WHERE student_id = %s", (phone_number, student_id))
+        db.commit()
+        flash("Profile updated successfully.", "success")
     except Exception as e:
+        flash("An error occurred while updating profile.", "error")
         pass
        
     return redirect("/student_profile")
@@ -1146,9 +1211,11 @@ def apply_job():
     student_selected_tier = student.get('selected_tier')
     tier_ok = True
     if student_selected_tier is not None and student_selected_tier > 0:
-        if student_selected_tier == 1 and job_tier_num in [2, 3]:
+        if student_selected_tier == 1:
             tier_ok = False
-        elif student_selected_tier == 2 and job_tier_num == 3:
+        elif student_selected_tier == 2 and job_tier_num in [2, 3]:
+            tier_ok = False
+        elif student_selected_tier == 3 and job_tier_num == 3:
             tier_ok = False
            
     if not tier_ok:
@@ -1514,7 +1581,15 @@ def faculty_select_year():
     ensure_connection()
     if "faculty_email" not in session:
         return redirect("/faculty_login")
-    return render_template("faculty/select_year.html")
+        
+    import json, os
+    batches_file = os.path.join(app.root_path, "database", "batches.json")
+    batches = []
+    if os.path.exists(batches_file):
+        with open(batches_file, "r") as f:
+            batches = json.load(f)
+            
+    return render_template("faculty/select_year.html", batches=batches)
 
 
 @app.route("/faculty/set_year/<year>")
@@ -1523,15 +1598,57 @@ def faculty_set_year(year):
     if "faculty_email" not in session:
         return redirect("/faculty_login")
     
-    if year not in ["2025-2026", "2026-2027"]:
+    import json, os
+    batches_file = os.path.join(app.root_path, "database", "batches.json")
+    batches = []
+    if os.path.exists(batches_file):
+        with open(batches_file, "r") as f:
+            batches = json.load(f)
+            
+    valid_years = [b["id"] for b in batches]
+    
+    if year not in valid_years:
         flash("Invalid year batch selection.", "error")
         return redirect("/faculty/select_year")
         
-    db_name = f"placement_portal_{year.replace('-', '_')}"
+    db_name = next(b["db"] for b in batches if b["id"] == year)
     switch_active_db(db_name, year)
     
     flash(f"Switched to {year} Batch successfully.", "success")
     return redirect("/faculty_dashboard")
+
+@app.route("/faculty/manage_batches", methods=["POST"])
+def faculty_manage_batches():
+    ensure_connection()
+    redir = faculty_required()
+    if redir: return redir
+    
+    action = request.form.get("action")
+    import json, os
+    batches_file = os.path.join(app.root_path, "database", "batches.json")
+    batches = []
+    if os.path.exists(batches_file):
+        with open(batches_file, "r") as f:
+            batches = json.load(f)
+            
+    if action == "edit":
+        edit_id = request.form.get("batch_id")
+        edit_name = request.form.get("batch_name")
+        edit_desc = request.form.get("batch_desc")
+        
+        for b in batches:
+            if b["id"] == edit_id:
+                b["name"] = edit_name
+                if edit_desc:
+                    b["desc"] = edit_desc
+                break
+                
+        with open(batches_file, "w") as f:
+            json.dump(batches, f, indent=2)
+            
+        flash(f"Batch {edit_name} updated successfully.", "success")
+        
+    return redirect("/faculty/select_year")
 
 
 @app.route("/faculty/reset_batch", methods=["POST"])
@@ -1543,6 +1660,20 @@ def faculty_reset_batch():
     confirm_checkbox = request.form.get("confirm_save")
     if not confirm_checkbox:
         flash("You must confirm that you have saved student data before resetting.", "error")
+        return redirect("/faculty/master_sheet")
+    
+    # Verify faculty email and password
+    confirm_email = request.form.get("confirm_email", "").strip().lower()
+    confirm_password = request.form.get("confirm_password", "").strip()
+    
+    if not confirm_email or not confirm_password:
+        flash("You must enter your faculty email and password to reset.", "error")
+        return redirect("/faculty/master_sheet")
+    
+    cursor.execute("SELECT * FROM faculty WHERE LOWER(email) = %s AND password = %s", (confirm_email, confirm_password))
+    faculty = cursor.fetchone()
+    if not faculty:
+        flash("Incorrect email or password. Reset denied.", "error")
         return redirect("/faculty/master_sheet")
         
     active_year = session.get("active_year", "2025-2026")
@@ -1985,48 +2116,110 @@ def faculty_upload_selected_students_excel():
         updated_count = 0
         for index, row in df.iterrows():
             roll_number = str(row['Roll Number']).strip()
-            job_id = str(row['Job ID']).strip()
+            job_ids_raw = str(row['Job ID']).strip()
             
-            # Skip blank / filler rows (e.g. the 5 empty rows at the bottom of the template)
             if not roll_number or roll_number.lower() in ('nan', 'none', '') or \
-               not job_id or job_id.lower() in ('nan', 'none', ''):
+               not job_ids_raw or job_ids_raw.lower() in ('nan', 'none', ''):
                 continue
-            company_name = str(row['Company Name']).strip()
-            ctc_val = row['CTC']
-            
+                
             cursor.execute("SELECT student_id FROM students WHERE roll_number = %s", (roll_number,))
             student = cursor.fetchone()
             if not student:
                 continue
-                
             student_id = student['student_id']
-            
-            # --- Determine tier ---
-            # Priority: read Tier 1/Tier 2/Tier 3 columns from Excel (as edited by admin)
-            # Fall back to CTC-based calculation if those columns don't exist
-            has_tier_cols = 'Tier 1' in df.columns or 'Tier 2' in df.columns or 'Tier 3' in df.columns
-            t1 = str(row.get('Tier 1', '')).strip().lower() if 'Tier 1' in df.columns else ''
-            t2 = str(row.get('Tier 2', '')).strip().lower() if 'Tier 2' in df.columns else ''
-            t3 = str(row.get('Tier 3', '')).strip().lower() if 'Tier 3' in df.columns else ''
-            
-            is_selected_in_excel = False
-            tier = None
-            if t1 in ('yes', '1', 'true', '✓', 'tick', 'y'):
-                tier = 'Tier 1'
-                is_selected_in_excel = True
-            elif t2 in ('yes', '1', 'true', '✓', 'tick', 'y'):
-                tier = 'Tier 2'
-                is_selected_in_excel = True
-            elif t3 in ('yes', '1', 'true', '✓', 'tick', 'y'):
-                tier = 'Tier 3'
-                is_selected_in_excel = True
 
-            if has_tier_cols and not is_selected_in_excel:
-                # The admin cleared the tiers for this student for this job. Unselect them.
-                cursor.execute("UPDATE applications SET status = 'Not Selected' WHERE student_id = %s AND job_id = %s", (student_id, job_id))
+            job_ids = [x.strip() for x in job_ids_raw.split(',')]
+            companies = [x.strip() for x in str(row['Company Name']).split(',')] if pd.notna(row['Company Name']) else []
+            ctcs = [x.strip() for x in str(row['CTC']).split(',')] if pd.notna(row['CTC']) else []
+            
+            # pad companies and ctcs to match job_ids length
+            while len(companies) < len(job_ids): companies.append("Unknown")
+            while len(ctcs) < len(job_ids): ctcs.append("0")
+            
+            has_tier_cols = 'Tier 1' in df.columns or 'Tier 2' in df.columns or 'Tier 3' in df.columns
+            t1_str = str(row.get('Tier 1', '')).strip().lower() if 'Tier 1' in df.columns else ''
+            t2_str = str(row.get('Tier 2', '')).strip().lower() if 'Tier 2' in df.columns else ''
+            t3_str = str(row.get('Tier 3', '')).strip().lower() if 'Tier 3' in df.columns else ''
+            
+            for job_id, company_name, ctc_val in zip(job_ids, companies, ctcs):
+                is_selected_in_excel = False
+                tier = None
+                c_lower = company_name.lower()
+                
+                if has_tier_cols:
+                    if (c_lower and c_lower in t1_str) or t1_str in ('yes', '1', 'true', '✓', 'tick', 'y'):
+                        tier = 'Tier 1'
+                        is_selected_in_excel = True
+                    elif (c_lower and c_lower in t2_str) or t2_str in ('yes', '1', 'true', '✓', 'tick', 'y'):
+                        tier = 'Tier 2'
+                        is_selected_in_excel = True
+                    elif (c_lower and c_lower in t3_str) or t3_str in ('yes', '1', 'true', '✓', 'tick', 'y'):
+                        tier = 'Tier 3'
+                        is_selected_in_excel = True
+
+                if has_tier_cols and not is_selected_in_excel:
+                    cursor.execute("UPDATE applications SET status = 'Not Selected' WHERE student_id = %s AND job_id = %s", (student_id, job_id))
+                    db.commit()
+                    
+                    cursor.execute("""
+                        SELECT j.tier
+                        FROM applications a
+                        JOIN jobs j ON a.job_id = j.job_id
+                        WHERE a.student_id = %s AND a.status = 'Selected'
+                    """, (student_id,))
+                    selected_apps = cursor.fetchall()
+                    
+                    highest_tier_num = 3
+                    if selected_apps:
+                        for sa in selected_apps:
+                            t_str = sa["tier"] or "Tier 3"
+                            t_num = 1 if '1' in t_str else (2 if '2' in t_str else 3)
+                            if t_num < highest_tier_num:
+                                highest_tier_num = t_num
+                    cursor.execute("UPDATE students SET selected_tier = %s WHERE student_id = %s", (highest_tier_num, student_id))
+                    db.commit()
+                    updated_count += 1
+                    continue
+                    
+                if not has_tier_cols:
+                    ctc_num = 0.0
+                    try:
+                        import re
+                        match = re.search(r'(\d+(\.\d+)?)', str(ctc_val).lower())
+                        if match: ctc_num = float(match.group(1))
+                    except: pass
+                    
+                    if ctc_num < 7.0: tier = 'Tier 3'
+                    elif 7.0 <= ctc_num <= 17.0: tier = 'Tier 2'
+                    else: tier = 'Tier 1'
+                    
+                ctc_str = str(ctc_val)
+                if ctc_str.replace('.', '', 1).isdigit(): ctc_str += " LPA"
+                
+                cursor.execute("SELECT id FROM jobs WHERE job_id = %s", (job_id,))
+                if not cursor.fetchone():
+                    cursor.execute("INSERT INTO jobs (job_id, company_name, ctc, tier, role) VALUES (%s, %s, %s, %s, %s)",
+                                   (job_id, company_name, ctc_str, tier, "Selected Role"))
+                else:
+                    cursor.execute("UPDATE jobs SET tier = %s WHERE job_id = %s", (tier, job_id))
+                db.commit()
+                    
+                cursor.execute("SELECT application_id, status FROM applications WHERE student_id = %s AND job_id = %s", (student_id, job_id))
+                app = cursor.fetchone()
+                was_selected = app and app['status'] == 'Selected'
+                
+                if app:
+                    cursor.execute("UPDATE applications SET status = 'Selected' WHERE application_id = %s", (app['application_id'],))
+                else:
+                    cursor.execute("SELECT MAX(application_id) as max_id FROM applications")
+                    max_row = cursor.fetchone()
+                    next_id = (max_row['max_id'] or 0) + 1
+                    from datetime import datetime
+                    today = datetime.today().strftime('%Y-%m-%d')
+                    cursor.execute("INSERT INTO applications (application_id, student_id, job_id, status, applied_date) VALUES (%s, %s, %s, %s, %s)",
+                                   (next_id, student_id, job_id, 'Selected', today))
                 db.commit()
                 
-                # Recalculate student's selected tier
                 cursor.execute("""
                     SELECT j.tier
                     FROM applications a
@@ -2034,98 +2227,24 @@ def faculty_upload_selected_students_excel():
                     WHERE a.student_id = %s AND a.status = 'Selected'
                 """, (student_id,))
                 selected_apps = cursor.fetchall()
-                
-                highest_tier_num = 3
+               
                 if selected_apps:
+                    highest_tier_num = 3
                     for sa in selected_apps:
                         t_str = sa["tier"] or "Tier 3"
                         t_num = 1 if '1' in t_str else (2 if '2' in t_str else 3)
                         if t_num < highest_tier_num:
                             highest_tier_num = t_num
-                cursor.execute("UPDATE students SET selected_tier = %s WHERE student_id = %s", (highest_tier_num, student_id))
+                    cursor.execute("UPDATE students SET selected_tier = %s WHERE student_id = %s", (highest_tier_num, student_id))
+                
+                if not was_selected:
+                    tier_label = tier.replace('Tier ', 'Tier ')
+                    notif_msg = f"🏆 Congratulations! You have been <strong>Selected</strong> by <strong>{company_name}</strong> under <strong>{tier_label}</strong> (CTC: {ctc_val} LPA). Your tier eligibility has been updated."
+                    cursor.execute("INSERT INTO notifications (student_id, message, link) VALUES (%s, %s, %s)",
+                                   (student_id, notif_msg, "/my_applications"))
                 db.commit()
-                
                 updated_count += 1
-                continue
                 
-            if not has_tier_cols:
-                # Fallback: calculate from CTC
-                ctc_num = 0.0
-                if isinstance(ctc_val, (int, float)):
-                    ctc_num = float(ctc_val)
-                else:
-                    import re
-                    match = re.search(r'(\d+(\.\d+)?)', str(ctc_val).lower())
-                    if match:
-                        ctc_num = float(match.group(1))
-                if ctc_num < 7.0:
-                    tier = 'Tier 3'
-                elif 7.0 <= ctc_num <= 17.0:
-                    tier = 'Tier 2'
-                else:
-                    tier = 'Tier 1'
-                
-            ctc_str = str(ctc_val) + (" LPA" if isinstance(ctc_val, (int, float)) else "")
-            
-            # --- Upsert the job ---
-            cursor.execute("SELECT id FROM jobs WHERE job_id = %s", (job_id,))
-            job = cursor.fetchone()
-            if not job:
-                cursor.execute("""
-                    INSERT INTO jobs (job_id, company_name, ctc, tier, role)
-                    VALUES (%s, %s, %s, %s, %s)
-                """, (job_id, company_name, ctc_str, tier, "Selected Role"))
-            else:
-                # Update the tier on the existing job so table reflects the edited tier
-                cursor.execute("UPDATE jobs SET tier = %s WHERE job_id = %s", (tier, job_id))
-            db.commit()
-                
-            cursor.execute("SELECT application_id FROM applications WHERE student_id = %s AND job_id = %s", (student_id, job_id))
-            app = cursor.fetchone()
-            if app:
-                cursor.execute("UPDATE applications SET status = 'Selected' WHERE application_id = %s", (app['application_id'],))
-            else:
-                cursor.execute("SELECT MAX(application_id) as max_id FROM applications")
-                max_row = cursor.fetchone()
-                next_id = (max_row['max_id'] or 0) + 1
-                
-                from datetime import datetime
-                today = datetime.today().strftime('%Y-%m-%d')
-                cursor.execute("""
-                    INSERT INTO applications (application_id, student_id, job_id, status, applied_date)
-                    VALUES (%s, %s, %s, %s, %s)
-                """, (next_id, student_id, job_id, 'Selected', today))
-                
-            db.commit()
-            
-            # --- Update student's highest selected tier ---
-            cursor.execute("""
-                SELECT j.tier
-                FROM applications a
-                JOIN jobs j ON a.job_id = j.job_id
-                WHERE a.student_id = %s AND a.status = 'Selected'
-            """, (student_id,))
-            selected_apps = cursor.fetchall()
-           
-            if selected_apps:
-                highest_tier_num = 3
-                for sa in selected_apps:
-                    t_str = sa["tier"] or "Tier 3"
-                    t_num = 1 if '1' in t_str else (2 if '2' in t_str else 3)
-                    if t_num < highest_tier_num:
-                        highest_tier_num = t_num
-                cursor.execute("UPDATE students SET selected_tier = %s WHERE student_id = %s", (highest_tier_num, student_id))
-            
-            # --- Send notification to student ---
-            tier_label = tier.replace('Tier ', 'Tier ')
-            notif_msg = f"🏆 Congratulations! You have been <strong>Selected</strong> by <strong>{company_name}</strong> under <strong>{tier_label}</strong> (CTC: {ctc_val} LPA). Your tier eligibility has been updated."
-            cursor.execute("INSERT INTO notifications (student_id, message, link) VALUES (%s, %s, %s)",
-                           (student_id, notif_msg, "/my_applications"))
-            
-            db.commit()
-                
-            updated_count += 1
-            
         return jsonify({"success": True, "message": f"Successfully updated {updated_count} records."})
     except Exception as e:
         db.rollback()
@@ -2182,7 +2301,8 @@ def faculty_download_selected_students_template():
         allowed_aliases = None if branch_filter == 'all' else BRANCH_MAP.get(branch_filter, [branch_filter])
 
         # Build data rows
-        data_rows = []
+        from collections import defaultdict
+        student_groups = defaultdict(list)
         for r in rows:
             c = (r['course'] or 'b.tech').lower()
             b = (r['branch'] or '').lower().strip()
@@ -2190,19 +2310,34 @@ def faculty_download_selected_students_template():
             b_match = True if allowed_aliases is None else (b in allowed_aliases)
             if not (c_match and b_match):
                 continue
-            tier = str(r['tier'] or '')
-            t1 = 'Yes' if '1' in tier else 'No'
-            t2 = 'Yes' if '2' in tier else 'No'
-            t3 = 'Yes' if ('3' in tier or ('1' not in tier and '2' not in tier)) else 'No'
+            student_groups[r['roll_number']].append(r)
+            
+        data_rows = []
+        for roll_no, apps in student_groups.items():
+            first = apps[0]
+            job_ids = [str(a['job_id']) for a in apps]
+            ctcs = [str(a['ctc']) for a in apps if a.get('ctc')]
+            
+            t1, t2, t3 = '', '', ''
+            for a in apps:
+                tier = str(a['tier'] or '')
+                c_name = str(a['company_name'] or '')
+                if '1' in tier:
+                    t1 = c_name if not t1 else t1 + ", " + c_name
+                elif '2' in tier:
+                    t2 = c_name if not t2 else t2 + ", " + c_name
+                else:
+                    t3 = c_name if not t3 else t3 + ", " + c_name
+                    
             data_rows.append([
                 len(data_rows) + 1,
-                r['roll_number'],
-                r['name'],
-                r['course'],
-                r['branch'],
-                r['job_id'],
-                r['company_name'],
-                r['ctc'],
+                first['roll_number'],
+                first['name'],
+                first['course'],
+                first['branch'],
+                ", ".join(job_ids),
+                ", ".join([str(a['company_name']) for a in apps]),
+                ", ".join(ctcs),
                 t1, t2, t3
             ])
 
@@ -3143,6 +3278,65 @@ def faculty_download_applied_excel(job_id):
         download_name=f"Applicants_{clean_company}_{job_id}.xlsx"
     )
 
+@app.route("/faculty/student_details_download")
+def faculty_student_details_download():
+    ensure_connection()
+    redir = faculty_required()
+    if redir: return redir
+
+    cursor.execute("""
+        SELECT
+            roll_number as `Roll No`,
+            name as `Name`,
+            cgpa as `CGPA`,
+            branch as `Branch`,
+            backlogs as `Active Backlogs`,
+            backlog_history as `Backlog History`,
+            batch as `Graduation Year`,
+            email as `College email ID`,
+            phone_number as `Phone number`,
+            alt_phone_number as `Alternate phone number`,
+            tenth_score as `10th score`,
+            inter_score as `12th score`,
+            dob as `Date of Birth`,
+            gender as `Gender`,
+            category as `Category`,
+            physically_challenged as `Physically challenged if yes how much percentage?`,
+            pc_percentage as `PC Percentage`,
+            internships_count as `Number of internships completed`,
+            home_address as `Address`,
+            jee_rank as `JEE rank`,
+            academic_gap as `Academic year gap right from 10th`
+        FROM students
+    """)
+    students_data = cursor.fetchall()
+    
+    # Process physically challenged column to append percentage if applicable
+    for student in students_data:
+        if student['Physically challenged if yes how much percentage?'] == 'Yes' and student['PC Percentage']:
+            student['Physically challenged if yes how much percentage?'] = f"Yes ({student['PC Percentage']}%)"
+        del student['PC Percentage']
+
+    import pandas as pd
+    import io
+    from flask import send_file
+    
+    df = pd.DataFrame(students_data)
+    
+    output = io.BytesIO()
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+        df.to_excel(writer, index=False, sheet_name='Student Details')
+    
+    output.seek(0)
+    
+    active_year = session.get("active_year", "2025-2026")
+    return send_file(
+        output,
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        as_attachment=True,
+        download_name=f"Student_Details_{active_year}.xlsx"
+    )
+
 
 # ─── FACULTY: STUDENTS ───────────────────────────────────────────────────────
 
@@ -3313,7 +3507,12 @@ def faculty_upload_master_sheet():
     uploaded_emails = set()
 
     for index, row in df.iterrows():
-        raw_roll = row.get("roll_no", "")
+        # Roll number: try 'Roll Number' (→ roll_number) or 'Register Number' (→ register_number)
+        raw_roll = row.get("roll_number",
+           row.get("roll_no",
+           row.get("register_number",
+           row.get("registration_number",
+           row.get("reg_no", "")))))
         if pd.isna(raw_roll):
             roll_no = ""
         else:
@@ -3321,35 +3520,128 @@ def faculty_upload_master_sheet():
             if roll_no.endswith('.0'):
                 roll_no = roll_no[:-2]
 
-        name = str(row.get("name", "")).strip()
-        email = str(row.get("email", "")).strip().lower()
-        branch = normalize_branch(str(row.get("branch", "")).strip())
+        # Name: 'Name(in block letters)' normalizes to 'name(in_block_letters)'
+        name = str(row.get("name(in_block_letters)", row.get("name", row.get("student_name", "")))).strip()
+        email = str(
+    row.get("institute_email",
+    row.get("college_email",
+    row.get("email",
+    row.get("email_id",
+    row.get("mail_id",
+    row.get("institute_mail_id",
+    row.get("official_email", "")))))))
+).strip().lower()
+        # Branch: 'Specialization' or 'Branch' column
+        branch = normalize_branch(str(row.get("branch", row.get("specialization", ""))).strip())
 
         if email == "" or email == "nan":
             continue
+            
+        # Try to infer roll number from email if not provided (e.g. 421235@student.nitandhra.ac.in)
+        if not roll_no and '@' in email:
+            inferred_roll = email.split('@')[0]
+            if inferred_roll.isdigit():
+                roll_no = inferred_roll
 
         uploaded_emails.add(email)
 
         cgpa = float(row.get("cgpa", 0) or 0)
-        active_backlogs = int(float(row.get("active_backlogs", 0) or 0))
+        active_backlogs = int(float(row.get("active_backlogs", row.get("backlog_count", 0)) or 0))
         backlog_history = int(float(row.get("backlog_history", 0) or 0))
         batch = int(float(row.get("graduation_batch", 0) or 0))
 
-        # Accept many real-world column name variants for 10th and 12th scores
-        def _score(row, *keys):
-            for k in keys:
-                v = row.get(k)
-                if v is not None and str(v).strip() not in ("", "nan", "None"):
-                    try: return float(v)
-                    except: pass
-            return 0.0
+        # Extra fields from master sheet (optional)
+        def _safe_float(val):
+            try:
+                v = float(val)
+                return v if v > 0 else None
+            except (TypeError, ValueError):
+                return None
 
-        tenth_score = _score(row,
-            "10th_score", "10_score", "tenth_score", "10th score",
-            "ssc_score", "ssc", "x_score", "x_marks")
-        inter_score = _score(row,
-            "inter_score", "12thscore", "12th_score", "12_score",
-            "inter score", "hsc_score", "hsc", "xii_score", "xii_marks")
+        # '10th Score' normalizes to '10th_score'; '12th Score' → '12th_score'
+        tenth_score_ms = _safe_float(row.get("10th_score", row.get("10th_%", row.get("tenth_score", None))))
+        inter_score_ms = _safe_float(row.get("12th_score", row.get("12th_%", row.get("inter_score", None))))
+        # 'Phone Number' normalizes to 'phone_number'
+        raw_phone = str(row.get("phone_number", row.get("phone_no", row.get("phone", "")))).strip()
+        phone_ms = raw_phone if raw_phone and raw_phone != "nan" else None
+        
+        tier_1_ms = str(row.get("tier_1", row.get("tier 1", row.get("tier1", row.get("tier-1", ""))))).strip()
+        tier_2_ms = str(row.get("tier_2", row.get("tier 2", row.get("tier2", row.get("tier-2", ""))))).strip()
+        tier_3_ms = str(row.get("tier_3", row.get("tier 3", row.get("tier3", row.get("tier-3", ""))))).strip()
+        tier_1_ms = tier_1_ms if tier_1_ms and tier_1_ms.lower() != "nan" else None
+        tier_2_ms = tier_2_ms if tier_2_ms and tier_2_ms.lower() != "nan" else None
+        tier_3_ms = tier_3_ms if tier_3_ms and tier_3_ms.lower() != "nan" else None
+
+        selected_tier_ms = None
+        if tier_1_ms: selected_tier_ms = 1
+        elif tier_2_ms: selected_tier_ms = 2
+        elif tier_3_ms: selected_tier_ms = 3
+
+        def _get_str(keys):
+            for k in keys:
+                val = str(row.get(k, "")).strip()
+                if val and val.lower() != "nan":
+                    return val
+            return None
+
+        # Personal info fields — keys are the NORMALIZED column names from the master sheet
+        gender_ms = _get_str(["gender", "sex"])
+        category_ms = _get_str(["category", "caste"])
+
+        # 'PWD' column → normalized to 'pwd'
+        physically_challenged_ms = _get_str(["pwd", "physically_challenged", "ph"])
+        if physically_challenged_ms and physically_challenged_ms.lower() in ['yes', 'y', 'true']:
+            physically_challenged_ms = 'Yes'
+        else:
+            physically_challenged_ms = 'No'
+
+        # 'If Yes Reason with Percentage' → normalized to 'if_yes_reason_with_percentage'
+        pwd_reason_raw = _get_str(["if_yes_reason_with_percentage", "pwd_percentage", "pc_percentage"])
+        pc_percentage_ms = None
+        if pwd_reason_raw:
+            # Try to extract a number from the reason text (e.g. "40%" → 40.0)
+            import re as _re
+            nums = _re.findall(r'[\d]+(?:\.\d+)?', str(pwd_reason_raw))
+            if nums:
+                pc_percentage_ms = float(nums[0])
+
+        internships_count_ms = int(_safe_float(row.get("internships_count", row.get("internships", 0))) or 0)
+
+        # 'Address' column → normalized to 'address'
+        home_address_ms = _get_str(["address", "home_address"])
+
+        # 'JEE Rank' → normalized to 'jee_rank'
+        jee_rank_ms = _get_str(["jee_rank", "jee_mains_rank", "jeerank", "jee", "jee_main_rank"])
+
+        # 'Any Academic Gap' → normalized to 'any_academic_gap'
+        academic_gap_ms = _get_str(["any_academic_gap", "academic_gap", "gap_years"])
+
+        # 'Alternate Phone Number' → normalized to 'alternate_phone_number'
+        alt_phone_number_ms = _get_str(["alternate_phone_number", "alternate_phone_no", "alt_phone_number", "alternate_phone"])
+
+        # 'Aadhar Number' → normalized to 'aadhar_number'
+        aadhar_ms = _get_str(["aadhar_number", "aadhar_no", "aadhar"])
+
+        # 'PAN Number' → normalized to 'pan_number'
+        pan_ms = _get_str(["pan_number", "pan_no", "pan"])
+
+        # 'Career Option(HE, Job, Others)' → normalized to 'career_option(he,_job,_others)'
+        career_option_ms = _get_str(["career_option(he,_job,_others)", "career_option", "career"])
+
+        # 'Personal Email' → normalized to 'personal_email'
+        personal_email_ms = _get_str(["personal_email"])
+        
+        # Handle date specifically to avoid invalid datetime DB errors
+        # 'Date of Birth' → normalized to 'date_of_birth'
+        dob_raw = _get_str(["date_of_birth", "dob"])
+        dob_ms = None
+        if dob_raw:
+            try:
+                # If it's passed as a pandas timestamp/datetime string
+                parsed = pd.to_datetime(dob_raw)
+                dob_ms = parsed.strftime('%Y-%m-%d')
+            except Exception:
+                dob_ms = None
 
         cursor.execute("SELECT * FROM students WHERE LOWER(email) = %s", (email,))
         existing_student = cursor.fetchone()
@@ -3364,13 +3656,38 @@ def faculty_upload_master_sheet():
                     backlogs = %s,
                     backlog_history = %s,
                     batch = %s,
-                    tenth_score = %s,
-                    inter_score = %s
+                    tenth_score = COALESCE(%s, tenth_score),
+                    inter_score = COALESCE(%s, inter_score),
+                    phone_number = COALESCE(%s, phone_number),
+                    tier_1 = %s,
+                    tier_2 = %s,
+                    tier_3 = %s,
+                    selected_tier = %s,
+                    gender = COALESCE(%s, gender),
+                    category = COALESCE(%s, category),
+                    physically_challenged = %s,
+                    pc_percentage = COALESCE(%s, pc_percentage),
+                    internships_count = %s,
+                    home_address = COALESCE(%s, home_address),
+                    jee_rank = COALESCE(%s, jee_rank),
+                    academic_gap = COALESCE(%s, academic_gap),
+                    alt_phone_number = COALESCE(%s, alt_phone_number),
+                    aadhar = COALESCE(%s, aadhar),
+                    pan = COALESCE(%s, pan),
+                    dob = COALESCE(%s, dob),
+                    career_option = COALESCE(%s, career_option),
+                    personal_email = COALESCE(%s, personal_email)
                 WHERE LOWER(email) = %s
             """, (
-                roll_no, name, cgpa, branch,
+                roll_no, name, cgpa, branch.upper(),
                 active_backlogs, backlog_history, batch,
-                tenth_score, inter_score, email
+                tenth_score_ms, inter_score_ms, phone_ms,
+                tier_1_ms, tier_2_ms, tier_3_ms, selected_tier_ms,
+                gender_ms, category_ms, physically_challenged_ms, pc_percentage_ms,
+                internships_count_ms, home_address_ms, jee_rank_ms, academic_gap_ms,
+                alt_phone_number_ms, aadhar_ms, pan_ms, dob_ms,
+                career_option_ms, personal_email_ms,
+                email
             ))
             updated += 1
 
@@ -3381,13 +3698,21 @@ def faculty_upload_master_sheet():
             cursor.execute("""
                 INSERT INTO students
                 (student_id, roll_number, name, email, password, branch, cgpa,
-                 backlogs, backlog_history, batch, tenth_score, inter_score, skills,
-                 must_change_password)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                 backlogs, backlog_history, batch, skills,
+                 must_change_password, tenth_score, inter_score, phone_number,
+                 tier_1, tier_2, tier_3, selected_tier,
+                 gender, category, physically_challenged, pc_percentage, internships_count,
+                 home_address, jee_rank, academic_gap, alt_phone_number, aadhar, pan, dob,
+                 career_option, personal_email)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """, (
-                next_id, roll_no, name, email, roll_no, branch, cgpa,
+                next_id, roll_no, name, email, roll_no, branch.upper(), cgpa,
                 active_backlogs, backlog_history, batch,
-                tenth_score, inter_score, "", 1
+                "", 1, tenth_score_ms, inter_score_ms, phone_ms,
+                tier_1_ms, tier_2_ms, tier_3_ms, selected_tier_ms,
+                gender_ms, category_ms, physically_challenged_ms, pc_percentage_ms, internships_count_ms,
+                home_address_ms, jee_rank_ms, academic_gap_ms, alt_phone_number_ms, aadhar_ms, pan_ms, dob_ms,
+                career_option_ms, personal_email_ms
             ))
 
             inserted += 1

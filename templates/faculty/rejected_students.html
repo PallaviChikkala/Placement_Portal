@@ -196,7 +196,7 @@ tr:hover { background-color: rgba(253, 230, 138, 0.08); }
               <td class="roll-no">{{ s.roll_number or 'N/A' }}</td>
               <td>{{ s.name }}</td>
               <td>{{ s.email }}</td>
-              <td><span style="background:var(--badge-bg); padding:4px 8px; border-radius:10px; font-size:11px; color:var(--text-accent); font-weight:700;">{{ s.branch }}</span></td>
+              <td><span style="background:var(--badge-bg); padding:4px 8px; border-radius:10px; font-size:11px; color:var(--text-accent); font-weight:700;">{{ s.branch | upper }}</span></td>
               <td>{{ s.phone_number or 'N/A' }}</td>
               <td style="font-weight: 700; color: var(--text-accent);">{{ s.company_name }}</td>
               <td>{{ s.role }}</td>

@@ -208,7 +208,7 @@ tr:hover td { background-color:rgba(253,230,138,0.12); }
               <td><strong>{{ s.roll_number or s.student_id or '—' }}</strong></td>
               <td><strong>{{ s.name }}</strong></td>
               <td>{{ s.course or 'B.Tech' }}</td>
-              <td><span style="background: rgba(217, 119, 6, 0.08); padding: 4px 10px; border-radius: 12px; font-weight: 600; font-size: 12px;">{{ s.branch }}</span></td>
+              <td><span style="background: rgba(217, 119, 6, 0.08); padding: 4px 10px; border-radius: 12px; font-weight: 600; font-size: 12px;">{{ s.branch | upper }}</span></td>
               <td>{{ s.job_id }}</td>
               <td>{{ s.company_name }}</td>
               <td>{{ s.ctc }}</td>
