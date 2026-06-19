@@ -144,6 +144,52 @@
                     <p class="text-muted mb-0 small">Class of {{ student.batch or '2028' }} | {{ student.branch | upper or 'COMPUTER SCIENCE' }} Department</p>
                 </div>
                 <div class="d-flex align-items-center gap-3">
+
+                    <!-- Calendar Dropdown -->
+                    <div class="position-relative" id="calendarWrapper">
+                        <button class="btn btn-outline-secondary rounded-circle p-2 d-flex align-items-center justify-content-center"
+                                id="calendarBtn"
+                                title="Calendar"
+                                style="width: 42px; height: 42px;"
+                                onclick="toggleCalendar(event)">
+                            <i class="bi bi-calendar3 fs-5"></i>
+                        </button>
+
+                        <div id="calendarDropdown" class="calendar-dropdown position-absolute mt-2 d-none"
+                             style="top: 100%; right: 0; z-index: 9999;">
+                            <!-- Calendar Header -->
+                            <div class="cal-header">
+                                <button class="cal-nav-btn" onclick="calNav(-1)" title="Previous Month">
+                                    <i class="bi bi-chevron-left" style="font-size: 0.75rem;"></i>
+                                </button>
+                                <div class="text-center">
+                                    <div class="cal-month-year" id="calMonthYear">June 2025</div>
+                                    <span class="cal-today-chip" id="calTodayChip">Today</span>
+                                </div>
+                                <button class="cal-nav-btn" onclick="calNav(1)" title="Next Month">
+                                    <i class="bi bi-chevron-right" style="font-size: 0.75rem;"></i>
+                                </button>
+                            </div>
+
+                            <!-- Day Headers -->
+                            <div class="cal-weekdays">
+                                <span>Su</span><span>Mo</span><span>Tu</span>
+                                <span>We</span><span>Th</span><span>Fr</span><span>Sa</span>
+                            </div>
+
+                            <!-- Day Grid -->
+                            <div class="cal-days" id="calDaysGrid"></div>
+
+                            <!-- Footer -->
+                            <div class="cal-footer">
+                                <span class="cal-upcoming-label">
+                                    <i class="bi bi-lightning-charge-fill me-1"></i>Upcoming Deadlines
+                                </span>
+                                <div id="calUpcomingEvents" style="min-height: 18px;">Loading…</div>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="position-relative">
                         <button class="btn btn-outline-secondary rounded-circle p-2" type="button" id="notifButton" data-bs-toggle="dropdown" aria-expanded="false" style="width: 42px; height: 42px;">
                             <i class="bi bi-bell fs-5"></i>
@@ -165,11 +211,11 @@
                         </ul>
                     </div>
                     <button class="btn btn-outline-secondary rounded-circle p-2"
-        onclick="toggleDarkMode()"
-        id="themeBtn"
-        style="width:42px; height:42px;">
-    <i class="bi bi-moon"></i>
-</button>
+                            onclick="toggleDarkMode()"
+                            id="themeBtn"
+                            style="width:42px; height:42px;">
+                        <i class="bi bi-moon"></i>
+                    </button>
                     
                     <a href="/student_profile" class="d-flex align-items-center gap-2 text-decoration-none">
                         <img src="{{ student.profile_photo if student.profile_photo and student.profile_photo != '/static/default_avatar.png' and student.profile_photo != '/static/StudentLogin.png' else '/static/default_profile.png' }}" class="rounded-circle" style="width: 42px; height: 42px; object-fit: cover; border: 2px solid white; box-shadow: 0 4px 10px rgba(0,0,0,0.08); background-color: white;" alt="Profile">
@@ -263,7 +309,9 @@
                                             <td class="fw-semibold text-primary">{{ drive.package_lpa }} LPA</td>
                                             <td>{{ drive.deadline }}</td>
                                             <td>
-                                                {% if drive.is_eligible %}
+                                                {% if drive.application_status %}
+                                                    <span class="badge-custom badge-selected">{{ drive.application_status|upper }}</span>
+                                                {% elif drive.is_eligible %}
                                                     <span class="badge-custom badge-eligible">Eligible</span>
                                                 {% else %}
                                                     <span class="badge-custom badge-ineligible">Ineligible</span>
@@ -659,5 +707,119 @@ window.onload = function() {
         fetch('/clear_notifications', { method: 'POST' });
     }
     </script>
+
+    <!-- ─── Calendar Widget JS ─────────────────────────────────────────── -->
+    <script>
+    (function() {
+        const MONTHS = ['January','February','March','April','May','June',
+                        'July','August','September','October','November','December'];
+        let calDate = new Date();
+
+        function renderCalendar() {
+            const now    = new Date();
+            const today  = now.getDate();
+            const todayM = now.getMonth();
+            const todayY = now.getFullYear();
+
+            const yr = calDate.getFullYear();
+            const mo = calDate.getMonth();
+
+            document.getElementById('calMonthYear').textContent = MONTHS[mo] + ' ' + yr;
+
+            // Today chip text
+            const chip = document.getElementById('calTodayChip');
+            if (mo === todayM && yr === todayY) {
+                const d = now.toLocaleDateString('en-IN', {weekday:'short', day:'numeric'});
+                chip.textContent = 'Today · ' + d;
+                chip.style.display = '';
+            } else {
+                chip.style.display = 'none';
+            }
+
+            const firstDay = new Date(yr, mo, 1).getDay();
+            const daysInMonth = new Date(yr, mo + 1, 0).getDate();
+            const prevDays = new Date(yr, mo, 0).getDate();
+
+            const grid = document.getElementById('calDaysGrid');
+            grid.innerHTML = '';
+
+            // Previous month trailing days
+            for (let i = firstDay - 1; i >= 0; i--) {
+                const d = document.createElement('div');
+                d.className = 'cal-day other-month';
+                d.textContent = prevDays - i;
+                grid.appendChild(d);
+            }
+
+            // Current month days
+            for (let d = 1; d <= daysInMonth; d++) {
+                const el = document.createElement('div');
+                el.className = 'cal-day';
+                el.textContent = d;
+                if (d === today && mo === todayM && yr === todayY) {
+                    el.classList.add('today');
+                }
+                grid.appendChild(el);
+            }
+
+            // Next month leading days
+            const totalCells = Math.ceil((firstDay + daysInMonth) / 7) * 7;
+            let nextDay = 1;
+            for (let i = firstDay + daysInMonth; i < totalCells; i++, nextDay++) {
+                const d = document.createElement('div');
+                d.className = 'cal-day other-month';
+                d.textContent = nextDay;
+                grid.appendChild(d);
+            }
+
+            // Fetch upcoming deadlines
+            fetchUpcomingDeadlines();
+        }
+
+        function fetchUpcomingDeadlines() {
+            const el = document.getElementById('calUpcomingEvents');
+            fetch('/api/upcoming_deadlines')
+                .then(r => r.ok ? r.json() : null)
+                .then(data => {
+                    if (!data || !data.deadlines || data.deadlines.length === 0) {
+                        el.textContent = 'No upcoming deadlines';
+                        return;
+                    }
+                    el.innerHTML = data.deadlines.slice(0, 3).map(d =>
+                        `<div style="display:flex;justify-content:space-between;align-items:center;padding:2px 0;">
+                            <span style="font-size:0.72rem;font-weight:600;">${d.company}</span>
+                            <span style="font-size:0.68rem;opacity:0.75;">${d.date}</span>
+                        </div>`
+                    ).join('');
+                })
+                .catch(() => { el.textContent = 'No upcoming deadlines'; });
+        }
+
+        window.toggleCalendar = function(e) {
+            e.stopPropagation();
+            const drop = document.getElementById('calendarDropdown');
+            const btn  = document.getElementById('calendarBtn');
+            const open = !drop.classList.contains('d-none');
+            drop.classList.toggle('d-none', open);
+            btn.classList.toggle('cal-btn-active', !open);
+            if (!open) renderCalendar();
+        };
+
+        window.calNav = function(dir) {
+            calDate.setMonth(calDate.getMonth() + dir);
+            renderCalendar();
+        };
+
+        // Close when clicking outside
+        document.addEventListener('click', function(e) {
+            const wrapper = document.getElementById('calendarWrapper');
+            if (wrapper && !wrapper.contains(e.target)) {
+                document.getElementById('calendarDropdown').classList.add('d-none');
+                document.getElementById('calendarBtn').classList.remove('cal-btn-active');
+            }
+        });
+    })();
+    </script>
+
 </body>
 </html>

@@ -172,10 +172,15 @@
                                             <span class="badge-custom badge-pending">Pending</span>
                                         {% elif app.status == 'Shortlisted' %}
                                             <span class="badge-custom badge-shortlisted">Shortlisted</span>
+                                        {% elif app.status == 'Rounds Cleared' %}
+                                            <span class="badge-custom badge-shortlisted">All Rounds Cleared</span>
+                                            <div style="margin-top: 6px; padding: 4px 10px; background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); color: white; border-radius: 8px; font-size: 11px; font-weight: 700; display: inline-block;">
+                                                🎉 Awaiting Final Confirmation
+                                            </div>
                                         {% elif app.status == 'Selected' %}
                                             <span class="badge-custom badge-selected">Selected</span>
                                             <div style="margin-top: 6px; padding: 4px 10px; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; border-radius: 8px; font-size: 11px; font-weight: 700; display: inline-block;">
-                                                🏆 Hired — {{ app.tier or 'Tier' }}
+                                                🏆 Selected — {{ app.tier or 'Tier' }}
                                             </div>
                                         {% elif app.status == 'Not Selected' or app.status == 'Rejected' %}
                                             <span class="badge-custom badge-rejected">Not Selected</span>
@@ -219,7 +224,7 @@
                                         <div class="stepper-line-active" style="width: 0%;"></div>
                                     {% elif app.status == 'Shortlisted' or app.status == 'Interview' %}
                                         <div class="stepper-line-active" style="width: 66%;"></div>
-                                    {% elif app.status == 'Selected' or app.status == 'Rejected' or app.status == 'Not Selected' %}
+                                    {% elif app.status in ['Selected', 'Rejected', 'Not Selected', 'Rounds Cleared'] %}
                                         <div class="stepper-line-active" style="width: 100%;"></div>
                                     {% else %}
                                         <div class="stepper-line-active" style="width: 33%;"></div>
@@ -251,10 +256,10 @@
                                             3
                                             <span class="step-label" style="left: -24px;">Status</span>
                                         </div>
-                                    {% elif app.status == 'Selected' or app.status == 'Rejected' or app.status == 'Not Selected' %}
+                                    {% elif app.status in ['Selected', 'Rounds Cleared', 'Rejected', 'Not Selected'] %}
                                         <div class="step-node completed">
                                             <i class="bi bi-check"></i>
-                                            <span class="step-label" style="left: -24px;">{{ app.pipeline_status if not app.pipeline_status in ['Hired', 'Closed'] else 'Evaluated' }}</span>
+                                            <span class="step-label" style="left: -24px;">{{ app.pipeline_status }}</span>
                                         </div>
                                     {% else %}
                                         <div class="step-node active">
@@ -267,12 +272,17 @@
                                     {% if app.status == 'Selected' %}
                                         <div class="step-node completed">
                                             <i class="bi bi-trophy"></i>
-                                            <span class="step-label" style="left: -16px; color: #10b981;">Hired</span>
+                                            <span class="step-label" style="left: -16px; color: #10b981;">Selected</span>
+                                        </div>
+                                    {% elif app.status == 'Rounds Cleared' %}
+                                        <div class="step-node" style="border-color:#3b82f6; background:#eff6ff;">
+                                            <i class="bi bi-hourglass-split" style="color:#3b82f6;"></i>
+                                            <span class="step-label" style="left: -30px; color: #3b82f6;">Awaiting</span>
                                         </div>
                                     {% elif app.status == 'Rejected' or app.status == 'Not Selected' %}
                                         <div class="step-node failed">
                                             <i class="bi bi-x"></i>
-                                            <span class="step-label" style="left: -26px; color: #ef4444;">Closed</span>
+                                            <span class="step-label" style="left: -26px; color: #ef4444;">Not Selected</span>
                                         </div>
                                     {% else %}
                                         <div class="step-node">

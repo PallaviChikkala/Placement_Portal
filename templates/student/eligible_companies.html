@@ -184,8 +184,18 @@
 
                             <!-- Actions -->
                             <div class="card-footer-custom d-flex gap-2">
-                                <button class="btn btn-premium-outline btn-sm flex-grow-1" 
-                                        onclick="showJobDetails('{{ job.company_name }}', '{{ job.role }}', '{{ job.package_lpa }}', '{{ job.tier }}', '{{ job.deadline }}', '{{ job.required_skills }}', '{{ job.job_description|replace('\n', '<br>')|replace('\'', '\\\'') }}', '{{ job.eligible_branches }}', '{{ job.min_cgpa }}', '{{ job.num_rounds }}')">
+                                <button class="btn btn-premium-outline btn-sm flex-grow-1 view-details-btn" 
+                                        data-company="{{ job.company_name|e }}"
+                                        data-role="{{ job.role|e }}"
+                                        data-lpa="{{ job.package_lpa|e }}"
+                                        data-tier="{{ job.tier|e }}"
+                                        data-deadline="{{ job.deadline|e }}"
+                                        data-skills="{{ job.required_skills|e }}"
+                                        data-desc="{{ job.job_description|replace('\n', '<br>')|e }}"
+                                        data-branches="{{ job.eligible_branches|e }}"
+                                        data-mincgpa="{{ job.min_cgpa|e }}"
+                                        data-numrounds="{{ job.num_rounds|e }}"
+                                        data-pdf="{{ job.pdf_path|default('', true)|e }}">
                                     View Details
                                 </button>
                                 
@@ -360,6 +370,13 @@
                     <p class="text-muted small" style="line-height: 1.6; max-height: 250px; overflow-y: auto;" id="modal-description">
                         Details of the job profile...
                     </p>
+
+                    <!-- Job PDF/Image Attachment -->
+                    <div id="modal-pdf-section" style="display:none; margin-top: 1rem;">
+                        <hr class="my-3">
+                        <h6 class="text-primary fw-bold mb-2"><i class="bi bi-paperclip me-2"></i> Job Attachment</h6>
+                        <div id="modal-pdf-container"></div>
+                    </div>
                 </div>
                 <div class="modal-footer border-0">
                     <button type="button" class="btn btn-secondary rounded-pill px-4" data-bs-dismiss="modal">Close</button>
@@ -501,28 +518,61 @@ window.onload = function() {
         }
 
         // Show details in Modal
-        function showJobDetails(company, role, lpa, tier, deadline, skills, description, branches, minCgpa, numRounds) {
-            document.getElementById("modal-company-name").innerText = company;
-            document.getElementById("modal-job-role").innerText = role;
-            document.getElementById("modal-package").innerText = `${lpa} LPA`;
-            document.getElementById("modal-tier").innerText = tier;
-            document.getElementById("modal-deadline").innerText = deadline;
-            document.getElementById("modal-branches").innerText = branches || "All Branches";
-            document.getElementById("modal-min-cgpa").innerText = `${minCgpa || '6.0'} CGPA`;
-            
-            if (numRounds && numRounds !== "None") {
-                document.getElementById("modal-rounds-li").style.display = "list-item";
-                document.getElementById("modal-rounds").innerText = numRounds;
-            } else {
-                document.getElementById("modal-rounds-li").style.display = "none";
-            }
-            
-            document.getElementById("modal-required-skills").innerText = skills || "Not Specified";
-            document.getElementById("modal-description").innerHTML = description || "No detailed description provided.";
-            
-            const myModal = new bootstrap.Modal(document.getElementById('jobDetailsModal'));
-            myModal.show();
-        }
+        document.querySelectorAll('.view-details-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const company = this.getAttribute('data-company');
+                const role = this.getAttribute('data-role');
+                const lpa = this.getAttribute('data-lpa');
+                const tier = this.getAttribute('data-tier');
+                const deadline = this.getAttribute('data-deadline');
+                const skills = this.getAttribute('data-skills');
+                const description = this.getAttribute('data-desc');
+                const branches = this.getAttribute('data-branches');
+                const minCgpa = this.getAttribute('data-mincgpa');
+                const numRounds = this.getAttribute('data-numrounds');
+                const pdf = this.getAttribute('data-pdf');
+                
+                document.getElementById("modal-company-name").innerText = company;
+                document.getElementById("modal-job-role").innerText = role;
+                document.getElementById("modal-package").innerText = `${lpa} LPA`;
+                document.getElementById("modal-tier").innerText = tier;
+                document.getElementById("modal-deadline").innerText = deadline;
+                document.getElementById("modal-branches").innerText = branches || "All Branches";
+                document.getElementById("modal-min-cgpa").innerText = `${minCgpa || '6.0'} CGPA`;
+                
+                if (numRounds && numRounds !== "None") {
+                    document.getElementById("modal-rounds-li").style.display = "list-item";
+                    document.getElementById("modal-rounds").innerText = numRounds;
+                } else {
+                    document.getElementById("modal-rounds-li").style.display = "none";
+                }
+                
+                document.getElementById("modal-required-skills").innerText = skills || "Not Specified";
+                document.getElementById("modal-description").innerHTML = description || "No detailed description provided.";
+                
+                // Show PDF / Image attachment
+                const pdfSection = document.getElementById("modal-pdf-section");
+                const pdfContainer = document.getElementById("modal-pdf-container");
+                pdfContainer.innerHTML = "";
+                pdfSection.style.display = "block";
+                const pdfVal = (pdf || '').trim().toLowerCase();
+                if (pdf && pdf.trim() !== '' && pdfVal !== 'none' && pdfVal !== 'null' && pdfVal !== 'undefined') {
+                    const ext = pdf.split('.').pop().toLowerCase();
+                    if (['png', 'jpg', 'jpeg', 'gif', 'webp'].includes(ext)) {
+                        // Image preview
+                        pdfContainer.innerHTML = `<img src="${pdf}" alt="Job Attachment" style="max-width:100%; border-radius:8px; border:1px solid #dee2e6;">`;
+                    } else {
+                        // PDF / other - show open button
+                        pdfContainer.innerHTML = `<a href="${pdf}" target="_blank" class="btn btn-premium-outline btn-sm rounded-pill px-4"><i class="bi bi-file-earmark-pdf me-2"></i>View Job Description PDF</a>`;
+                    }
+                } else {
+                    pdfContainer.innerHTML = `<span class="text-muted small"><i class="bi bi-info-circle me-1"></i>No file attached</span>`;
+                }
+                
+                const myModal = new bootstrap.Modal(document.getElementById('jobDetailsModal'));
+                myModal.show();
+            });
+        });
 
         function nextStep(stepNumber) {
             document.getElementById("apply-step-1").classList.add("d-none");

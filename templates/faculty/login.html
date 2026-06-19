@@ -103,7 +103,7 @@ body {
 .logo-text p { font-size: 9px; letter-spacing: 0.5px; color: var(--text-muted); text-transform: uppercase; transition: color 0.3s; }
 .header-right { font-size: 11px; background: var(--badge-bg); padding: 6px 14px; border-radius: 30px; color: var(--text-accent); transition: all 0.3s; }
 .main-wrapper { width: 100%; margin-top: 80px; display: flex; justify-content: center; }
-.layout { position: relative; z-index: 2; display: flex; gap: 18px; align-items: stretch; width: 100%; max-width: 580px; opacity: 0; animation: fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+.layout { position: relative; z-index: 2; display: flex; gap: 18px; align-items: stretch; width: 100%; max-width: 800px; opacity: 0; animation: fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
 
 @keyframes fadeInUp {
   from { opacity: 0; transform: translateY(30px); }
@@ -176,17 +176,17 @@ input[type="password"]::-webkit-textfield-decoration-container {
 
 <div class="main-wrapper">
   <div class="layout">
+    {% if batches_stats|length > 0 %}
     <div class="side-cards">
+      <div style="font-size: 11px; font-weight: 800; color: var(--text-accent); text-align: center; margin-bottom: -4px; text-transform: uppercase;">{{ batches_stats[0].name }}</div>
       <div class="stat-card c1">
-        <div class="trend">+12%</div>
         <div class="icon-wrap"><i class="ti ti-users"></i></div>
-        <div class="stat-num">{{ total_students }}</div>
+        <div class="stat-num">{{ batches_stats[0].total_students }}</div>
         <div class="stat-label">Registered students</div>
       </div>
       <div class="stat-card c1">
-        <div class="trend">↑ Live</div>
         <div class="icon-wrap"><i class="ti ti-briefcase"></i></div>
-        <div class="stat-num">{{ active_jobs }}</div>
+        <div class="stat-num">{{ batches_stats[0].active_jobs }}</div>
         <div class="stat-label">Active Job Openings</div>
       </div>
       <div class="info-card">
@@ -194,12 +194,13 @@ input[type="password"]::-webkit-textfield-decoration-container {
         <div class="info-row">
           <div class="info-icon"><i class="ti ti-certificate"></i></div>
           <div>
-            <div class="i-val">{{ placement_rate }}%</div>
+            <div class="i-val">{{ batches_stats[0].placement_rate }}%</div>
             <div class="i-lbl">Placement rate</div>
           </div>
         </div>
       </div>
     </div>
+    {% endif %}
 
     <div class="login-panel">
       <div class="portal-tag"><div class="dot-live"></div> Placement Portal</div>
@@ -242,6 +243,33 @@ input[type="password"]::-webkit-textfield-decoration-container {
         <span>Training & Placement Cell © 2026</span>
       </div>
     </div>
+
+    {% if batches_stats|length > 1 %}
+    <div class="side-cards">
+      <div style="font-size: 11px; font-weight: 800; color: var(--text-accent); text-align: center; margin-bottom: -4px; text-transform: uppercase;">{{ batches_stats[1].name }}</div>
+      <div class="stat-card c1">
+        <div class="icon-wrap"><i class="ti ti-users"></i></div>
+        <div class="stat-num">{{ batches_stats[1].total_students }}</div>
+        <div class="stat-label">Registered students</div>
+      </div>
+      <div class="stat-card c1">
+        <div class="icon-wrap"><i class="ti ti-briefcase"></i></div>
+        <div class="stat-num">{{ batches_stats[1].active_jobs }}</div>
+        <div class="stat-label">Active Job Openings</div>
+      </div>
+      <div class="info-card">
+        <div class="info-card-title">Quick stats</div>
+        <div class="info-row">
+          <div class="info-icon"><i class="ti ti-certificate"></i></div>
+          <div>
+            <div class="i-val">{{ batches_stats[1].placement_rate }}%</div>
+            <div class="i-lbl">Placement rate</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
   </div>
 </div>
 <script>

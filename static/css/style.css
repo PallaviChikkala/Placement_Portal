@@ -813,4 +813,198 @@ body.dark-mode .alert-danger strong {
         font-size: 10px !important;
     }
 }
+/* ─── Mini Calendar Widget ─────────────────────────────────────────────── */
+.calendar-dropdown {
+    width: 320px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-color);
+    box-shadow: 0 12px 40px rgba(69, 26, 3, 0.12);
+    overflow: hidden;
+    font-family: var(--font-body);
+    background: #ffffff;
+}
+
+.cal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 16px 10px;
+    background: linear-gradient(135deg, var(--primary) 0%, #78350f 100%);
+    color: #ffffff;
+}
+
+.cal-header .cal-month-year {
+    font-family: var(--font-heading);
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+}
+
+.cal-header .cal-nav-btn {
+    background: rgba(255,255,255,0.15);
+    border: none;
+    color: #fff;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+}
+
+.cal-header .cal-nav-btn:hover {
+    background: rgba(255,255,255,0.3);
+}
+
+.cal-today-chip {
+    background: rgba(255,255,255,0.2);
+    color: #fff;
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 2px 10px;
+    border-radius: 20px;
+    letter-spacing: 0.05em;
+}
+
+.cal-weekdays {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    background: var(--primary-light);
+    padding: 6px 8px 4px;
+    gap: 2px;
+}
+
+.cal-weekdays span {
+    text-align: center;
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.cal-days {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 2px;
+    padding: 8px;
+    background: #ffffff;
+}
+
+.cal-day {
+    aspect-ratio: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    font-weight: 500;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.18s ease;
+    color: var(--text-main);
+}
+
+.cal-day:hover {
+    background: var(--primary-light);
+    color: var(--primary);
+}
+
+.cal-day.today {
+    background: var(--accent);
+    color: #ffffff !important;
+    font-weight: 700;
+    box-shadow: 0 4px 12px rgba(217, 119, 6, 0.4);
+}
+
+.cal-day.other-month {
+    color: #c4b5a0;
+}
+
+.cal-day.has-event::after {
+    content: '';
+    position: absolute;
+    bottom: 3px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 4px;
+    height: 4px;
+    background: var(--accent);
+    border-radius: 50%;
+}
+
+.cal-footer {
+    padding: 10px 16px 12px;
+    border-top: 1px solid var(--border-color);
+    background: var(--primary-light);
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    text-align: center;
+}
+
+.cal-upcoming-label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 4px;
+    display: block;
+}
+
+/* Dark mode calendar overrides */
+.dark-mode .calendar-dropdown {
+    background: #1f2937;
+    border-color: #374151;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.45);
+}
+
+.dark-mode .cal-weekdays {
+    background: #111827;
+}
+
+.dark-mode .cal-days {
+    background: #1f2937;
+}
+
+.dark-mode .cal-day {
+    color: #e5e7eb;
+}
+
+.dark-mode .cal-day:hover {
+    background: #374151;
+    color: #f9fafb;
+}
+
+.dark-mode .cal-day.other-month {
+    color: #4b5563;
+}
+
+.dark-mode .cal-footer {
+    background: #111827;
+    border-color: #374151;
+    color: #9ca3af;
+}
+
+.dark-mode .cal-upcoming-label {
+    color: #d97706;
+}
+
+/* Profile detail cards dark mode fix */
+.dark-mode .p-3.border.rounded.bg-white {
+    background-color: #1f2937 !important;
+    border-color: #374151 !important;
+}
+
+.dark-mode .p-3.border.rounded.bg-white h5 {
+    color: #f59e0b !important;
+}
+
+/* Calendar btn active glow */
+.cal-btn-active {
+    background: var(--accent-glow) !important;
+    color: var(--accent) !important;
+    border-color: var(--accent) !important;
+}
 

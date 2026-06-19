@@ -482,6 +482,7 @@ tr:hover td { background-color:rgba(253,230,138,0.12); }
                 placeholder="Type branch name here"
                 style="display:none;width:100%;max-width:360px;padding:10px;border-radius:10px;border:1px solid rgba(253,230,138,0.8);background:var(--input-bg);color:var(--text-main);font-family:'DM Sans',sans-serif;"
               >
+              <label class="branch-check-label"><input type="checkbox" name="pwd_only" id="fPwdOnly"> PWD Students Only</label>
             </div>
 
           </div>
@@ -711,6 +712,7 @@ function openEditModal(jobDbIdStr) {
   document.getElementById("fBacklogHistory").value = job.backlog_history;
   document.getElementById("fDescription").value = job.description || "";
   document.getElementById("fReqOther").value = job.req_other || "";
+  document.getElementById("fPwdOnly").checked = !!job.pwd_only;
   document.getElementById("fAadhar").checked = !!job.req_aadhar;
   document.getElementById("fPan").checked = !!job.req_pan;
   
