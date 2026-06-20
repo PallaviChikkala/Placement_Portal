@@ -190,6 +190,8 @@ body { min-height: 100vh; font-family: 'DM Sans', sans-serif; background: var(--
 .cal-day { font-size: 13px; color: var(--text-main); font-weight: 500; padding: 8px 0; border-radius: 12px; cursor: default; transition: color 0.3s; }
 .cal-day:hover { background: var(--badge-bg); }
 .cal-day.today { background: linear-gradient(135deg, #f59e0b, #d97706); color: white; font-weight: 700; box-shadow: 0 4px 10px rgba(217,119,6,0.3); }
+.calendar-toggle-btn { background: var(--badge-bg); padding: 6px 14px; border-radius: 30px; color: var(--text-accent); font-weight: 600; display: flex; align-items: center; gap: 6px; font-size: 12px; cursor: pointer; user-select: none; border: 1px solid var(--card-border); transition: background 0.3s, color 0.3s, border-color 0.3s; }
+.calendar-toggle-btn:hover { background: var(--button-gradient); color: #fff; }
 </style>
 </head>
 <body class="premium-animated-bg">
@@ -209,7 +211,7 @@ body { min-height: 100vh; font-family: 'DM Sans', sans-serif; background: var(--
       <i class="ti ti-moon"></i>
     </button>
     <div class="calendar-container" style="position: relative;">
-      <span id="calendarToggleBtn" style="background:rgba(253,230,138,0.3); padding:6px 14px; border-radius:30px; color:#b45309; font-weight:600; display:flex; align-items:center; gap:6px; font-size:12px; cursor:pointer; user-select:none;">
+      <span id="calendarToggleBtn" class="calendar-toggle-btn">
         <i class="ti ti-calendar-time"></i> <span id="currentDateLabel">Calendar</span>
       </span>
       <div id="calendarDropdown" class="calendar-dropdown">
@@ -251,19 +253,19 @@ body { min-height: 100vh; font-family: 'DM Sans', sans-serif; background: var(--
   <div class="stats-row">
     <div class="stat-card-horiz">
       <div class="stat-icon"><i class="ti ti-users"></i></div>
-      <div><div class="stat-number">{{ total_students }}</div><div class="stat-label">Total Students</div></div>
+      <div><div class="stat-number" id="stat-total-students">{{ total_students }}</div><div class="stat-label">Total Students</div></div>
     </div>
     <div class="stat-card-horiz">
       <div class="stat-icon"><i class="ti ti-medal"></i></div>
-      <div><div class="stat-number">{{ placement_rate }}%</div><div class="stat-label">Placement Rate</div></div>
+      <div><div class="stat-number" id="stat-placement-rate">{{ placement_rate }}%</div><div class="stat-label">Placement Rate</div></div>
     </div>
     <div class="stat-card-horiz">
       <div class="stat-icon"><i class="ti ti-briefcase"></i></div>
-      <div><div class="stat-number">{{ active_jobs }}</div><div class="stat-label">Active Jobs</div></div>
+      <div><div class="stat-number" id="stat-active-jobs">{{ active_jobs }}</div><div class="stat-label">Active Jobs</div></div>
     </div>
     <div class="stat-card-horiz">
       <div class="stat-icon"><i class="ti ti-coin"></i></div>
-      <div><div class="stat-number">{{ avg_lpa }} LPA</div><div class="stat-label">Avg Package</div></div>
+      <div><div class="stat-number" id="stat-avg-lpa">{{ avg_lpa }} LPA</div><div class="stat-label">Avg Package</div></div>
     </div>
   </div>
 
@@ -424,6 +426,37 @@ if (themeToggle) {
     icon.className = currentTheme === 'dark' ? 'ti ti-sun' : 'ti ti-moon';
   }
 }
+</script>
+
+<script>
+/* ─── Auto-refresh: silently poll stats every 30 s ─── */
+(function () {
+  function animateValue(el, newText) {
+    if (!el || el.textContent === newText) return;
+    el.style.transition = 'opacity 0.3s';
+    el.style.opacity = '0';
+    setTimeout(() => {
+      el.textContent = newText;
+      el.style.opacity = '1';
+    }, 300);
+  }
+
+  function refreshStats() {
+    fetch('/api/faculty/stats', { credentials: 'same-origin' })
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (!data || data.error) return;
+        animateValue(document.getElementById('stat-total-students'), data.total_students);
+        animateValue(document.getElementById('stat-placement-rate'), data.placement_rate + '%');
+        animateValue(document.getElementById('stat-active-jobs'), data.active_jobs);
+        animateValue(document.getElementById('stat-avg-lpa'), data.avg_lpa + ' LPA');
+      })
+      .catch(() => {});
+  }
+
+  // Poll every 30 seconds silently
+  setInterval(refreshStats, 30000);
+})();
 </script>
 </body>
 </html>

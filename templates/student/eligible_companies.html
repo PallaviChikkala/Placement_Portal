@@ -65,6 +65,9 @@
                 <a href="/my_applications" class="sidebar-link">
                     <i class="bi bi-file-earmark-text"></i> Placement History
                 </a>
+                <a href="/student_selected_companies" class="sidebar-link">
+                    <i class="bi bi-trophy"></i> Selected Companies
+                </a>
             </div>
             
             <div class="sidebar-footer">
@@ -140,7 +143,7 @@
                                 </div>
                                 <div>
                                     {% if job.applied %}
-                                        <span class="badge-custom badge-selected">Applied</span>
+                                        <span class="badge-custom badge-selected">{{ job.application_status|default('Applied', true) }}</span>
                                     {% elif job.is_eligible %}
                                         <span class="badge-custom badge-eligible">Eligible</span>
                                     {% else %}
@@ -173,7 +176,7 @@
                                 {% endif %}
                             </div>
 
-                            {% if not job.is_eligible %}
+                            {% if not job.is_eligible and not job.applied %}
                             <div class="alert alert-danger py-2 px-3 mb-3 small" style="border-radius: var(--radius-sm); font-size: 0.8rem;">
                                 <i class="bi bi-exclamation-triangle me-1"></i>
                                 {% for reason in job.reasons %}
@@ -190,7 +193,8 @@
                                         data-lpa="{{ job.package_lpa|e }}"
                                         data-tier="{{ job.tier|e }}"
                                         data-deadline="{{ job.deadline|e }}"
-                                        data-skills="{{ job.required_skills|e }}"
+                                        data-location="{{ job.location|default('Not Specified', true)|e }}"
+                                        data-bond="{{ job.bond|default('None', true)|e }}"
                                         data-desc="{{ job.job_description|replace('\n', '<br>')|e }}"
                                         data-branches="{{ job.eligible_branches|e }}"
                                         data-mincgpa="{{ job.min_cgpa|e }}"
@@ -200,7 +204,7 @@
                                 </button>
                                 
                                 {% if job.applied %}
-                                    <button class="btn btn-secondary btn-sm flex-grow-1" disabled><i class="bi bi-check2-circle"></i> Applied</button>
+                                    <button class="btn btn-secondary btn-sm flex-grow-1" disabled><i class="bi bi-check2-circle"></i> {{ job.application_status|default('Applied', true) }}</button>
                                 {% elif job.is_eligible %}
                                     <button class="btn btn-premium btn-sm flex-grow-1 apply-btn-trigger" data-job-id="{{ job.job_id }}" onclick="confirmApplication('{{ job.job_id }}', '{{ job.company_name }}', '{{ job.role }}', {{ 'true' if job.req_aadhar else 'false' }}, {{ 'true' if job.req_pan else 'false' }}, '{{ job.req_other|default('', true)|replace('\n', ' ')|replace('\'', '\\\'') }}')">Apply</button>
                                 {% else %}
@@ -337,13 +341,13 @@
                         </div>
                         <div class="col-sm-4">
                             <div class="p-3 bg-light rounded shadow-sm">
-                                <span class="text-muted small d-block">Target Tier</span>
+                                <span class="text-muted small d-block">Company</span>
                                 <h6 class="mb-0 fw-bold text-primary" id="modal-tier">Tier 2</h6>
                             </div>
                         </div>
                         <div class="col-sm-4">
                             <div class="p-3 bg-light rounded shadow-sm">
-                                <span class="text-muted small d-block">Last Date</span>
+                                <span class="text-muted small d-block">Deadline</span>
                                 <h6 class="mb-0 fw-bold text-danger" id="modal-deadline">01-01-2026</h6>
                             </div>
                         </div>
@@ -359,8 +363,11 @@
                             </ul>
                         </div>
                         <div class="col-md-6">
-                            <h6 class="text-primary fw-bold"><i class="bi bi-tag-fill me-2"></i> Required Skills</h6>
-                            <div class="text-muted small mt-2" id="modal-required-skills">Java, HTML, CSS...</div>
+                            <h6 class="text-primary fw-bold"><i class="bi bi-geo-alt me-2"></i> Location & Bond</h6>
+                            <ul class="small text-muted ps-3 mt-2">
+                                <li>Location: <strong class="text-dark" id="modal-location">Not Specified</strong></li>
+                                <li>Bond Details: <strong class="text-dark" id="modal-bond">None</strong></li>
+                            </ul>
                         </div>
                     </div>
 
@@ -525,7 +532,8 @@ window.onload = function() {
                 const lpa = this.getAttribute('data-lpa');
                 const tier = this.getAttribute('data-tier');
                 const deadline = this.getAttribute('data-deadline');
-                const skills = this.getAttribute('data-skills');
+                const location = this.getAttribute('data-location');
+                const bond = this.getAttribute('data-bond');
                 const description = this.getAttribute('data-desc');
                 const branches = this.getAttribute('data-branches');
                 const minCgpa = this.getAttribute('data-mincgpa');
@@ -537,6 +545,8 @@ window.onload = function() {
                 document.getElementById("modal-package").innerText = `${lpa} LPA`;
                 document.getElementById("modal-tier").innerText = tier;
                 document.getElementById("modal-deadline").innerText = deadline;
+                document.getElementById("modal-location").innerText = location;
+                document.getElementById("modal-bond").innerText = bond;
                 document.getElementById("modal-branches").innerText = branches || "All Branches";
                 document.getElementById("modal-min-cgpa").innerText = `${minCgpa || '6.0'} CGPA`;
                 
@@ -547,7 +557,6 @@ window.onload = function() {
                     document.getElementById("modal-rounds-li").style.display = "none";
                 }
                 
-                document.getElementById("modal-required-skills").innerText = skills || "Not Specified";
                 document.getElementById("modal-description").innerHTML = description || "No detailed description provided.";
                 
                 // Show PDF / Image attachment

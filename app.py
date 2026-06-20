@@ -89,11 +89,15 @@ init_global_db()
 cursor = CursorWrapper()
 db = DbWrapper()
 
-def switch_active_db(db_name, year_str):
+def switch_active_db(db_name, year_str, year_name=None):
     from flask import g, session, has_request_context
     if has_request_context():
         session["active_year_db"] = db_name
         session["active_year"] = year_str
+        if year_name:
+            session["active_year_name"] = year_name
+        else:
+            session["active_year_name"] = year_str
         if 'db' in g:
             try:
                 g.cursor.close()
@@ -1175,10 +1179,13 @@ def eligible_companies():
             tier_ok = False
             tier_reason = "Tier Policy restriction: Selected in 2 companies, cannot apply for more."
         elif student_selected_tier is not None and student_selected_tier > 0:
-            if student_selected_tier == 1 and job_tier_num in [2, 3]:
+            if student_selected_tier == 1:
                 tier_ok = False
                 tier_reason = f"Tier Policy restriction: Selected in Tier {student_selected_tier}, cannot apply for Tier {job_tier_num}"
-            elif student_selected_tier == 2 and job_tier_num == 3:
+            elif student_selected_tier == 2 and job_tier_num in [2, 3]:
+                tier_ok = False
+                tier_reason = f"Tier Policy restriction: Selected in Tier {student_selected_tier}, cannot apply for Tier {job_tier_num}"
+            elif student_selected_tier == 3 and job_tier_num == 3:
                 tier_ok = False
                 tier_reason = f"Tier Policy restriction: Selected in Tier {student_selected_tier}, cannot apply for Tier {job_tier_num}"
 
@@ -1449,6 +1456,29 @@ def my_applications():
 
     return render_template("student/my_applications.html", applications=apps, student=student, round_links_map=round_links_map)
 
+@app.route("/student_selected_companies")
+def student_selected_companies():
+    ensure_connection()
+    if "student_id" not in session:
+        return redirect("/student_login")
+        
+    student_id = session["student_id"]
+    cursor.execute("SELECT * FROM students WHERE student_id = %s", (student_id,))
+    student = cursor.fetchone()
+    
+    # Fetch jobs where they are formally 'Selected'
+    query = """
+        SELECT a.applied_date, j.job_id, j.company_name, j.role, j.tier, j.ctc
+        FROM applications a
+        JOIN jobs j ON a.job_id = j.job_id
+        WHERE a.student_id = %s AND a.status = 'Selected'
+        ORDER BY j.company_name ASC
+    """
+    cursor.execute(query, (student_id,))
+    selected_jobs = cursor.fetchall()
+
+    return render_template("student/selected_companies.html", student=student, selected_jobs=selected_jobs)
+
 @app.route("/ongoing_rounds")
 def ongoing_rounds():
     ensure_connection()
@@ -1526,6 +1556,7 @@ def inject_global_settings():
     ensure_connection()
     from flask import session
     active_year = session.get("active_year", "2025-2026")
+    active_year_name = session.get("active_year_name", active_year)
     try:
         cursor.execute("SELECT setting_key, setting_value FROM global_settings")
         rows = cursor.fetchall()
@@ -1533,10 +1564,10 @@ def inject_global_settings():
         for r in rows:
             settings[r["setting_key"]] = r["setting_value"]
         if 'recruitment_title' not in settings:
-            settings['recruitment_title'] = f'{active_year} Recruitment Season Live'
-        return dict(global_settings=settings, active_year=active_year)
+            settings['recruitment_title'] = f'{active_year_name} Recruitment Season Live'
+        return dict(global_settings=settings, active_year=active_year_name)
     except Exception:
-        return dict(global_settings={'recruitment_title': f'{active_year} Recruitment Season Live'}, active_year=active_year)
+        return dict(global_settings={'recruitment_title': f'{active_year_name} Recruitment Season Live'}, active_year=active_year_name)
 
 @app.route("/faculty/update_settings", methods=["POST"])
 def faculty_update_settings():
@@ -1569,13 +1600,36 @@ def get_dashboard_stats():
         active_jobs = 0
     
     placement_rate = 0.0
-    if total_students > 0:
-        try:
-            cursor.execute("SELECT COUNT(DISTINCT student_id) as placed FROM applications WHERE status = 'Selected'")
-            placed_students = cursor.fetchone()["placed"]
-            placement_rate = round((placed_students / total_students * 100), 1)
-        except Exception:
-            pass
+    try:
+        # Interested in job: career_option is 'Job' or 'PSU' (placement-seeking)
+        cursor.execute("""
+            SELECT COUNT(*) AS c FROM students
+            WHERE LOWER(TRIM(COALESCE(career_option,''))) IN ('job', 'psu')
+               OR career_option IS NULL
+        """)
+        total_interested = cursor.fetchone()["c"] or 0
+
+        # Not-interested students who still applied for any job
+        cursor.execute("""
+            SELECT COUNT(DISTINCT s.student_id) AS c
+            FROM students s
+            JOIN applications a ON a.student_id = s.student_id
+            WHERE LOWER(TRIM(COALESCE(s.career_option,''))) NOT IN ('job', 'psu')
+              AND s.career_option IS NOT NULL
+        """)
+        not_interested_applied = cursor.fetchone()["c"] or 0
+
+        denominator = total_interested + not_interested_applied
+
+        if denominator > 0:
+            # Numerator: all students who applied (from either group)
+            cursor.execute("""
+                SELECT COUNT(DISTINCT student_id) AS c FROM applications
+            """)
+            total_applied = cursor.fetchone()["c"] or 0
+            placement_rate = round((total_applied / denominator * 100), 1)
+    except Exception:
+        pass
 
     return total_students, active_jobs, placement_rate
 
@@ -1682,14 +1736,50 @@ def faculty_dashboard():
             count_lpa += 1
     avg_lpa = round(total_lpa / count_lpa, 1) if count_lpa > 0 else 0.0
 
-    # Calculate placement rate
-    cursor.execute("SELECT COUNT(DISTINCT student_id) as placed FROM applications WHERE status = 'Selected'")
-    placed_students = cursor.fetchone()["placed"]
-    placement_rate = round((placed_students / total_students * 100), 1) if total_students > 0 else 0.0
+    # Calculate placement rate using the correct formula:
+    # (applied_interested + applied_not_interested) / (total_interested + applied_not_interested)
+    try:
+        cursor.execute("""
+            SELECT COUNT(*) AS c FROM students
+            WHERE LOWER(TRIM(COALESCE(career_option,''))) IN ('job', 'psu')
+               OR career_option IS NULL
+        """)
+        total_interested = cursor.fetchone()["c"] or 0
+
+        cursor.execute("""
+            SELECT COUNT(DISTINCT s.student_id) AS c
+            FROM students s
+            JOIN applications a ON a.student_id = s.student_id
+            WHERE LOWER(TRIM(COALESCE(s.career_option,''))) NOT IN ('job', 'psu')
+              AND s.career_option IS NOT NULL
+        """)
+        not_interested_applied = cursor.fetchone()["c"] or 0
+
+        denominator = total_interested + not_interested_applied
+
+        if denominator > 0:
+            cursor.execute("SELECT COUNT(DISTINCT student_id) AS c FROM applications")
+            total_applied = cursor.fetchone()["c"] or 0
+            placement_rate = round((total_applied / denominator * 100), 1)
+        else:
+            placement_rate = 0.0
+    except Exception:
+        placement_rate = 0.0
 
     # Check if master sheet file exists (pdf, xlsx, or csv)
-    active_year = session.get("active_year", "2025-2026")
-    upload_dir = os.path.join(app.static_folder, "uploads", active_year)
+    # Get active batch name instead of just ID
+    active_year_id = session.get("active_year", "2025-2026")
+    active_year_name = active_year_id
+    batches_file = os.path.join(app.root_path, "database", "batches.json")
+    if os.path.exists(batches_file):
+        with open(batches_file, "r") as f:
+            batches_list = json.load(f)
+            for b in batches_list:
+                if b["id"] == active_year_id:
+                    active_year_name = b["name"]
+                    break
+
+    upload_dir = os.path.join(app.static_folder, "uploads", active_year_id)
     master_sheet_status = "Empty"
     if os.path.exists(os.path.join(upload_dir, "master_sheet.pdf")) or \
        os.path.exists(os.path.join(upload_dir, "master_sheet.xlsx")) or \
@@ -1703,7 +1793,8 @@ def faculty_dashboard():
         active_jobs=active_jobs,
         placement_rate=placement_rate,
         avg_lpa=avg_lpa,
-        master_sheet_status=master_sheet_status
+        master_sheet_status=master_sheet_status,
+        active_year=active_year_name
     )
 
 
@@ -1714,6 +1805,96 @@ def faculty_logout():
     session.pop("active_year", None)
     session.pop("active_year_db", None)
     return redirect("/faculty_login")
+
+
+@app.route("/api/faculty/stats")
+def api_faculty_stats():
+    """Live stats endpoint for auto-refresh polling on faculty dashboard."""
+    ensure_connection()
+    redir = faculty_required()
+    if redir:
+        return jsonify({"error": "unauthorized"}), 403
+    try:
+        cursor.execute("SELECT COUNT(*) AS c FROM students")
+        total_students = cursor.fetchone()["c"] or 0
+        cursor.execute("SELECT COUNT(*) AS c FROM jobs")
+        active_jobs = cursor.fetchone()["c"] or 0
+
+        # Placement rate formula
+        cursor.execute("""
+            SELECT COUNT(*) AS c FROM students
+            WHERE LOWER(TRIM(COALESCE(career_option,''))) IN ('job', 'psu')
+               OR career_option IS NULL
+        """)
+        total_interested = cursor.fetchone()["c"] or 0
+
+        cursor.execute("""
+            SELECT COUNT(DISTINCT s.student_id) AS c
+            FROM students s
+            JOIN applications a ON a.student_id = s.student_id
+            WHERE LOWER(TRIM(COALESCE(s.career_option,''))) NOT IN ('job', 'psu')
+              AND s.career_option IS NOT NULL
+        """)
+        not_interested_applied = cursor.fetchone()["c"] or 0
+
+        denominator = total_interested + not_interested_applied
+        if denominator > 0:
+            cursor.execute("SELECT COUNT(DISTINCT student_id) AS c FROM applications")
+            total_applied = cursor.fetchone()["c"] or 0
+            placement_rate = round((total_applied / denominator * 100), 1)
+        else:
+            placement_rate = 0.0
+
+        # Avg LPA
+        import re as _re
+        cursor.execute("SELECT ctc FROM jobs WHERE ctc IS NOT NULL AND ctc != ''")
+        ctc_rows = cursor.fetchall()
+        total_lpa, count_lpa = 0, 0
+        for r in ctc_rows:
+            m = _re.search(r'([\d.]+)', str(r['ctc']))
+            if m:
+                total_lpa += float(m.group(1))
+                count_lpa += 1
+        avg_lpa = round(total_lpa / count_lpa, 1) if count_lpa > 0 else 0.0
+
+        return jsonify({
+            "total_students": total_students,
+            "active_jobs": active_jobs,
+            "placement_rate": placement_rate,
+            "avg_lpa": avg_lpa
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/student/stats")
+def api_student_stats():
+    """Live stats endpoint for auto-refresh polling on student dashboard."""
+    ensure_connection()
+    if "student_id" not in session:
+        return jsonify({"error": "unauthorized"}), 403
+    try:
+        student_id = session["student_id"]
+        cursor.execute("SELECT COUNT(*) AS c FROM applications WHERE student_id = %s", (student_id,))
+        applied_count = cursor.fetchone()["c"] or 0
+
+        cursor.execute("SELECT COUNT(*) AS c FROM applications WHERE student_id = %s AND status = 'Selected'", (student_id,))
+        selected_count = cursor.fetchone()["c"] or 0
+
+        cursor.execute("SELECT COUNT(*) AS c FROM jobs")
+        active_jobs = cursor.fetchone()["c"] or 0
+
+        cursor.execute("SELECT COUNT(*) AS c FROM notifications WHERE student_id = %s AND is_read = 0", (student_id,))
+        unread_notifications = cursor.fetchone()["c"] or 0
+
+        return jsonify({
+            "applied_count": applied_count,
+            "selected_count": selected_count,
+            "active_jobs": active_jobs,
+            "unread_notifications": unread_notifications
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 
 @app.route("/faculty/select_year")
@@ -1752,9 +1933,10 @@ def faculty_set_year(year):
         return redirect("/faculty/select_year")
         
     db_name = next(b["db"] for b in batches if b["id"] == year)
-    switch_active_db(db_name, year)
+    batch_name = next((b["name"] for b in batches if b["id"] == year), year)
+    switch_active_db(db_name, year, batch_name)
     
-    flash(f"Switched to {year} Batch successfully.", "success")
+    flash(f"Switched to {batch_name} Batch successfully.", "success")
     return redirect("/faculty_dashboard")
 
 @app.route("/faculty/manage_batches", methods=["POST"])
@@ -1781,12 +1963,24 @@ def faculty_manage_batches():
                 b["name"] = edit_name
                 if edit_desc:
                     b["desc"] = edit_desc
+                else:
+                    b["desc"] = f"Manage recruitment drives, student details, eligibility criteria, and outcomes for {edit_name}."
                 break
                 
         with open(batches_file, "w") as f:
             json.dump(batches, f, indent=2)
+
+        # Update session if renaming the currently active batch
+        if session.get("active_year") == edit_id:
+            session["active_year_name"] = edit_name
+            # Also update global settings so login page shows correct recruitment title
+            try:
+                cursor.execute("UPDATE global_settings SET setting_value = %s WHERE setting_key = 'recruitment_title'", (f"{edit_name} Recruitment Season Live",))
+                db.commit()
+            except Exception:
+                pass
             
-        flash(f"Batch {edit_name} updated successfully.", "success")
+        flash(f"Batch '{edit_name}' updated successfully.", "success")
         
     return redirect("/faculty/select_year")
 
@@ -1817,6 +2011,7 @@ def faculty_reset_batch():
         return redirect("/faculty/master_sheet")
         
     active_year = session.get("active_year", "2025-2026")
+    active_year_name = session.get("active_year_name", active_year)
     
     # 1. Delete all uploaded files for this year (profile photos, job PDFs, master sheets)
     import shutil
@@ -1837,11 +2032,11 @@ def faculty_reset_batch():
         cursor.execute("DELETE FROM students")
         cursor.execute("DELETE FROM jobs")
         cursor.execute("DELETE FROM global_settings")
-        cursor.execute("INSERT INTO global_settings (setting_key, setting_value) VALUES ('recruitment_title', %s)", (f"{active_year} Recruitment Season",))
+        cursor.execute("INSERT INTO global_settings (setting_key, setting_value) VALUES ('recruitment_title', %s)", (f"{active_year_name} Recruitment Season Live",))
         cursor.execute("SET FOREIGN_KEY_CHECKS = 1")
         db.commit()
         
-        flash(f"Database for batch {active_year} has been reset. All student data and files were removed.", "success")
+        flash(f"Database for batch '{active_year_name}' has been reset. All student data and files were removed.", "success")
     except Exception as e:
         db.rollback()
         flash(f"Error resetting database: {str(e)}", "error")
@@ -2204,7 +2399,7 @@ def faculty_applications_update_status():
         # Re-evaluate the student selected_tier:
         # Find the highest tier level among all 'Selected' applications for this student
         cursor.execute("""
-            SELECT j.tier
+            SELECT j.tier, j.company_name
             FROM applications a
             JOIN jobs j ON a.job_id = j.job_id
             WHERE a.student_id = %s AND a.status = 'Selected'
@@ -2212,17 +2407,25 @@ def faculty_applications_update_status():
         selected_apps = cursor.fetchall()
        
         if selected_apps:
-            # Calculate highest tier selected (lower tier number is better, i.e., Tier 1 is better than Tier 2)
             highest_tier_num = 3
+            tier_1_val, tier_2_val, tier_3_val = None, None, None
             for sa in selected_apps:
                 t_str = sa["tier"] or "Tier 3"
+                c_name = sa["company_name"]
                 t_num = 1 if '1' in t_str else (2 if '2' in t_str else 3)
                 if t_num < highest_tier_num:
                     highest_tier_num = t_num
-            cursor.execute("UPDATE students SET selected_tier = %s WHERE student_id = %s", (highest_tier_num, student_id))
+                    
+                if t_num == 1:
+                    tier_1_val = c_name
+                elif t_num == 2:
+                    tier_2_val = c_name
+                elif t_num == 3:
+                    tier_3_val = c_name
+            cursor.execute("UPDATE students SET selected_tier = %s, tier_1 = %s, tier_2 = %s, tier_3 = %s WHERE student_id = %s", (highest_tier_num, tier_1_val, tier_2_val, tier_3_val, student_id))
         else:
             # Clear selected tier
-            cursor.execute("UPDATE students SET selected_tier = NULL WHERE student_id = %s", (student_id,))
+            cursor.execute("UPDATE students SET selected_tier = NULL, tier_1 = NULL, tier_2 = NULL, tier_3 = NULL WHERE student_id = %s", (student_id,))
 
         db.commit()
         return jsonify({"success": True})
@@ -3227,13 +3430,29 @@ def faculty_download_applied_excel(job_id):
 
     # Fetch applied students
     cursor.execute("""
-        SELECT s.student_id, s.name, s.branch, s.roll_number, s.phone_number, s.email, s.aadhar, s.pan, a.resume_path
+        SELECT s.student_id, s.name, s.branch, s.roll_number, s.phone_number, s.email, s.aadhar, s.pan, a.resume_path, a.extra_details
         FROM applications a
         JOIN students s ON a.student_id = s.student_id
         WHERE a.job_id = %s
         ORDER BY s.student_id ASC
     """, (job_id,))
     applicants = cursor.fetchall()
+    
+    import json
+    for app_row in applicants:
+        if app_row.get('extra_details'):
+            try:
+                app_row['extra_dict'] = json.loads(app_row['extra_details'])
+            except:
+                app_row['extra_dict'] = {}
+        else:
+            app_row['extra_dict'] = {}
+
+    extra_keys = []
+    for app_row in applicants:
+        for k in app_row['extra_dict'].keys():
+            if k not in extra_keys:
+                extra_keys.append(k)
 
     import openpyxl
     from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
@@ -3265,7 +3484,7 @@ def faculty_download_applied_excel(job_id):
 
     # Title row
     ws.merge_cells("A1:I1")
-    ws["A1"] = f"Applied Students - {company_name} ({role_name})"
+    ws["A1"] = f"Applied Students - {company_name} ({role_name}) - Job ID: {job_id}"
     ws["A1"].font = title_font
     ws["A1"].alignment = left_align
     ws.row_dimensions[1].height = 30
@@ -3277,12 +3496,17 @@ def faculty_download_applied_excel(job_id):
         "Roll Number",
         "Student Name",
         "Branch",
-        "Aadhar Card",
-        "PAN Card",
+        "Aadhar Number",
+        "PAN Number",
         "Email ID",
         "Phone Number",
         "Resume Drive Link"
     ]
+    
+    filtered_extra_keys = [k for k in extra_keys if k not in ("aadhar_number", "pan_number")]
+    
+    for k in filtered_extra_keys:
+        headers.append(k.replace('_', ' ').title())
    
     # In openpyxl: A=1, B=2, C=3, etc. We will write to Row 3
     for col_num, header in enumerate(headers, 1):
@@ -3331,13 +3555,15 @@ def faculty_download_applied_excel(job_id):
         c.border = thin_border
 
         # Aadhar
-        c = ws.cell(row=row_num, column=6, value=app["aadhar"] or "—")
+        aadhar_val = app.get("aadhar") or app["extra_dict"].get("aadhar_number") or "—"
+        c = ws.cell(row=row_num, column=6, value=aadhar_val)
         c.font = regular_font
         c.alignment = center_align
         c.border = thin_border
 
         # PAN
-        c = ws.cell(row=row_num, column=7, value=app["pan"] or "—")
+        pan_val = app.get("pan") or app["extra_dict"].get("pan_number") or "—"
+        c = ws.cell(row=row_num, column=7, value=pan_val)
         c.font = regular_font
         c.alignment = center_align
         c.border = thin_border
@@ -3360,9 +3586,17 @@ def faculty_download_applied_excel(job_id):
         c.font = regular_font
         c.alignment = left_align
         c.border = thin_border
-        if resume_val.startswith("http"):
+        if resume_val and str(resume_val).startswith("http"):
             c.hyperlink = resume_val
             c.font = Font(name="Calibri", size=11, color="0000FF", underline="single")
+            
+        # Extra Details
+        for i, key in enumerate(filtered_extra_keys):
+            val = app['extra_dict'].get(key, "—")
+            c = ws.cell(row=row_num, column=11+i, value=str(val))
+            c.font = regular_font
+            c.alignment = left_align
+            c.border = thin_border
 
     # Autofit columns
     for col in ws.columns:
@@ -3548,7 +3782,9 @@ def faculty_master_sheet():
         file_type = "CSV Document"
         file_size = round(os.path.getsize(os.path.join(upload_dir, current_file)) / 1024)
 
-    return render_template("faculty/master_sheet.html", current_file=current_file, file_type=file_type, file_size=file_size)
+    active_year_name = session.get("active_year_name", active_year)
+
+    return render_template("faculty/master_sheet.html", current_file=current_file, file_type=file_type, file_size=file_size, active_year=active_year_name)
 
 @app.route("/faculty/upload_master_sheet", methods=["POST"])
 def faculty_upload_master_sheet():
@@ -4138,6 +4374,29 @@ def verify_otp():
        
     if request.method == "POST":
         entered_otp = request.form.get("otp", "").strip()
+        role = session.get('reset_role')
+        
+        if role == 'student':
+            aadhar_last5 = request.form.get("aadhar_last5", "").strip()
+            pan_number = request.form.get("pan_number", "").strip().upper()
+            
+            email = session.get('reset_email')
+            cursor.execute("SELECT aadhar, pan FROM students WHERE email = %s", (email,))
+            student = cursor.fetchone()
+            
+            if student:
+                real_aadhar = student['aadhar'] or ""
+                real_pan = student['pan'] or ""
+                
+                if len(aadhar_last5) != 5 or not real_aadhar.endswith(aadhar_last5) or real_pan.upper() != pan_number:
+                    from flask import flash
+                    flash("Aadhar or PAN verification failed. Make sure to enter the exact details given to the faculty.", "error")
+                    return redirect("/verify_otp")
+            else:
+                from flask import flash
+                flash("Student account not found.", "error")
+                return redirect("/verify_otp")
+
         if entered_otp == session.get('reset_otp'):
             session['reset_verified'] = True
             return redirect("/reset_password")
@@ -4145,7 +4404,7 @@ def verify_otp():
             from flask import flash
             flash("Invalid OTP. Please try again.", "error")
            
-    return render_template("verify_otp.html", email=session.get('reset_email'))
+    return render_template("verify_otp.html", email=session.get('reset_email'), role=session.get('reset_role'))
 
 @app.route("/reset_password", methods=["GET", "POST"])
 def reset_password():
@@ -4183,7 +4442,8 @@ def reset_password():
             session.pop('reset_verified', None)
            
             from flask import flash
-            flash("Password has been reset successfully! You can now log in.", "success")
+            active_year_name = session.get("active_year_name", "the active batch")
+            flash(f"Password has been reset successfully for {active_year_name}! You can now log in.", "success")
             return redirect("/")
         except Exception as e:
             db.rollback()

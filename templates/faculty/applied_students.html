@@ -126,6 +126,42 @@ td { padding:10px 10px; color:var(--text-main); border-bottom:1px solid var(--ta
 .resume-btn:hover { text-decoration:underline; }
 
 .empty-state { text-align:center; padding:30px; color:var(--text-muted); font-weight:600; font-size:13px; transition: color 0.3s; }
+/* Jobs selection grid */
+.jobs-title { font-family:'Syne',sans-serif; font-size:20px; font-weight:800; margin-bottom:16px; color:var(--text-main); }
+.jobs-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 20px; margin-bottom: 40px; }
+.job-selector-card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 20px;
+  padding: 20px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px var(--shadow-color);
+  animation: fadeInUp 0.6s ease forwards;
+}
+.job-selector-card:hover {
+  transform: translateY(-4px);
+  background: var(--card-hover-bg);
+  box-shadow: 0 10px 24px var(--shadow-hover);
+  border-color: var(--text-accent);
+}
+.job-selector-card.active {
+  background: var(--card-hover-bg);
+  border-color: var(--text-accent);
+  box-shadow: 0 0 0 3px var(--text-accent);
+}
+.job-selector-card h3 { font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 800; color: var(--text-main); margin-bottom: 6px; }
+.job-selector-card p { font-size: 13px; color: var(--text-muted); line-height: 1.4; }
+.job-meta { display: flex; justify-content: space-between; font-size: 11px; margin-top: 14px; font-weight: 700; color: var(--text-accent); }
+
+/* Results section */
+.results-section { display: none; margin-top: 20px; }
+.results-section.active { display: block; animation: fadeIn 0.5s ease; }
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
 </style>
 </head>
 <body>
@@ -151,158 +187,178 @@ td { padding:10px 10px; color:var(--text-main); border-bottom:1px solid var(--ta
   </div>
 
   {% if jobs %}
-    {% for j in jobs %}
-    <div class="job-card">
-      <div class="job-header">
-        <div class="job-title">
-          <h3>{{ j.company_name }} — {{ j.role }}</h3>
-          <p>JOB ID: {{ j.job_id }} · Tier: {{ j.tier }} · CTC: {{ j.ctc }} · Location: {{ j.location }}</p>
+    <h2 class="jobs-title">Select a Job Position</h2>
+    <div class="jobs-grid">
+      {% for j in jobs %}
+        <div class="job-selector-card" onclick="showJobDetails('job-{{ j.job_id }}', this)">
+          <h3>{{ j.company_name }}</h3>
+          <p>{{ j.role }}</p>
+          <div style="font-size:11px; color:var(--text-muted); margin-top:4px;">{{ j.job_id }}</div>
+          <div class="job-meta">
+            <span><i class="ti ti-coin"></i> {{ j.ctc }}</span>
+            <span><i class="ti ti-users"></i> {{ j.applicants|length }} Applicants</span>
+          </div>
         </div>
-        <div class="job-status-badges">
-          {% if j.is_deadline_passed %}
-            <span class="status-badge closed"><i class="ti ti-lock"></i> Closed</span>
-          {% else %}
-            <span class="status-badge active"><i class="ti ti-lock-open"></i> Active</span>
-            {% if j.deadline_str != 'Ongoing' %}
-              <span class="countdown-timer" data-deadline="{{ j.deadline_str }}"><i class="ti ti-clock"></i> Calculating...</span>
-            {% endif %}
-          {% endif %}
-          
-          {% if j.applicants %}
-            <a href="/faculty/download_applied_excel/{{ j.job_id }}" class="download-excel-btn">
-              <i class="ti ti-file-spreadsheet"></i> Download Excel
-            </a>
-          {% else %}
-            <button class="download-excel-btn" style="background:#e5e7eb; color:#9ca3af; cursor:not-allowed;" disabled>
-              <i class="ti ti-file-spreadsheet"></i> No Applicants
-            </button>
-          {% endif %}
-        </div>
-      </div>
-
-      <!-- Applicant List Section -->
-      <div>
-        <h4 style="font-size:13px; color:#78350f; font-family:'Syne',sans-serif; margin-bottom:8px;">
-          Applicants List ({{ j.applicants|length }})
-        </h4>
-
-        {% if j.is_deadline_passed %}
-          <!-- Table shown once deadline is completed -->
-          {% if j.applicants %}
-          <div class="table-wrapper">
-            <table>
-              <thead>
-                <tr>
-                  <th>S.No</th>
-                  <th>Roll Number</th>
-                  <th>Student Name</th>
-                  <th>Branch</th>
-                  <th>Aadhar</th>
-                  <th>PAN</th>
-                  <th>Email ID</th>
-                  <th>Phone Number</th>
-                  <th>Resume Drive Link</th>
-                  <th>Extra Details</th>
-                </tr>
-              </thead>
-              <tbody>
-                {% for a in j.applicants %}
-                <tr>
-                  <td>{{ loop.index }}</td>
-                  <td><strong>{{ a.roll_number or a.student_id or '—' }}</strong></td>
-                  <td><strong>{{ a.name }}</strong></td>
-                  <td>{{ a.branch | upper }}</td>
-                  <td>{{ a.aadhar or '—' }}</td>
-                  <td>{{ a.pan or '—' }}</td>
-                  <td>{{ a.email }}</td>
-                  <td>{{ a.phone_number or '—' }}</td>
-                  <td>
-                    {% if a.resume_path %}
-                      <a href="{{ a.resume_path }}" target="_blank" class="resume-btn"><i class="ti ti-external-link"></i> View Resume</a>
-                    {% else %}
-                      <span style="color:#a1a1aa;">—</span>
-                    {% endif %}
-                  </td>
-                  <td>
-                    {% if a.extra_dict %}
-                      <ul style="margin: 0; padding-left: 15px; font-size: 11px;">
-                        {% for k, v in a.extra_dict.items() %}
-                          <li><strong>{{ k.replace('_', ' ').title() }}:</strong> {{ v }}</li>
-                        {% endfor %}
-                      </ul>
-                    {% else %}
-                      <span style="color:#a1a1aa;">—</span>
-                    {% endif %}
-                  </td>
-                </tr>
-                {% endfor %}
-              </tbody>
-            </table>
-          </div>
-          {% else %}
-            <p class="empty-state">No students applied for this job drive.</p>
-          {% endif %}
-        {% else %}
-          <!-- Pre-deadline state: show students applied so far, but mark active -->
-          <div style="background: rgba(253,230,138,0.12); padding: 12px; border-radius: 12px; border: 1px dashed rgba(253,230,138,0.6); margin-bottom: 12px;">
-            <p style="font-size: 12px; color: #b45309; font-weight: 600;">
-              <i class="ti ti-info-circle"></i> Application period is active. Final list will freeze once the deadline completes.
-            </p>
-          </div>
-          {% if j.applicants %}
-          <div class="table-wrapper">
-            <table>
-              <thead>
-                <tr>
-                  <th>S.No</th>
-                  <th>Roll Number</th>
-                  <th>Student Name</th>
-                  <th>Branch</th>
-                  <th>Email ID</th>
-                  <th>Phone Number</th>
-                  <th>Resume Drive Link</th>
-                  <th>Extra Details</th>
-                </tr>
-              </thead>
-              <tbody>
-                {% for a in j.applicants %}
-                <tr>
-                  <td>{{ loop.index }}</td>
-                  <td><strong>{{ a.roll_number or a.student_id or '—' }}</strong></td>
-                  <td><strong>{{ a.name }}</strong></td>
-                  <td>{{ a.branch | upper }}</td>
-                  <td>{{ a.email }}</td>
-                  <td>{{ a.phone_number or '—' }}</td>
-                  <td>
-                    {% if a.resume_path %}
-                      <a href="{{ a.resume_path }}" target="_blank" class="resume-btn"><i class="ti ti-external-link"></i> View Resume</a>
-                    {% else %}
-                      <span style="color:#a1a1aa;">—</span>
-                    {% endif %}
-                  </td>
-                  <td>
-                    {% if a.extra_dict %}
-                      <ul style="margin: 0; padding-left: 15px; font-size: 11px;">
-                        {% for k, v in a.extra_dict.items() %}
-                          <li><strong>{{ k.replace('_', ' ').title() }}:</strong> {{ v }}</li>
-                        {% endfor %}
-                      </ul>
-                    {% else %}
-                      <span style="color:#a1a1aa;">—</span>
-                    {% endif %}
-                  </td>
-                </tr>
-                {% endfor %}
-              </tbody>
-            </table>
-          </div>
-          {% else %}
-            <p class="empty-state">No student applications submitted yet.</p>
-          {% endif %}
-        {% endif %}
-      </div>
+      {% endfor %}
     </div>
-    {% endfor %}
+
+    <!-- Hidden detailed views -->
+    <div id="job-details-container">
+      {% for j in jobs %}
+      <div id="job-{{ j.job_id }}" class="results-section">
+        <div class="job-card">
+          <div class="job-header">
+            <div class="job-title">
+              <h3>{{ j.company_name }} — {{ j.role }}</h3>
+              <p>JOB ID: {{ j.job_id }} · Tier: {{ j.tier }} · CTC: {{ j.ctc }} · Location: {{ j.location }}</p>
+            </div>
+            <div class="job-status-badges">
+              {% if j.is_deadline_passed %}
+                <span class="status-badge closed"><i class="ti ti-lock"></i> Closed</span>
+              {% else %}
+                <span class="status-badge active"><i class="ti ti-lock-open"></i> Active</span>
+                {% if j.deadline_str != 'Ongoing' %}
+                  <span class="countdown-timer" data-deadline="{{ j.deadline_str }}"><i class="ti ti-clock"></i> Calculating...</span>
+                {% endif %}
+              {% endif %}
+              
+              {% if j.applicants %}
+                <a href="/faculty/download_applied_excel/{{ j.job_id }}" class="download-excel-btn">
+                  <i class="ti ti-file-spreadsheet"></i> Download Excel
+                </a>
+              {% else %}
+                <button class="download-excel-btn" style="background:#e5e7eb; color:#9ca3af; cursor:not-allowed;" disabled>
+                  <i class="ti ti-file-spreadsheet"></i> No Applicants
+                </button>
+              {% endif %}
+            </div>
+          </div>
+
+          <!-- Applicant List Section -->
+          <div>
+            <h4 style="font-size:13px; color:#78350f; font-family:'Syne',sans-serif; margin-bottom:8px;">
+              Applicants List ({{ j.applicants|length }})
+            </h4>
+
+            {% if j.is_deadline_passed %}
+              <!-- Table shown once deadline is completed -->
+              {% if j.applicants %}
+              <div class="table-wrapper">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>S.No</th>
+                      <th>Roll Number</th>
+                      <th>Student Name</th>
+                      <th>Branch</th>
+                      <th>Aadhar</th>
+                      <th>PAN</th>
+                      <th>Email ID</th>
+                      <th>Phone Number</th>
+                      <th>Resume Drive Link</th>
+                      <th>Extra Details</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for a in j.applicants %}
+                    <tr>
+                      <td>{{ loop.index }}</td>
+                      <td><strong>{{ a.roll_number or a.student_id or '—' }}</strong></td>
+                      <td><strong>{{ a.name }}</strong></td>
+                      <td>{{ a.branch | upper }}</td>
+                      <td>{{ a.aadhar or '—' }}</td>
+                      <td>{{ a.pan or '—' }}</td>
+                      <td>{{ a.email }}</td>
+                      <td>{{ a.phone_number or '—' }}</td>
+                      <td>
+                        {% if a.resume_path %}
+                          <a href="{{ a.resume_path }}" target="_blank" class="resume-btn"><i class="ti ti-external-link"></i> View Resume</a>
+                        {% else %}
+                          <span style="color:#a1a1aa;">—</span>
+                        {% endif %}
+                      </td>
+                      <td>
+                        {% if a.extra_dict %}
+                          <ul style="margin: 0; padding-left: 15px; font-size: 11px;">
+                            {% for k, v in a.extra_dict.items() %}
+                              <li><strong>{{ k.replace('_', ' ').title() }}:</strong> {{ v }}</li>
+                            {% endfor %}
+                          </ul>
+                        {% else %}
+                          <span style="color:#a1a1aa;">—</span>
+                        {% endif %}
+                      </td>
+                    </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+              {% else %}
+                <p class="empty-state">No students applied for this job drive.</p>
+              {% endif %}
+            {% else %}
+              <!-- Pre-deadline state: show students applied so far, but mark active -->
+              <div style="background: rgba(253,230,138,0.12); padding: 12px; border-radius: 12px; border: 1px dashed rgba(253,230,138,0.6); margin-bottom: 12px;">
+                <p style="font-size: 12px; color: #b45309; font-weight: 600;">
+                  <i class="ti ti-info-circle"></i> Application period is active. Final list will freeze once the deadline completes.
+                </p>
+              </div>
+              {% if j.applicants %}
+              <div class="table-wrapper">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>S.No</th>
+                      <th>Roll Number</th>
+                      <th>Student Name</th>
+                      <th>Branch</th>
+                      <th>Email ID</th>
+                      <th>Phone Number</th>
+                      <th>Resume Drive Link</th>
+                      <th>Extra Details</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for a in j.applicants %}
+                    <tr>
+                      <td>{{ loop.index }}</td>
+                      <td><strong>{{ a.roll_number or a.student_id or '—' }}</strong></td>
+                      <td><strong>{{ a.name }}</strong></td>
+                      <td>{{ a.branch | upper }}</td>
+                      <td>{{ a.email }}</td>
+                      <td>{{ a.phone_number or '—' }}</td>
+                      <td>
+                        {% if a.resume_path %}
+                          <a href="{{ a.resume_path }}" target="_blank" class="resume-btn"><i class="ti ti-external-link"></i> View Resume</a>
+                        {% else %}
+                          <span style="color:#a1a1aa;">—</span>
+                        {% endif %}
+                      </td>
+                      <td>
+                        {% if a.extra_dict %}
+                          <ul style="margin: 0; padding-left: 15px; font-size: 11px;">
+                            {% for k, v in a.extra_dict.items() %}
+                              <li><strong>{{ k.replace('_', ' ').title() }}:</strong> {{ v }}</li>
+                            {% endfor %}
+                          </ul>
+                        {% else %}
+                          <span style="color:#a1a1aa;">—</span>
+                        {% endif %}
+                      </td>
+                    </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+              {% else %}
+                <p class="empty-state">No student applications submitted yet.</p>
+              {% endif %}
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
   {% else %}
     <div style="text-align:center; padding:60px 0; color:#b97f10;">
       <i class="ti ti-mood-empty" style="font-size:48px;display:block;margin-bottom:12px;"></i>
@@ -313,6 +369,15 @@ td { padding:10px 10px; color:var(--text-main); border-bottom:1px solid var(--ta
 </div>
 
 <script>
+function showJobDetails(jobSectionId, cardElement) {
+  document.querySelectorAll('.results-section').forEach(el => el.classList.remove('active'));
+  const target = document.getElementById(jobSectionId);
+  if(target) target.classList.add('active');
+
+  document.querySelectorAll('.job-selector-card').forEach(el => el.classList.remove('active'));
+  cardElement.classList.add('active');
+}
+
 // Countdown logic for active jobs
 function updateCountdowns() {
   const timers = document.querySelectorAll(".countdown-timer");

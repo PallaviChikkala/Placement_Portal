@@ -58,6 +58,16 @@ body { min-height: 100vh; display: flex; align-items: center; justify-content: c
     <div class="panel-sub">We've sent a 6-digit authentication code to <strong>{{ email }}</strong>. Please enter it below.</div>
 
     <form action="/verify_otp" method="POST" id="otpForm">
+      {% if role == 'student' %}
+      <div style="margin-bottom: 20px; text-align: left;">
+          <label style="font-size: 13px; font-weight: 700; color: #78350f; margin-bottom: 6px; display: block;">Aadhar Last 5 Digits</label>
+          <input type="text" name="aadhar_last5" required style="width: 100%; padding: 12px; border: 1px solid rgba(253,230,138,0.8); border-radius: 8px; font-family: 'DM Sans', sans-serif; outline: none; transition: all 0.2s; background: #fffdf9; color: #78350f;" maxlength="5">
+      </div>
+      <div style="margin-bottom: 24px; text-align: left;">
+          <label style="font-size: 13px; font-weight: 700; color: #78350f; margin-bottom: 6px; display: block;">Full PAN Card Number</label>
+          <input type="text" name="pan_number" required style="width: 100%; padding: 12px; border: 1px solid rgba(253,230,138,0.8); border-radius: 8px; font-family: 'DM Sans', sans-serif; outline: none; transition: all 0.2s; background: #fffdf9; color: #78350f; text-transform: uppercase;" maxlength="10">
+      </div>
+      {% endif %}
       <input type="hidden" name="otp" id="fullOtp">
       <div class="otp-input-container">
         <input type="text" class="otp-digit" maxlength="1" autofocus>

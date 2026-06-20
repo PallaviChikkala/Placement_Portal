@@ -122,6 +122,9 @@
                 <a href="/my_applications" class="sidebar-link">
                     <i class="bi bi-file-earmark-text"></i> Placement History
                 </a>
+                <a href="/student_selected_companies" class="sidebar-link">
+                    <i class="bi bi-trophy"></i> Selected Companies
+                </a>
             </div>
             
             <div class="sidebar-footer">
@@ -242,7 +245,7 @@
                     <div class="card glass-card p-4 h-100 d-flex flex-row justify-content-between align-items-center premium-hover-scale">
                         <div>
                             <span class="text-muted small fw-semibold text-uppercase d-block mb-1">Applied Roles</span>
-                            <h3 class="mb-0 fw-extrabold text-primary counter-anim" data-target="{{ applied_count }}" style="font-size: 2.2rem;">0</h3>
+                            <h3 id="stu-applied-count" class="mb-0 fw-extrabold text-primary counter-anim" data-target="{{ applied_count }}" style="font-size: 2.2rem;">0</h3>
                         </div>
                         <div class="stat-card-icon">
                             <i class="bi bi-file-earmark-check"></i>
@@ -254,7 +257,7 @@
                     <div class="card glass-card p-4 h-100 d-flex flex-row justify-content-between align-items-center premium-hover-scale">
                         <div>
                             <span class="text-muted small fw-semibold text-uppercase d-block mb-1">Selected Companies</span>
-                            <h3 class="mb-0 fw-extrabold text-primary counter-anim" data-target="{{ selected_count }}" style="font-size: 2.2rem;">0</h3>
+                            <h3 id="stu-selected-count" class="mb-0 fw-extrabold text-primary counter-anim" data-target="{{ selected_count }}" style="font-size: 2.2rem;">0</h3>
                         </div>
                         <div class="stat-card-icon">
                             <i class="bi bi-award"></i>
@@ -429,29 +432,7 @@
                         </form>
                     </div>
 
-                    <!-- Calendar Widget -->
-                    <div class="card glass-card p-4 mt-4 animated-fade-in-up delay-400" id="calendarWidget">
-                        <div class="d-flex justify-content-between align-items-center mb-3">
-                            <h5 class="fw-bold text-primary mb-0" style="font-family: var(--font-heading);"><i class="bi bi-calendar3 text-warning me-2"></i> Calendar</h5>
-                            <div class="d-flex gap-2">
-                                <button class="btn btn-sm btn-outline-primary px-2 py-1" id="prevMonth" style="border-radius: 8px;"><i class="bi bi-chevron-left"></i></button>
-                                <button class="btn btn-sm btn-outline-primary px-2 py-1" id="nextMonth" style="border-radius: 8px;"><i class="bi bi-chevron-right"></i></button>
-                            </div>
-                        </div>
-                        <h6 id="currentMonthYear" class="text-center fw-bold mb-3" style="color: var(--text-main);"></h6>
-                        <div class="calendar-grid">
-                            <div class="calendar-day-header text-muted small fw-bold">Su</div>
-                            <div class="calendar-day-header text-muted small fw-bold">Mo</div>
-                            <div class="calendar-day-header text-muted small fw-bold">Tu</div>
-                            <div class="calendar-day-header text-muted small fw-bold">We</div>
-                            <div class="calendar-day-header text-muted small fw-bold">Th</div>
-                            <div class="calendar-day-header text-muted small fw-bold">Fr</div>
-                            <div class="calendar-day-header text-muted small fw-bold">Sa</div>
-                        </div>
-                        <div class="calendar-grid" id="calendarDays">
-                            <!-- Days populated by JS -->
-                        </div>
-                    </div>
+
                 </div>
             </div>
         </div>
@@ -511,57 +492,7 @@
                 }
             }
 
-            // Calendar Logic
-            const calendarDays = document.getElementById('calendarDays');
-            const currentMonthYear = document.getElementById('currentMonthYear');
-            let date = new Date();
-            let currMonth = date.getMonth();
-            let currYear = date.getFullYear();
 
-            const renderCalendar = () => {
-                let firstDayofMonth = new Date(currYear, currMonth, 1).getDay();
-                let lastDateofMonth = new Date(currYear, currMonth + 1, 0).getDate();
-                let lit = "";
-
-                const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-                currentMonthYear.innerText = `${months[currMonth]} ${currYear}`;
-
-                for (let i = 0; i < firstDayofMonth; i++) {
-                    lit += `<div class="calendar-day empty"></div>`;
-                }
-
-                for (let i = 1; i <= lastDateofMonth; i++) {
-                    let isToday = i === date.getDate() && currMonth === new Date().getMonth() && currYear === new Date().getFullYear() ? "active" : "";
-                    lit += `<div class="calendar-day ${isToday}">${i}</div>`;
-                }
-                calendarDays.innerHTML = lit;
-            }
-
-            renderCalendar();
-
-            document.getElementById('prevMonth').addEventListener('click', () => {
-                currMonth = currMonth - 1;
-                if (currMonth < 0) {
-                    date = new Date(currYear, currMonth, new Date().getDate());
-                    currYear = date.getFullYear();
-                    currMonth = date.getMonth();
-                } else {
-                    date = new Date();
-                }
-                renderCalendar();
-            });
-
-            document.getElementById('nextMonth').addEventListener('click', () => {
-                currMonth = currMonth + 1;
-                if (currMonth > 11) {
-                    date = new Date(currYear, currMonth, new Date().getDate());
-                    currYear = date.getFullYear();
-                    currMonth = date.getMonth();
-                } else {
-                    date = new Date();
-                }
-                renderCalendar();
-            });
         });
     </script>
     <script>
@@ -656,7 +587,7 @@ window.onload = function() {
     <!-- Active Notification Popup Modal -->
     <div class="modal fade" id="notifPopupModal" tabindex="-1" aria-labelledby="notifPopupLabel" aria-hidden="true" style="z-index: 1055;">
       <div class="modal-dialog modal-dialog-centered" style="margin: auto; max-width: 500px;">
-        <div class="modal-content shadow-lg" style="border-radius:18px; border: 1.5px solid rgba(245,158,11,0.3); background: var(--card-bg); backdrop-filter: blur(16px);">
+        <div class="modal-content shadow-lg" style="border-radius:18px; border: 1.5px solid rgba(245,158,11,0.3); background: var(--glass-bg); backdrop-filter: blur(16px);">
           <div class="modal-header" style="border-bottom: 1px solid rgba(245,158,11,0.15);">
             <h5 class="modal-title fw-bold" id="notifPopupLabel" style="color: var(--accent);"><i class="bi bi-bell-fill me-2"></i>New Update from Placement Cell</h5>
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -820,6 +751,38 @@ window.onload = function() {
         });
     })();
     </script>
+
+<script>
+/* ─── Auto-refresh: silently poll student stats every 30 s ─── */
+(function () {
+  function silentUpdate(id, newVal) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const strVal = String(newVal);
+    if (el.textContent === strVal) return;
+    el.style.transition = 'opacity 0.3s';
+    el.style.opacity = '0';
+    setTimeout(() => { el.textContent = strVal; el.style.opacity = '1'; }, 300);
+  }
+
+  function refreshStudentStats() {
+    fetch('/api/student/stats', { credentials: 'same-origin' })
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (!data || data.error) return;
+        silentUpdate('stu-applied-count', data.applied_count);
+        silentUpdate('stu-selected-count', data.selected_count);
+
+        // Update notification badge
+        const badge = document.getElementById('notifBadge');
+        if (badge) badge.style.display = data.unread_notifications > 0 ? '' : 'none';
+      })
+      .catch(() => {});
+  }
+
+  setInterval(refreshStudentStats, 30000);
+})();
+</script>
 
 </body>
 </html>

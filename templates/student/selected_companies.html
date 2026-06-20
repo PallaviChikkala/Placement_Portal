@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Dashboard - Placement Portal</title>
+    <!-- Bootstrap & Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <!-- Custom Style System -->
+    <link rel="stylesheet" href="/static/css/style.css">
+    <style>
+        .stat-card-icon {
+            font-size: 2.2rem;
+            color: var(--accent);
+            opacity: 0.85;
+        }
+        .dashboard-header-bg {
+            background: linear-gradient(135deg, rgba(245, 158, 11, 0.08) 0%, rgba(15, 23, 42, 0.03) 100%);
+            border-radius: var(--radius-md);
+            border: 1px solid rgba(245, 158, 11, 0.1);
+        }
+        .quick-upload-zone {
+            border: 2px dashed rgba(245, 158, 11, 0.3);
+            border-radius: var(--radius-md);
+            background: rgba(255, 255, 255, 0.5);
+            transition: all 0.3s ease;
+        }
+        .quick-upload-zone:hover {
+            border-color: var(--accent);
+            background: rgba(245, 158, 11, 0.02);
+            transform: translateY(-2px);
+        }
+        
+        /* Premium Table Row Animations */
+        .stagger-row {
+            opacity: 0;
+            animation: slideInRight 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+            animation-delay: calc(0.1s + (var(--row-idx) * 0.08s));
+        }
+
+        @keyframes slideInRight {
+            from { opacity: 0; transform: translateX(20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .table-premium tbody tr {
+            transition: transform 0.3s ease, background-color 0.3s ease, box-shadow 0.3s ease;
+            position: relative;
+        }
+        
+        .table-premium tbody tr:hover {
+            transform: scale(1.01) translateX(4px);
+            box-shadow: -4px 0 0 0 var(--accent);
+            background-color: rgba(245, 158, 11, 0.04) !important;
+        }
+        
+        body.dark-mode .table-premium tbody tr:hover {
+            background-color: rgba(245, 158, 11, 0.1) !important;
+        }
+
+        /* Calendar Widget Styles */
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 5px;
+            text-align: center;
+        }
+        .calendar-day-header {
+            padding: 5px 0;
+        }
+        .calendar-day {
+            padding: 8px 0;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            color: var(--text-main);
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+        .calendar-day:hover:not(.empty) {
+            background-color: rgba(245, 158, 11, 0.1);
+            color: var(--accent);
+        }
+        .calendar-day.active {
+            background-color: var(--accent);
+            color: white;
+            font-weight: bold;
+            box-shadow: 0 4px 10px rgba(245, 158, 11, 0.3);
+        }
+        .calendar-day.empty {
+            cursor: default;
+        }
+    </style>
+</head>
+<body class="premium-animated-bg">
+
+    <div class="dashboard-layout">
+        <!-- Sidebar Navigation -->
+        <div class="sidebar">
+            <div class="sidebar-logo">
+                <img src="/static/StudentLogin.png" width="45" height="45" alt="NIT AP Logo" class="premium-floating-element">
+                <div>
+                    <h5 class="mb-0 fw-bold" style="font-family: var(--font-heading); color: var(--primary);">NIT AP</h5>
+                    <small class="text-muted" style="font-size: 0.75rem;">Placement Cell</small>
+                </div>
+            </div>
+            
+            
+            <div class="sidebar-menu">
+                <a href="/student_dashboard" class="sidebar-link">
+                    <i class="bi bi-speedometer2"></i> Dashboard
+                </a>
+                <a href="/student_profile" class="sidebar-link">
+                    <i class="bi bi-person"></i> Profile
+                </a>
+                <a href="/eligible_companies" class="sidebar-link">
+                    <i class="bi bi-building"></i> Eligible Companies
+                </a>
+                <a href="/ongoing_rounds" class="sidebar-link">
+                    <i class="bi bi-arrow-repeat"></i> Ongoing Rounds
+                </a>
+                <a href="/my_applications" class="sidebar-link">
+                    <i class="bi bi-file-earmark-text"></i> Placement History
+                </a>
+                <a href="/student_selected_companies" class="sidebar-link active">
+                    <i class="bi bi-trophy"></i> Selected Companies
+                </a>
+            </div>
+            
+            <div class="sidebar-footer">
+                <hr style="background-color: rgba(255,255,255,0.1); margin-bottom: 20px;">
+                <a href="/student_logout" class="sidebar-link" style="color: #ef4444;">
+                    <i class="bi bi-box-arrow-right"></i> Logout
+                </a>
+            </div>
+        </div>
+
+        <!-- Main Body Content -->
+        <div class="main-content">
+
+
+
+                        <!-- Page Title -->
+            <div class="row mb-4 animated-fade-in-up">
+                <div class="col-12">
+                    <h3 class="fw-bold" style="color: var(--text-main);">
+                        <i class="bi bi-trophy text-warning me-2"></i> Selected Companies
+                    </h3>
+                    <p class="text-muted">Companies where you have been formally selected.</p>
+                </div>
+            </div>
+
+            <!-- Tier Messages -->
+            <div class="row g-4 mb-5 animated-fade-in-up" style="animation-delay: 0.1s;">
+                <div class="col-12">
+                    <div class="card glass-card p-4">
+                        <h5 class="fw-bold mb-4" style="color: var(--primary);">Placement Tier Status</h5>
+                        
+                        <div class="d-flex flex-column gap-3">
+                            <div class="p-3 rounded" style="background: rgba(245, 158, 11, 0.05); border-left: 4px solid var(--accent);">
+                                <h6 class="fw-bold mb-1" style="color: var(--accent);">Tier 1</h6>
+                                <p class="mb-0 text-muted">{{ student.tier_1 or 'Not Selected Yet' }}</p>
+                            </div>
+                            <div class="p-3 rounded" style="background: rgba(16, 185, 129, 0.05); border-left: 4px solid #10b981;">
+                                <h6 class="fw-bold mb-1" style="color: #10b981;">Tier 2</h6>
+                                <p class="mb-0 text-muted">{{ student.tier_2 or 'Not Selected Yet' }}</p>
+                            </div>
+                            <div class="p-3 rounded" style="background: rgba(59, 130, 246, 0.05); border-left: 4px solid #3b82f6;">
+                                <h6 class="fw-bold mb-1" style="color: #3b82f6;">Tier 3</h6>
+                                <p class="mb-0 text-muted">{{ student.tier_3 or 'Not Selected Yet' }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Selected Jobs Table -->
+            <div class="row mb-5 animated-fade-in-up" style="animation-delay: 0.2s;">
+                <div class="col-12">
+                    <div class="card glass-card p-4">
+                        <h5 class="fw-bold mb-4" style="color: var(--primary);">Formal Selections</h5>
+                        
+                        <div class="table-responsive">
+                            <table class="table table-premium mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Date Selected</th>
+                                        <th>Company</th>
+                                        <th>Role</th>
+                                        <th>Tier</th>
+                                        <th>Package</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% if selected_jobs %}
+                                        {% for job in selected_jobs %}
+                                        <tr class="stagger-row" style="--row-idx: {{ loop.index0 }};">
+                                            <td>
+                                                <div class="fw-semibold">{{ job.applied_date.strftime('%d %b %Y') if job.applied_date else '—' }}</div>
+                                            </td>
+                                            <td>
+                                                <div class="fw-bold text-primary">{{ job.company_name }}</div>
+                                                <small class="text-muted">Job ID: {{ job.job_id }}</small>
+                                            </td>
+                                            <td>{{ job.role }}</td>
+                                            <td>
+                                                <span class="badge" style="background: rgba(245, 158, 11, 0.1); color: var(--accent); border: 1px solid rgba(245, 158, 11, 0.2);">
+                                                    {{ job.tier }}
+                                                </span>
+                                            </td>
+                                            <td><span class="fw-semibold">{{ job.ctc }}</span></td>
+                                        </tr>
+                                        {% endfor %}
+                                    {% else %}
+                                        <tr>
+                                            <td colspan="5" class="text-center py-4 text-muted">
+                                                <i class="bi bi-inbox fs-4 d-block mb-2 text-warning"></i>
+                                                No formal selections found in records.
+                                            </td>
+                                        </tr>
+                                    {% endif %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+</div>
+    </div>
+
+    <!-- Active Notification Popup Modal -->
+    <div class="modal fade" id="notifPopupModal" tabindex="-1" aria-labelledby="notifPopupLabel" aria-hidden="true" style="z-index: 1055;">
+      <div class="modal-dialog modal-dialog-centered" style="margin: auto; max-width: 500px;">
+        <div class="modal-content shadow-lg" style="border-radius:18px; border: 1.5px solid rgba(245,158,11,0.3); background: var(--card-bg); backdrop-filter: blur(16px);">
+          <div class="modal-header" style="border-bottom: 1px solid rgba(245,158,11,0.15);">
+            <h5 class="modal-title fw-bold" id="notifPopupLabel" style="color: var(--accent);"><i class="bi bi-bell-fill me-2"></i>New Update from Placement Cell</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body" id="notifPopupBody" style="padding: 1.5rem; line-height: 1.8; color: var(--text-main);">
+          </div>
+          <div class="modal-footer" style="border-top: 1px solid rgba(245,158,11,0.15);">
+            <a href="/eligible_companies" class="btn btn-premium btn-sm px-4"><i class="bi bi-building me-1"></i>View Eligible Companies</a>
+            <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal" onclick="markNotifRead()">Dismiss</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+    // Show active notification popups for unread notifications on page load (once per session)
+    (function() {
+        var notifications = null;
+        if (notifications && notifications.length > 0) {
+            var unread = notifications.filter(function(n) { return !n.is_read; });
+            if (unread.length > 0 && !sessionStorage.getItem('notifPopupShown')) {
+                var bodyEl = document.getElementById('notifPopupBody');
+                if (bodyEl) {
+                    var html = '';
+                    if (unread.length > 1) {
+                        html += '<div class="mb-3 p-2 rounded" style="background: rgba(245,158,11,0.09); font-size:0.82rem; color: var(--text-muted);"><i class="bi bi-info-circle me-1"></i>You have <strong>' + unread.length + '</strong> new update(s). Showing latest:</div>';
+                    }
+                    html += '<div style="font-size:1rem; font-weight:500;">' + unread[0].message + '</div>';
+                    if (unread.length > 1) {
+                        html += '<div class="mt-3">';
+                        for (var i = 1; i < Math.min(unread.length, 4); i++) {
+                            html += '<div class="py-2 border-bottom" style="font-size:0.88rem; color: var(--text-muted);">' + unread[i].message + '</div>';
+                        }
+                        html += '</div>';
+                    }
+                    bodyEl.innerHTML = html;
+                }
+                var modal = new bootstrap.Modal(document.getElementById('notifPopupModal'), { backdrop: 'static', keyboard: false });
+                setTimeout(function() { 
+                    modal.show(); 
+                    sessionStorage.setItem('notifPopupShown', 'true');
+                }, 800);
+            }
+        }
+    })();
+
+    function markNotifRead() {
+        fetch('/clear_notifications', { method: 'POST' });
+    }
+    </script>
+
+    <!-- ─── Calendar Widget JS ─────────────────────────────────────────── -->
+    <script>
+    (function() {
+        const MONTHS = ['January','February','March','April','May','June',
+                        'July','August','September','October','November','December'];
+        let calDate = new Date();
+
+        function renderCalendar() {
+            const now    = new Date();
+            const today  = now.getDate();
+            const todayM = now.getMonth();
+            const todayY = now.getFullYear();
+
+            const yr = calDate.getFullYear();
+            const mo = calDate.getMonth();
+
+            document.getElementById('calMonthYear').textContent = MONTHS[mo] + ' ' + yr;
+
+            // Today chip text
+            const chip = document.getElementById('calTodayChip');
+            if (mo === todayM && yr === todayY) {
+                const d = now.toLocaleDateString('en-IN', {weekday:'short', day:'numeric'});
+                chip.textContent = 'Today · ' + d;
+                chip.style.display = '';
+            } else {
+                chip.style.display = 'none';
+            }
+
+            const firstDay = new Date(yr, mo, 1).getDay();
+            const daysInMonth = new Date(yr, mo + 1, 0).getDate();
+            const prevDays = new Date(yr, mo, 0).getDate();
+
+            const grid = document.getElementById('calDaysGrid');
+            grid.innerHTML = '';
+
+            // Previous month trailing days
+            for (let i = firstDay - 1; i >= 0; i--) {
+                const d = document.createElement('div');
+                d.className = 'cal-day other-month';
+                d.textContent = prevDays - i;
+                grid.appendChild(d);
+            }
+
+            // Current month days
+            for (let d = 1; d <= daysInMonth; d++) {
+                const el = document.createElement('div');
+                el.className = 'cal-day';
+                el.textContent = d;
+                if (d === today && mo === todayM && yr === todayY) {
+                    el.classList.add('today');
+                }
+                grid.appendChild(el);
+            }
+
+            // Next month leading days
+            const totalCells = Math.ceil((firstDay + daysInMonth) / 7) * 7;
+            let nextDay = 1;
+            for (let i = firstDay + daysInMonth; i < totalCells; i++, nextDay++) {
+                const d = document.createElement('div');
+                d.className = 'cal-day other-month';
+                d.textContent = nextDay;
+                grid.appendChild(d);
+            }
+
+            // Fetch upcoming deadlines
+            fetchUpcomingDeadlines();
+        }
+
+        function fetchUpcomingDeadlines() {
+            const el = document.getElementById('calUpcomingEvents');
+            fetch('/api/upcoming_deadlines')
+                .then(r => r.ok ? r.json() : null)
+                .then(data => {
+                    if (!data || !data.deadlines || data.deadlines.length === 0) {
+                        el.textContent = 'No upcoming deadlines';
+                        return;
+                    }
+                    el.innerHTML = data.deadlines.slice(0, 3).map(d =>
+                        `<div style="display:flex;justify-content:space-between;align-items:center;padding:2px 0;">
+                            <span style="font-size:0.72rem;font-weight:600;">${d.company}</span>
+                            <span style="font-size:0.68rem;opacity:0.75;">${d.date}</span>
+                        </div>`
+                    ).join('');
+                })
+                .catch(() => { el.textContent = 'No upcoming deadlines'; });
+        }
+
+        window.toggleCalendar = function(e) {
+            e.stopPropagation();
+            const drop = document.getElementById('calendarDropdown');
+            const btn  = document.getElementById('calendarBtn');
+            const open = !drop.classList.contains('d-none');
+            drop.classList.toggle('d-none', open);
+            btn.classList.toggle('cal-btn-active', !open);
+            if (!open) renderCalendar();
+        };
+
+        window.calNav = function(dir) {
+            calDate.setMonth(calDate.getMonth() + dir);
+            renderCalendar();
+        };
+
+        // Close when clicking outside
+        document.addEventListener('click', function(e) {
+            const wrapper = document.getElementById('calendarWrapper');
+            if (wrapper && !wrapper.contains(e.target)) {
+                document.getElementById('calendarDropdown').classList.add('d-none');
+                document.getElementById('calendarBtn').classList.remove('cal-btn-active');
+            }
+        });
+    })();
+    </script>
+
+</body>
+</html>

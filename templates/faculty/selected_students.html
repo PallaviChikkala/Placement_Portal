@@ -141,17 +141,7 @@ tr:hover td { background-color:rgba(253,230,138,0.12); }
     <a href="/faculty_dashboard" class="back-home-btn"><i class="ti ti-home"></i> Back to Dashboard</a>
   </div>
 
-  <div class="student-table-panel mb-4" style="padding: 24px;">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-      <h4 style="margin: 0;"><i class="ti ti-upload"></i> Upload Selected Students (Excel)</h4>
-      <a id="downloadBtn" href="/faculty/download_selected_students_template?course=all&branch=all" class="btn" style="background: var(--button-gradient); color: white; border: none; padding: 8px 16px; border-radius: 8px; font-weight: 600; text-decoration: none;"><i class="ti ti-download"></i> Download Excel</a>
-    </div>
-    <form id="uploadExcelForm" enctype="multipart/form-data" style="display: flex; gap: 16px; align-items: center; flex-wrap: wrap;">
-      <input type="file" name="file" accept=".xlsx, .xls, .csv" required style="padding: 8px; border: 1px solid var(--input-border); border-radius: 8px; background: var(--input-bg); color: var(--text-main);">
-      <button type="submit" style="background: var(--button-gradient); color: white; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer;"><i class="ti ti-file-upload"></i> Upload</button>
-      <div id="uploadStatus" style="font-size: 14px; font-weight: 600;"></div>
-    </form>
-  </div>
+
 
   <div class="student-table-panel">
     <div class="table-header">
@@ -321,36 +311,7 @@ function applyFilters() {
 
 document.getElementById('branchFilter').addEventListener('change', applyFilters);
 
-// Excel Upload
-document.getElementById('uploadExcelForm').addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const form = e.target;
-  const formData = new FormData(form);
-  const statusDiv = document.getElementById('uploadStatus');
-  
-  statusDiv.textContent = "Uploading and processing...";
-  statusDiv.style.color = "var(--text-muted)";
-  
-  try {
-    const response = await fetch('/faculty/upload_selected_students_excel', {
-      method: 'POST',
-      body: formData
-    });
-    
-    const result = await response.json();
-    if (result.success) {
-      statusDiv.textContent = "Success! " + result.message;
-      statusDiv.style.color = "#10b981";
-      setTimeout(() => location.reload(), 2000);
-    } else {
-      statusDiv.textContent = "Error: " + result.error;
-      statusDiv.style.color = "#ef4444";
-    }
-  } catch (error) {
-    statusDiv.textContent = "An error occurred during upload.";
-    statusDiv.style.color = "#ef4444";
-  }
-});
+
 
 // Theme Toggle
 const themeToggle = document.getElementById('themeToggleBtn');
