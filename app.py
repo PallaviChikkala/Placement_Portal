@@ -137,7 +137,8 @@ def check_routes_and_master_sheet():
                 os.path.exists(os.path.join(upload_dir, "master_sheet.csv"))
             )
             if not has_sheet:
-                session.clear()
+                session.pop("student_id", None)
+                session.pop("student_name", None)
                 return redirect("/student_login?error=Your+portal+is+currently+disabled.+Please+contact+faculty.")
             
 
@@ -761,15 +762,18 @@ def student_login_check():
         has_xlsx = os.path.exists(os.path.join(upload_dir, "master_sheet.xlsx"))
         has_pdf = os.path.exists(os.path.join(upload_dir, "master_sheet.pdf"))
         if not (has_xlsx or has_pdf):
-            session.clear()
+            session.pop("student_id", None)
+            session.pop("student_name", None)
             return render_template("student/login.html", error="Your portal is currently disabled (No Master Sheet uploaded by faculty).")
 
         session["student_id"] = student["student_id"]
         session["student_name"] = student["name"]
         session["must_change_password"] = student.get("must_change_password", 1)
+        session.permanent = True
         return redirect("/student_dashboard")
     else :
-        session.clear()
+        session.pop("student_id", None)
+        session.pop("student_name", None)
         return render_template("student/login.html", error="Wrong password or invalid credentials.")
 
 @app.route("/google_login_check", methods=["POST"])
@@ -812,19 +816,23 @@ def google_login_check():
             has_xlsx = os.path.exists(os.path.join(upload_dir, "master_sheet.xlsx"))
             has_pdf = os.path.exists(os.path.join(upload_dir, "master_sheet.pdf"))
             if not (has_xlsx or has_pdf):
-                session.clear()
+                session.pop("student_id", None)
+                session.pop("student_name", None)
                 return render_template("student/login.html", error="Your portal is currently disabled (No Master Sheet uploaded by faculty).")
 
             session["student_id"] = student["student_id"]
             session["student_name"] = student["name"]
+            session.permanent = True
             return redirect("/student_dashboard")
         else:
-            session.clear()
+            session.pop("student_id", None)
+            session.pop("student_name", None)
             return render_template("student/login.html", error=f"Email {email} is not registered. Please contact faculty.")
            
     except Exception as e:
         print("Google Auth Error:", e)
-        session.clear()
+        session.pop("student_id", None)
+        session.pop("student_name", None)
         return render_template("student/login.html", error="Google Sign-In verification failed.")
    
 @app.route("/change_password", methods=["POST"])
@@ -951,8 +959,9 @@ def student_dashboard():
         eligible_branches = [normalize_branch(b) for b in job.get("branches", "").split(",")] if job.get("branches") else []
         student_branch = normalize_branch(student["branch"]) if student["branch"] else ""
 
-        cgpa_ok = student["cgpa"] >= float(job.get("cgpa_cutoff") or 0)
+        cgpa_ok = float(student["cgpa"] or 0) >= float(job.get("cgpa_cutoff") or 0)
         backlogs_ok = student["backlogs"] <= int(job.get("active_backlogs") or 0)
+        backlog_history_ok = student["backlog_history"] <= int(job.get("backlog_history") or 0)
         branch_ok = student_branch in eligible_branches or not eligible_branches
 
         student_selected_tier = student.get("selected_tier")
@@ -979,7 +988,7 @@ def student_dashboard():
         if pwd_only and not is_pwd_student:
             continue
 
-        is_eligible = cgpa_ok and backlogs_ok and branch_ok and tier_ok
+        is_eligible = cgpa_ok and backlogs_ok and backlog_history_ok and branch_ok and tier_ok
 
         job_item = dict(job)
         job_item["is_eligible"] = is_eligible
@@ -1161,8 +1170,9 @@ def eligible_companies():
         eligible_branches = [normalize_branch(b) for b in job.get('branches', '').split(',')] if job.get('branches') else []
         student_branch = normalize_branch(student['branch']) if student['branch'] else ""
        
-        cgpa_ok = student['cgpa'] >= float(job.get('cgpa_cutoff') or 0) if student['cgpa'] is not None else True
+        cgpa_ok = float(student['cgpa'] or 0) >= float(job.get('cgpa_cutoff') or 0) if student['cgpa'] is not None else True
         backlogs_ok = student['backlogs'] <= int(job.get('active_backlogs') or 0) if student['backlogs'] is not None else True
+        backlog_history_ok = student['backlog_history'] <= int(job.get('backlog_history') or 0) if student['backlog_history'] is not None else True
         branch_ok = (student_branch in eligible_branches) or (not eligible_branches)
        
         # Tier check
@@ -1194,6 +1204,9 @@ def eligible_companies():
             reasons.append(f"CGPA below requirement ({student['cgpa']} < {job.get('cgpa_cutoff')})")
         if not backlogs_ok:
             reasons.append(f"Backlogs exceed maximum allowed ({student['backlogs']} > {job.get('active_backlogs')})")
+        if not backlog_history_ok:
+            reasons.append("Backlog History is not allowed for this job")
+
         if not branch_ok:
             reasons.append(f"Branch not eligible (Your branch: {student['branch'].upper()}, Eligible: {job.get('branches')})")
         if not tier_ok:
@@ -1202,7 +1215,7 @@ def eligible_companies():
             else:
                 reasons.append(f"Tier Policy restriction: Selected in Tier {student_selected_tier}, cannot apply for Tier {job_tier_num}")
            
-        is_eligible = cgpa_ok and backlogs_ok and branch_ok and tier_ok
+        is_eligible = cgpa_ok and backlogs_ok and backlog_history_ok and branch_ok and tier_ok
        
         # Check if already applied
         cursor.execute("SELECT * FROM applications WHERE student_id = %s AND job_id = %s", (student_id, job['job_id']))
@@ -1548,7 +1561,9 @@ def ongoing_rounds():
 
 @app.route("/student_logout")
 def student_logout():
-    session.clear()
+    session.pop("student_id", None)
+    session.pop("student_name", None)
+    session.pop("must_change_password", None)
     return redirect("/student_login")
 
 @app.context_processor
@@ -1622,12 +1637,12 @@ def get_dashboard_stats():
         denominator = total_interested + not_interested_applied
 
         if denominator > 0:
-            # Numerator: all students who applied (from either group)
+            # Numerator: all students who got selected (from either group)
             cursor.execute("""
-                SELECT COUNT(DISTINCT student_id) AS c FROM applications
+                SELECT COUNT(DISTINCT student_id) AS c FROM applications WHERE status = 'Selected'
             """)
-            total_applied = cursor.fetchone()["c"] or 0
-            placement_rate = round((total_applied / denominator * 100), 1)
+            total_selected = cursor.fetchone()["c"] or 0
+            placement_rate = round((total_selected / denominator * 100), 1)
     except Exception:
         pass
 
@@ -2304,6 +2319,43 @@ def faculty_job_delete_column(col_name):
     except Exception as e:
         db.rollback()
         return jsonify({"success": False, "error": str(e)})
+
+
+@app.route("/faculty/jobs/delete_column_by_name", methods=["POST"])
+def faculty_job_delete_column_by_name():
+    ensure_connection()
+    redir = faculty_required()
+    if redir:
+        return redir
+        
+    name = request.form.get("name")
+    if not name:
+        from flask import flash
+        flash("Column name is required.", "error")
+        return redirect("/faculty/jobs")
+        
+    import re
+    sanitized = re.sub(r'[^a-zA-Z0-9_]', '_', name.lower())
+    db_col_name = f"custom_{sanitized}"
+    
+    try:
+        cursor.execute("SHOW COLUMNS FROM jobs LIKE %s", (db_col_name,))
+        col = cursor.fetchone()
+        if not col:
+            from flask import flash
+            flash(f"Criteria column '{name}' does not exist.", "error")
+            return redirect("/faculty/jobs")
+            
+        cursor.execute(f"ALTER TABLE jobs DROP COLUMN {db_col_name}")
+        db.commit()
+        from flask import flash
+        flash(f"Criteria column '{name}' removed successfully!", "success")
+    except Exception as e:
+        db.rollback()
+        from flask import flash
+        flash(f"Error removing column: {str(e)}", "error")
+        
+    return redirect("/faculty/jobs")
 
 
 @app.route("/faculty/jobs/applicants/<string:job_db_id>")
@@ -4092,35 +4144,7 @@ def faculty_upload_master_sheet():
             ))
             updated += 1
 
-            # ── If tier was assigned in master sheet, confirm selection in applications ──
-            if selected_tier_ms is not None:
-                tier_label = f"Tier {selected_tier_ms}"
-                # Get student_id for this email
-                cursor.execute("SELECT student_id FROM students WHERE LOWER(email) = %s", (email,))
-                sid_row = cursor.fetchone()
-                if sid_row:
-                    sid = sid_row["student_id"]
-                    # Fetch applications for this student that are Rounds Cleared and match the tier
-                    cursor.execute("""
-                        SELECT a.job_id, j.company_name, j.role
-                        FROM applications a
-                        JOIN jobs j ON a.job_id = j.job_id
-                        WHERE a.student_id = %s
-                          AND a.status = 'Rounds Cleared'
-                          AND j.tier = %s
-                    """, (sid, tier_label))
-                    matching_apps = cursor.fetchall()
-                    for mapp in matching_apps:
-                        cursor.execute(
-                            "UPDATE applications SET status='Selected', status_updated_at=NOW() WHERE student_id=%s AND job_id=%s",
-                            (sid, mapp["job_id"]))
-                        sel_msg = (f"🏆 Congratulations! You have been <strong>Selected</strong> by "
-                                   f"<strong>{mapp['company_name']}</strong> for the "
-                                   f"<strong>{mapp['role']}</strong> role! "
-                                   f"The placement office has confirmed your selection.")
-                        cursor.execute(
-                            "INSERT INTO notifications (student_id, message, link) VALUES (%s, %s, %s)",
-                            (sid, sel_msg, "/my_applications"))
+
 
         else:
             cursor.execute("SELECT COALESCE(MAX(student_id), 0) + 1 AS next_id FROM students")
@@ -4147,6 +4171,26 @@ def faculty_upload_master_sheet():
             ))
 
             inserted += 1
+
+        sid = existing_student["student_id"] if existing_student else next_id
+        
+        # ── Ensure applications are created or updated for tier selections ──
+        for t_label, t_company in [("Tier 1", tier_1_ms), ("Tier 2", tier_2_ms), ("Tier 3", tier_3_ms)]:
+            if t_company and str(t_company).strip() and str(t_company).strip().lower() != 'nan':
+                cursor.execute("SELECT job_id, role, company_name FROM jobs WHERE LOWER(company_name) = LOWER(%s) AND tier = %s LIMIT 1", (str(t_company).strip(), t_label))
+                job_found = cursor.fetchone()
+                if job_found:
+                    cursor.execute("SELECT status FROM applications WHERE student_id=%s AND job_id=%s", (sid, job_found["job_id"]))
+                    app_exists = cursor.fetchone()
+                    if app_exists:
+                        if app_exists["status"] != "Selected":
+                            cursor.execute("UPDATE applications SET status='Selected', status_updated_at=NOW() WHERE student_id=%s AND job_id=%s", (sid, job_found["job_id"]))
+                            sel_msg = f"🏆 Congratulations! You have been <strong>Selected</strong> by <strong>{job_found['company_name']}</strong> for the <strong>{job_found['role']}</strong> role!"
+                            cursor.execute("INSERT INTO notifications (student_id, message, link) VALUES (%s, %s, %s)", (sid, sel_msg, "/my_applications"))
+                    else:
+                        cursor.execute("INSERT INTO applications (student_id, job_id, status) VALUES (%s, %s, 'Selected')", (sid, job_found["job_id"]))
+                        sel_msg = f"🏆 Congratulations! You have been <strong>Selected</strong> by <strong>{job_found['company_name']}</strong> for the <strong>{job_found['role']}</strong> role!"
+                        cursor.execute("INSERT INTO notifications (student_id, message, link) VALUES (%s, %s, %s)", (sid, sel_msg, "/my_applications"))
 
     deleted = 0
     if uploaded_emails:
@@ -4350,12 +4394,27 @@ def forgot_password():
             
         role = "student" if student else "faculty"
         
+        if role == "student":
+            aadhar = request.form.get("aadhar", "").strip()
+            pan = request.form.get("pan", "").strip()
+            if not aadhar or not pan:
+                from flask import flash
+                flash("Students must provide their Aadhar and PAN numbers for verification.", "error")
+                return redirect("/forgot_password")
+            
+            if str(student.get("aadhar", "")).strip() != aadhar or str(student.get("pan", "")).strip().upper() != pan.upper():
+                from flask import flash
+                flash("Aadhar or PAN number does not match our records.", "error")
+                return redirect("/forgot_password")
+        
         # Generate 6 digit OTP
         import random
+        import time
         otp = str(random.randint(100000, 999999))
         session['reset_email'] = email
         session['reset_role'] = role
         session['reset_otp'] = otp
+        session['reset_otp_expires'] = time.time() + 60  # Valid for 60 seconds
         
         # Send Email using dummy credentials
         send_reset_otp(email, otp)
@@ -4376,26 +4435,11 @@ def verify_otp():
         entered_otp = request.form.get("otp", "").strip()
         role = session.get('reset_role')
         
-        if role == 'student':
-            aadhar_last5 = request.form.get("aadhar_last5", "").strip()
-            pan_number = request.form.get("pan_number", "").strip().upper()
-            
-            email = session.get('reset_email')
-            cursor.execute("SELECT aadhar, pan FROM students WHERE email = %s", (email,))
-            student = cursor.fetchone()
-            
-            if student:
-                real_aadhar = student['aadhar'] or ""
-                real_pan = student['pan'] or ""
-                
-                if len(aadhar_last5) != 5 or not real_aadhar.endswith(aadhar_last5) or real_pan.upper() != pan_number:
-                    from flask import flash
-                    flash("Aadhar or PAN verification failed. Make sure to enter the exact details given to the faculty.", "error")
-                    return redirect("/verify_otp")
-            else:
-                from flask import flash
-                flash("Student account not found.", "error")
-                return redirect("/verify_otp")
+        import time
+        if time.time() > session.get('reset_otp_expires', 0):
+            from flask import flash
+            flash("OTP has expired (Valid for 1 min). Please request a new one.", "error")
+            return redirect("/forgot_password")
 
         if entered_otp == session.get('reset_otp'):
             session['reset_verified'] = True

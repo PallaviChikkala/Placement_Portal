@@ -272,33 +272,6 @@ body { min-height: 100vh; font-family: 'DM Sans', sans-serif; background: var(--
   <!-- Manage jobs bar removed as per request -->
   <div class="action-grid">
 
-    <a href="/faculty/jobs" class="option-card">
-      <div class="card-icon"><i class="ti ti-briefcase"></i></div>
-      <h3>JOBS</h3>
-      <p>Manage criteria, edit cutoffs, CTC, tiers &amp; upload details</p>
-      <div class="card-meta">
-        <span class="badge-count">{{ active_jobs }} active</span>
-        <i class="ti ti-arrow-right" style="color:#d97706;"></i>
-      </div>
-    </a>
-    <a href="/faculty/selected_students" class="option-card">
-      <div class="card-icon"><i class="ti ti-trophy"></i></div>
-      <h3>Selected Students</h3>
-      <p>View placement outcomes, company selections, and student tier distribution</p>
-      <div class="card-meta">
-        <span class="badge-count">Placed tracking</span>
-        <i class="ti ti-arrow-right" style="color:#d97706;"></i>
-      </div>
-    </a>
-    <a href="/faculty/applied_students" class="option-card">
-      <div class="card-icon"><i class="ti ti-clipboard-list"></i></div>
-      <h3>Applied Students</h3>
-      <p>View job-wise student applicant tables and download spreadsheets</p>
-      <div class="card-meta">
-        <span class="badge-count">Manage applications</span>
-        <i class="ti ti-arrow-right" style="color:#d97706;"></i>
-      </div>
-    </a>
     <a href="/faculty/master_sheet" class="option-card">
       <div class="card-icon"><i class="ti ti-file-spreadsheet"></i></div>
       <h3>Master Sheet</h3>
@@ -308,6 +281,37 @@ body { min-height: 100vh; font-family: 'DM Sans', sans-serif; background: var(--
         <i class="ti ti-arrow-right" style="color:#d97706;"></i>
       </div>
     </a>
+    
+    <a href="/faculty/jobs" class="option-card">
+      <div class="card-icon"><i class="ti ti-briefcase"></i></div>
+      <h3>JOBS</h3>
+      <p>Manage criteria, edit cutoffs, CTC, tiers &amp; upload details</p>
+      <div class="card-meta">
+        <span class="badge-count">{{ active_jobs }} active</span>
+        <i class="ti ti-arrow-right" style="color:#d97706;"></i>
+      </div>
+    </a>
+    
+    <a href="/faculty/applied_students" class="option-card">
+      <div class="card-icon"><i class="ti ti-clipboard-list"></i></div>
+      <h3>Applied Students</h3>
+      <p>View job-wise student applicant tables and download spreadsheets</p>
+      <div class="card-meta">
+        <span class="badge-count">Manage applications</span>
+        <i class="ti ti-arrow-right" style="color:#d97706;"></i>
+      </div>
+    </a>
+    
+    <a href="/faculty/recruitment_process" class="option-card">
+      <div class="card-icon"><i class="ti ti-git-branch"></i></div>
+      <h3><small><b>Recruitment</b></small> Process</h3>
+      <p>Track multi-round recruitment: set rounds, mark results, and export Excel per job</p>
+      <div class="card-meta">
+        <span class="badge-count">Round-wise tracker</span>
+        <i class="ti ti-arrow-right" style="color:#d97706;"></i>
+      </div>
+    </a>
+    
     <a href="/faculty/job_results" class="option-card">
       <div class="card-icon"><i class="ti ti-report-analytics"></i></div>
       <h3>Job Results Tracker</h3>
@@ -317,12 +321,13 @@ body { min-height: 100vh; font-family: 'DM Sans', sans-serif; background: var(--
         <i class="ti ti-arrow-right" style="color:#d97706;"></i>
       </div>
     </a>
-    <a href="/faculty/recruitment_process" class="option-card">
-      <div class="card-icon"><i class="ti ti-git-branch"></i></div>
-      <h3><small><b>Recruitment</b></small> Process</h3>
-      <p>Track multi-round recruitment: set rounds, mark results, and export Excel per job</p>
+
+    <a href="/faculty/selected_students" class="option-card">
+      <div class="card-icon"><i class="ti ti-trophy"></i></div>
+      <h3>Selected Students</h3>
+      <p>View placement outcomes, company selections, and student tier distribution</p>
       <div class="card-meta">
-        <span class="badge-count">Round-wise tracker</span>
+        <span class="badge-count">Placed tracking</span>
         <i class="ti ti-arrow-right" style="color:#d97706;"></i>
       </div>
     </a>

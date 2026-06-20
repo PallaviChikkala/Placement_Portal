@@ -159,6 +159,8 @@ tr:hover td { background-color:rgba(253,230,138,0.12); }
 .form-group label { font-size:12px; font-weight:700; color:#78350f; }
 .form-group input, .form-group select, .form-group textarea { padding:11px 14px; border-radius:10px; border:1px solid rgba(253,230,138,0.8); background:var(--input-bg); color:var(--text-main); font-family:inherit; font-size:13px; outline:none; transition:all 0.2s; }
 .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color:#d97706; background:white; box-shadow:0 0 0 3px rgba(253,230,138,0.4); }
+.form-group input[type="file"] { color: var(--text-main); }
+.form-group input[type="file"]::file-selector-button { background: var(--badge-bg); border: 1px solid var(--card-border); color: var(--text-main); padding: 6px 12px; border-radius: 6px; cursor: pointer; margin-right: 10px; }
 
 .tier-selector { display:flex; gap:10px; }
 .tier-btn { flex:1; padding:11px; border-radius:10px; border:1px solid rgba(253,230,138,0.8); background:#fffdf9; color:#78350f; cursor:pointer; font-weight:700; font-family:'DM Sans',sans-serif; transition:all 0.2s; text-align:center; }
@@ -189,6 +191,8 @@ tr:hover td { background-color:rgba(253,230,138,0.12); }
 [data-theme="dark"] .form-group label { color: var(--text-main); }
 [data-theme="dark"] .form-group input, [data-theme="dark"] .form-group select, [data-theme="dark"] .form-group textarea { background: var(--input-bg); border-color: var(--input-border); color: var(--text-main); }
 [data-theme="dark"] .form-group input:focus, [data-theme="dark"] .form-group select:focus, [data-theme="dark"] .form-group textarea:focus { background: rgba(30, 41, 59, 0.9); }
+[data-theme="dark"] .form-group input[type="file"] { color: var(--text-main) !important; background: var(--input-bg); }
+[data-theme="dark"] .form-group input[type="file"]::file-selector-button { background: rgba(255, 255, 255, 0.1); color: var(--text-main) !important; border-color: var(--card-border); }
 [data-theme="dark"] .tier-btn { background: var(--input-bg); border-color: var(--input-border); color: var(--text-main); }
 [data-theme="dark"] .tier-btn.active { background: linear-gradient(135deg,#f59e0b,#d97706) !important; color: white !important; border-color: #d97706 !important; }
 [data-theme="dark"] .tier-btn:hover { background: var(--badge-bg); }
@@ -250,7 +254,7 @@ tr:hover td { background-color:rgba(253,230,138,0.12); }
   <div class="controls-row">
     <div style="display:flex;gap:12px;flex-wrap:wrap;">
       <button class="edit-action-btn" onclick="openAddModal()"><i class="ti ti-plus"></i> Add Job Opening</button>
-      <button class="back-home-btn" onclick="openCriteriaModal()" style="border-color:#fde68a;"><i class="ti ti-adjustments"></i> Add Criteria Column</button>
+      <button class="back-home-btn" onclick="openCriteriaModal()" style="border-color:#fde68a;"><i class="ti ti-adjustments"></i> Add/Delete Criteria Column</button>
       <form action="/faculty/jobs/delete_all" method="POST"
       style="display:inline-block; margin-left:12px;"
       onsubmit="return confirm('Are you sure you want to delete all job openings? This action cannot be undone.');">
@@ -387,7 +391,7 @@ tr:hover td { background-color:rgba(253,230,138,0.12); }
         </div>
         <div class="form-group">
           <label>CTC (LPA) *</label>
-          <input type="text" name="ctc" id="fCtc" required placeholder="e.g. 24 LPA">
+          <input type="text" name="ctc" id="fCtc" required placeholder="e.g. 24">
         </div>
         <div class="form-group">
           <label>Job Location *</label>
@@ -410,8 +414,11 @@ tr:hover td { background-color:rgba(253,230,138,0.12); }
           <input type="number" min="0" name="active_backlogs" id="fActiveBacklogs" required placeholder="0">
         </div>
         <div class="form-group">
-          <label>Max Backlog History *</label>
-          <input type="number" min="0" name="backlog_history" id="fBacklogHistory" required placeholder="0">
+          <label>Is Backlog History Allowed? *</label>
+          <select name="backlog_history" id="fBacklogHistory" required style="width: 100%; padding: 12px; border-radius: 12px; border: 1px solid var(--input-border); background: var(--input-bg); color: var(--text-main); font-size: 14px; margin-bottom: 15px;">
+            <option value="1">Yes (Allowed)</option>
+            <option value="0">No (Not Allowed)</option>
+          </select>
         </div>
         <div class="form-group full-width">
           <label>Select Eligible Branches *</label>
@@ -539,7 +546,7 @@ tr:hover td { background-color:rgba(253,230,138,0.12); }
 <div class="modal-overlay" id="criteriaModal">
   <div class="modal-content" style="max-width:480px;">
     <div class="modal-header">
-      <h2 id="criteriaTitle"><i class="ti ti-adjustments"></i> Add Criteria Column</h2>
+      <h2 id="criteriaTitle"><i class="ti ti-adjustments"></i> Manage Criteria Columns</h2>
       <button class="modal-close-btn" onclick="closeModal('criteriaModal')">&times;</button>
     </div>
     <form action="/faculty/jobs/add_column" method="POST">
@@ -560,6 +567,19 @@ tr:hover td { background-color:rgba(253,230,138,0.12); }
         <button type="submit" class="edit-action-btn" style="margin-bottom:0;">Add Column</button>
       </div>
     </form>
+    
+    <div style="margin-top: 24px; padding-top: 24px; border-top: 1px dashed var(--table-border);">
+      <h3 style="font-size: 16px; font-weight: 800; color: var(--text-main); margin-bottom: 16px; font-family: 'Syne', sans-serif;">Remove Criteria Column</h3>
+      <form action="/faculty/jobs/delete_column_by_name" method="POST" onsubmit="return confirm('Are you sure you want to remove this criteria column? This will permanently delete associated data from all jobs and applications.');">
+        <div class="form-group" style="margin-bottom:20px;">
+          <label>Criteria Name to Delete</label>
+          <input type="text" name="name" placeholder="e.g. Minimum 10th Score" required>
+        </div>
+        <div style="display:flex;justify-content:flex-end;">
+          <button type="submit" class="edit-action-btn" style="background:#ef4444; border-color:#ef4444; margin-bottom:0;"><i class="ti ti-trash"></i> Delete Column</button>
+        </div>
+      </form>
+    </div>
   </div>
 </div>
 
@@ -758,6 +778,19 @@ function setTierByName(name) {
   document.querySelectorAll(".tier-btn").forEach(b => { b.classList.toggle("active", b.textContent.trim() === name); });
   document.getElementById("fTier").value = name;
 }
+
+function toggleCustomBranch() {
+  const checkbox = document.getElementById("customBranchCheck");
+  const input = document.getElementById("customBranchInput");
+  if (checkbox.checked) {
+    input.style.display = "block";
+    input.focus();
+  } else {
+    input.style.display = "none";
+    input.value = "";
+  }
+}
+
 
 function deleteJob(jobIdStr, company) {
   if (!confirm(`Are you sure you want to delete the job opening for "${company}"?`)) return;

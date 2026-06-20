@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Selected Students — NIT AP Placement Portal</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script>
   (function() {
@@ -109,7 +110,7 @@ body { min-height:100vh; font-family:'DM Sans',sans-serif; background:var(--bg-g
 .table-wrapper { overflow-x:auto; padding:16px 20px; }
 
 table { width:100%; border-collapse:collapse; }
-th { text-align:left; padding:14px 10px; color:var(--text-accent); border-bottom:1px solid var(--table-border); font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; white-space:nowrap; transition: color 0.3s; }
+th { text-align:left; padding:14px 10px; color:var(--text-accent); background-color: var(--blob1-color); border-bottom:1px solid var(--table-border); font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; white-space:nowrap; transition: color 0.3s; background: rgba(245, 158, 11, 0.1); }
 td { padding:12px 10px; color:var(--text-main); border-bottom:1px solid var(--table-border); font-size:13px; vertical-align:middle; transition: all 0.3s; }
 tr:hover td { background-color:rgba(253,230,138,0.12); }
 
@@ -146,7 +147,10 @@ tr:hover td { background-color:rgba(253,230,138,0.12); }
   <div class="student-table-panel">
     <div class="table-header">
       <h3>Placed Students Directory (<span id="countDisplay">{{ placed_students|length }}</span>)</h3>
-      <div style="display: flex; gap: 12px;">
+      <div style="display: flex; gap: 12px; align-items: center;">
+        <button class="back-home-btn" style="padding: 8px 16px; border-radius: 8px; font-size: 13px; margin:0;" onclick="exportSelectedStudents()">
+          <i class="ti ti-file-export"></i> Export Excel
+        </button>
         <select id="branchFilter" style="padding: 8px 12px; border-radius: 8px; border: 1px solid var(--input-border); background: var(--input-bg); color: var(--text-main);">
           <option value="All">All Branches</option>
           <optgroup label="B.TECH BRANCHES">
@@ -311,6 +315,37 @@ function applyFilters() {
 
 document.getElementById('branchFilter').addEventListener('change', applyFilters);
 
+function exportSelectedStudents() {
+    let csv = [];
+    let rows = document.querySelectorAll("table tr");
+    
+    for (let i = 0; i < rows.length; i++) {
+        // Skip hidden rows
+        if (rows[i].style.display === 'none') continue;
+        
+        let row = [], cols = rows[i].querySelectorAll("td, th");
+        
+        for (let j = 0; j < cols.length; j++) {
+            let data = cols[j].innerText.replace(/(\r\n|\n|\r)/gm, " ").replace(/"/g, '""');
+            row.push('"' + data + '"');
+        }
+        csv.push(row.join(","));
+    }
+    
+    let csvString = csv.join("\n");
+    let blob = new Blob([csvString], { type: "text/csv;charset=utf-8;" });
+    let link = document.createElement("a");
+    if (link.download !== undefined) {
+        let url = URL.createObjectURL(blob);
+        link.setAttribute("href", url);
+        let branch = document.getElementById("branchFilter").value;
+        link.setAttribute("download", `Selected_Students_${branch}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+}
 
 
 // Theme Toggle

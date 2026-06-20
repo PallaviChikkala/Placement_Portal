@@ -29,7 +29,7 @@
   --input-border: rgba(253, 230, 138, 0.6);
   --button-gradient: linear-gradient(135deg, #f59e0b, #d97706);
   --logout-bg: rgba(255, 255, 240, 0.6);
-  --table-hdr-bg: rgba(253, 230, 138, 0.35);
+  --table-hdr-bg: #fde68a;
   --table-border: rgba(253, 230, 138, 0.4);
   --shadow-color: rgba(120, 53, 15, 0.05);
   --shadow-hover: rgba(120, 53, 15, 0.14);
@@ -123,7 +123,7 @@ body { min-height: 100vh; font-family: 'DM Sans', sans-serif; background: var(--
 .detail-panel.visible { display:block; }
 @keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
 
-.panel-header { padding:20px 28px; background:var(--table-hdr-bg); border-bottom:1px solid var(--card-border); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:14px; }
+.panel-header { padding:20px 28px; background:transparent; border-bottom:1px solid var(--table-border); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:14px; }
 .panel-header h2 { font-family:'Syne',sans-serif; font-size:20px; font-weight:800; color:var(--text-main); display:flex; align-items:center; gap:8px; }
 .panel-controls { display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
 .rounds-control { display:flex; align-items:center; gap:8px; }
@@ -134,7 +134,7 @@ body { min-height: 100vh; font-family: 'DM Sans', sans-serif; background: var(--
 /* ── TABLE ───────────────────────────────────────────────────────────────────── */
 .table-wrap { overflow-x:auto; padding:0 4px; }
 table { width:100%; border-collapse:collapse; font-size:13px; }
-th { padding:13px 16px; text-align:left; font-weight:700; font-size:11px; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-accent); background:var(--table-hdr-bg); border-bottom:1px solid var(--table-border); white-space:nowrap; }
+th { padding:13px 16px; text-align:left; font-weight:700; font-size:11px; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-accent); background:transparent; border-bottom:1px solid var(--table-border); white-space:nowrap; }
 td { padding:11px 14px; border-bottom:1px solid var(--table-border); color:var(--text-main); font-weight:500; vertical-align:middle; }
 [data-theme="dark"] td { color: #e2e8f0; }
 tr:last-child td { border-bottom:none; }
@@ -394,8 +394,16 @@ function renderTable(job) {
       if (res === 'Selected')      { badgeCls = 'selected'; icon = 'ti-circle-check'; label = 'Selected'; }
       else if (res === 'Not Selected') { badgeCls = 'not-sel'; icon = 'ti-circle-x'; label = 'Not Selected'; }
 
+      let linkHtml = '<span style="color:var(--pending-color);font-size:12px;">\u2014</span>';
+      if (link && link.trim() !== '') {
+          if (link.trim().startsWith('http://') || link.trim().startsWith('https://')) {
+              linkHtml = `<a href="${link.trim()}" target="_blank"><i class="ti ti-external-link"></i>Open Link</a>`;
+          } else {
+              linkHtml = `<span style="font-size:12px;">${link}</span>`;
+          }
+      }
       rows += `<td style="text-align:center;"><span class="res-badge ${badgeCls}"><i class="ti ${icon}"></i>${label}</span></td>`;
-      rows += `<td class="drive-link-cell">${link ? `<a href="${link}" target="_blank"><i class="ti ti-external-link"></i>Open Link</a>` : '<span style="color:var(--pending-color);font-size:12px;">\u2014</span>'}</td>`;
+      rows += `<td class="drive-link-cell">${linkHtml}</td>`;
     }
     rows += '</tr>';
   });

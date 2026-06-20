@@ -547,7 +547,24 @@ window.onload = function() {
                 document.getElementById("modal-deadline").innerText = deadline;
                 document.getElementById("modal-location").innerText = location;
                 document.getElementById("modal-bond").innerText = bond;
-                document.getElementById("modal-branches").innerText = branches || "All Branches";
+                const rawBranches = branches || "All Branches";
+                if (rawBranches === "All Branches") {
+                    document.getElementById("modal-branches").innerHTML = `<span class="badge bg-success">All Branches Eligible</span>`;
+                } else {
+                    const branchArr = rawBranches.split(',').map(b => b.trim());
+                    const studentBranchStr = "{{ student.branch | upper }}";
+                    
+                    const formattedBranches = branchArr.map(b => {
+                        const bUpper = b.toUpperCase();
+                        // If this branch is the student's branch (basic substring match)
+                        if (bUpper.includes(studentBranchStr) || studentBranchStr.includes(bUpper) || (studentBranchStr === "CSE" && bUpper.includes("COMPUTER SCIENCE"))) {
+                            return `<span class="badge" style="background-color: #10b981; color: white; border: 1px solid #059669;">${b} <i class="bi bi-check-circle"></i></span>`;
+                        } else {
+                            return `<span class="badge" style="background-color: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0;">${b}</span>`;
+                        }
+                    }).join(' ');
+                    document.getElementById("modal-branches").innerHTML = formattedBranches;
+                }
                 document.getElementById("modal-min-cgpa").innerText = `${minCgpa || '6.0'} CGPA`;
                 
                 if (numRounds && numRounds !== "None") {

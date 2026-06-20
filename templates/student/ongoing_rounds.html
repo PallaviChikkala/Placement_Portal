@@ -179,6 +179,8 @@
                                             <span class="badge-custom badge-selected">Selected</span>
                                         {% elif app.status == 'Not Selected' or app.status == 'Rejected' %}
                                             <span class="badge-custom badge-rejected">Not Selected</span>
+                                        {% elif app.status == 'Rounds Cleared' %}
+                                            <span class="badge-custom badge-shortlisted" style="background: rgba(16, 185, 129, 0.1); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.2);">Rounds Cleared</span>
                                         {% else %}
                                             <span class="badge-custom badge-pending">{{ app.status }}</span>
                                         {% endif %}
@@ -217,7 +219,7 @@
                                     <!-- Dynamic Active Line Width -->
                                     {% if app.status == 'Pending' %}
                                         <div class="stepper-line-active" style="width: 0%;"></div>
-                                    {% elif app.status == 'Shortlisted' or app.status == 'Interview' %}
+                                    {% elif app.status == 'Shortlisted' or app.status == 'Interview' or app.status == 'Rounds Cleared' %}
                                         <div class="stepper-line-active" style="width: 66%;"></div>
                                     {% elif app.status == 'Selected' or app.status == 'Rejected' or app.status == 'Not Selected' %}
                                         <div class="stepper-line-active" style="width: 100%;"></div>
