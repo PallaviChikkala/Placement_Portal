@@ -314,13 +314,148 @@
             100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); }
         }
 
+        /* Stats Section */
+        .stats-section {
+            padding: 4rem 5%;
+            max-width: 1400px;
+            margin: 0 auto;
+            width: 100%;
+            animation: slideUp 1s cubic-bezier(0.16, 1, 0.3, 1) 0.4s forwards;
+            opacity: 0;
+            transform: translateY(30px);
+            z-index: 2;
+            position: relative;
+        }
+
+        .stats-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            margin-bottom: 2.5rem;
+            flex-wrap: wrap;
+            gap: 1.5rem;
+        }
+
+        .stats-header h2 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: #1c1917;
+            letter-spacing: -0.5px;
+        }
+
+        .stats-header h2 span {
+            background: linear-gradient(135deg, #d97706 0%, #f59e0b 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .year-tabs {
+            display: flex;
+            gap: 0.5rem;
+            background: rgba(255, 255, 255, 0.5);
+            padding: 0.5rem;
+            border-radius: 100px;
+            border: 1px solid var(--card-border);
+            backdrop-filter: blur(10px);
+        }
+
+        .tab-btn {
+            background: transparent;
+            border: none;
+            padding: 0.6rem 1.5rem;
+            border-radius: 100px;
+            font-family: 'Inter', sans-serif;
+            font-weight: 600;
+            font-size: 0.95rem;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .tab-btn:hover {
+            color: var(--text-main);
+        }
+
+        .tab-btn.active {
+            background: var(--primary);
+            color: white;
+            box-shadow: 0 4px 15px rgba(217, 119, 6, 0.3);
+        }
+
+        .stat-grid {
+            display: none;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1.5rem;
+        }
+
+        .stat-grid.active {
+            display: grid;
+            animation: fadeIn 0.5s ease forwards;
+        }
+
+        .stat-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--card-border);
+            border-radius: 24px;
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.02);
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            border-color: rgba(217, 119, 6, 0.3);
+            box-shadow: 0 10px 30px rgba(217, 119, 6, 0.1);
+        }
+
+        .stat-icon {
+            width: 60px; height: 60px;
+            border-radius: 16px;
+            background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            margin-bottom: 1rem;
+        }
+
+        .stat-value {
+            font-family: 'Outfit', sans-serif;
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: #1c1917;
+            margin-bottom: 0.2rem;
+        }
+
+        .stat-label {
+            font-size: 0.95rem;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        @keyframes slideUp {
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.98); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
         /* Responsive */
         @media (max-width: 968px) {
             .container {
                 grid-template-columns: 1fr;
                 gap: 3rem;
                 padding-top: 2rem;
-                padding-bottom: 4rem;
+                padding-bottom: 2rem;
             }
             .content-left {
                 text-align: center;
@@ -330,6 +465,7 @@
             .content-right {
                 padding: 0 1rem;
             }
+            .stat-grid { grid-template-columns: repeat(2, 1fr); }
         }
 
         @media (max-width: 480px) {
@@ -341,6 +477,133 @@
             }
             .arrow-btn { margin-top: 1rem; }
             h1 { font-size: 2.5rem; }
+            .stat-grid { grid-template-columns: 1fr; }
+            .year-tabs { width: 100%; overflow-x: auto; padding-bottom: 5px; }
+            .tab-btn { flex-shrink: 0; }
+        }
+
+        /* Recruiters Marquee */
+        .recruiters-section {
+            padding: 3rem 5% 4rem;
+            max-width: 1400px;
+            margin: 0 auto;
+            width: 100%;
+            animation: slideUp 1s cubic-bezier(0.16, 1, 0.3, 1) 0.6s forwards;
+            opacity: 0;
+            transform: translateY(30px);
+            z-index: 2;
+            position: relative;
+        }
+
+        .recruiters-header {
+            margin-bottom: 2.5rem;
+        }
+
+        .recruiters-header h2 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 2rem;
+            font-weight: 800;
+            color: #1c1917;
+            letter-spacing: -0.5px;
+        }
+
+        .recruiters-header h2 span {
+            background: linear-gradient(135deg, #d97706 0%, #f59e0b 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .marquee-wrapper {
+            overflow: hidden;
+            position: relative;
+            padding: 1.5rem 0;
+        }
+
+        .marquee-wrapper::before,
+        .marquee-wrapper::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            width: 100px;
+            height: 100%;
+            z-index: 2;
+            pointer-events: none;
+        }
+
+        .marquee-wrapper::before {
+            left: 0;
+            background: linear-gradient(to right, var(--bg-color), transparent);
+        }
+
+        .marquee-wrapper::after {
+            right: 0;
+            background: linear-gradient(to left, var(--bg-color), transparent);
+        }
+
+        .marquee-track {
+            display: flex;
+            width: max-content;
+            animation: marquee 40s linear infinite;
+        }
+
+        .marquee-track:hover {
+            animation-play-state: paused;
+        }
+
+        .marquee-item {
+            flex-shrink: 0;
+            width: auto;
+            height: 60px;
+            background: rgba(255,255,255,0.85);
+            border: 1px solid rgba(217,119,6,0.12);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.5rem 1.5rem;
+            margin: 0 0.75rem;
+            transition: all 0.3s ease;
+            gap: 12px;
+        }
+
+        .marquee-item:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 25px rgba(217,119,6,0.1);
+            border-color: rgba(217,119,6,0.25);
+        }
+
+        .marquee-item img {
+            max-width: 100%;
+            max-height: 30px;
+            object-fit: contain;
+            opacity: 0.8;
+            transition: opacity 0.3s ease;
+        }
+
+        .marquee-item:hover img {
+            opacity: 1;
+        }
+
+        .company-name {
+            font-family: 'Outfit', sans-serif;
+            font-weight: 700;
+            font-size: 1.1rem;
+            color: var(--text-color);
+            white-space: nowrap;
+        }
+
+        @keyframes marquee {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+        }
+
+        @media (max-width: 968px) {
+            .marquee-item { width: 140px; height: 65px; }
+        }
+
+        @media (max-width: 480px) {
+            .marquee-item { width: 120px; height: 55px; padding: 0.8rem 1rem; }
+            .recruiters-header h2 { font-size: 1.6rem; }
         }
     </style>
 </head>
@@ -357,7 +620,7 @@
         </a>
         <div class="institution-logo">
             <img src="{{ url_for('static', filename='nitap_logo.png') }}" alt="NIT AP Logo" class="nitap-img">
-            <span>NIT AP</span>
+            <span>NIT Andhra Pradesh</span>
         </div>
     </nav>
 
@@ -398,5 +661,263 @@
             </a>
         </div>
     </div>
+
+    <!-- Stats Section -->
+    <div class="stats-section">
+        <div class="stats-header">
+            <h2>Placement <span>Statistics</span></h2>
+            <div class="year-tabs">
+                <button class="tab-btn active" onclick="showStats('2025')">2025</button>
+                <button class="tab-btn" onclick="showStats('2024')">2024</button>
+                <button class="tab-btn" onclick="showStats('2023')">2023</button>
+                <button class="tab-btn" onclick="showStats('2022')">2022</button>
+            </div>
+        </div>
+
+        <div class="stats-content">
+            <!-- 2025 -->
+            <div class="stat-grid active" id="stats-2025">
+                <div class="stat-card">
+                    <div class="stat-icon"><svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg></div>
+                    <div class="stat-value"><span class="counter" data-target="510">0</span>+</div>
+                    <div class="stat-label">Offers</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon"><svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"></rect><path d="M9 22v-4h6v4"></path><path d="M8 6h.01"></path><path d="M16 6h.01"></path><path d="M12 6h.01"></path><path d="M12 10h.01"></path><path d="M12 14h.01"></path><path d="M16 10h.01"></path><path d="M16 14h.01"></path><path d="M8 10h.01"></path><path d="M8 14h.01"></path></svg></div>
+                    <div class="stat-value"><span class="counter" data-target="180">0</span>+</div>
+                    <div class="stat-label">Companies Visited</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon"><svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg></div>
+                    <div class="stat-value"><span class="counter" data-target="80.94">0</span>%</div>
+                    <div class="stat-label">Placement Percentage</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon"><svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="8" r="7"></circle><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"></polyline></svg></div>
+                    <div class="stat-value"><span class="counter" data-target="65">0</span> <span style="font-size:1.2rem;">LPA</span></div>
+                    <div class="stat-label">Highest Package</div>
+                </div>
+            </div>
+
+            <!-- 2024 -->
+            <div class="stat-grid" id="stats-2024">
+                <div class="stat-card">
+                    <div class="stat-icon"><svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg></div>
+                    <div class="stat-value"><span class="counter" data-target="361">0</span>+</div>
+                    <div class="stat-label">Offers</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon"><svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"></rect><path d="M9 22v-4h6v4"></path><path d="M8 6h.01"></path><path d="M16 6h.01"></path><path d="M12 6h.01"></path><path d="M12 10h.01"></path><path d="M12 14h.01"></path><path d="M16 10h.01"></path><path d="M16 14h.01"></path><path d="M8 10h.01"></path><path d="M8 14h.01"></path></svg></div>
+                    <div class="stat-value"><span class="counter" data-target="174">0</span>+</div>
+                    <div class="stat-label">Companies Visited</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon"><svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg></div>
+                    <div class="stat-value"><span class="counter" data-target="74.55">0</span>%</div>
+                    <div class="stat-label">Placement Percentage</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon"><svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="8" r="7"></circle><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"></polyline></svg></div>
+                    <div class="stat-value"><span class="counter" data-target="44.1">0</span> <span style="font-size:1.2rem;">LPA</span></div>
+                    <div class="stat-label">Highest Package</div>
+                </div>
+            </div>
+
+            <!-- 2023 -->
+            <div class="stat-grid" id="stats-2023">
+                <div class="stat-card">
+                    <div class="stat-icon"><svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg></div>
+                    <div class="stat-value"><span class="counter" data-target="352">0</span>+</div>
+                    <div class="stat-label">Offers</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon"><svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"></rect><path d="M9 22v-4h6v4"></path><path d="M8 6h.01"></path><path d="M16 6h.01"></path><path d="M12 6h.01"></path><path d="M12 10h.01"></path><path d="M12 14h.01"></path><path d="M16 10h.01"></path><path d="M16 14h.01"></path><path d="M8 10h.01"></path><path d="M8 14h.01"></path></svg></div>
+                    <div class="stat-value"><span class="counter" data-target="177">0</span>+</div>
+                    <div class="stat-label">Companies Visited</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon"><svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg></div>
+                    <div class="stat-value"><span class="counter" data-target="88.75">0</span>%</div>
+                    <div class="stat-label">Placement Percentage</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon"><svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="8" r="7"></circle><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"></polyline></svg></div>
+                    <div class="stat-value"><span class="counter" data-target="47">0</span> <span style="font-size:1.2rem;">LPA</span></div>
+                    <div class="stat-label">Highest Package</div>
+                </div>
+            </div>
+
+            <!-- 2022 -->
+            <div class="stat-grid" id="stats-2022">
+                <div class="stat-card">
+                    <div class="stat-icon"><svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg></div>
+                    <div class="stat-value"><span class="counter" data-target="522">0</span>+</div>
+                    <div class="stat-label">Offers</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon"><svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"></rect><path d="M9 22v-4h6v4"></path><path d="M8 6h.01"></path><path d="M16 6h.01"></path><path d="M12 6h.01"></path><path d="M12 10h.01"></path><path d="M12 14h.01"></path><path d="M16 10h.01"></path><path d="M16 14h.01"></path><path d="M8 10h.01"></path><path d="M8 14h.01"></path></svg></div>
+                    <div class="stat-value"><span class="counter" data-target="270">0</span>+</div>
+                    <div class="stat-label">Companies Visited</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon"><svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg></div>
+                    <div class="stat-value"><span class="counter" data-target="95.69">0</span>%</div>
+                    <div class="stat-label">Placement Percentage</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon"><svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="8" r="7"></circle><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"></polyline></svg></div>
+                    <div class="stat-value"><span class="counter" data-target="47.3">0</span> <span style="font-size:1.2rem;">LPA</span></div>
+                    <div class="stat-label">Highest Package</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recruiters Marquee -->
+    <div class="recruiters-section">
+        <div class="recruiters-header">
+            <h2>Our Esteemed <span>Recruiters</span></h2>
+        </div>
+        <div class="marquee-wrapper">
+            <div class="marquee-track">
+                <div class="marquee-item"><img src="https://cdn.simpleicons.org/amazon/FF9900" alt="Amazon" onerror="this.style.display='none'"><span class="company-name">Amazon</span></div>
+                <div class="marquee-item"><img src="https://cdn.simpleicons.org/google/4285F4" alt="Google" onerror="this.style.display='none'"><span class="company-name">Google</span></div>
+                <div class="marquee-item"><img src="https://cdn.simpleicons.org/samsung/1428A0" alt="Samsung" onerror="this.style.display='none'"><span class="company-name">Samsung</span></div>
+                <div class="marquee-item"><img src="https://cdn.simpleicons.org/ibm/054ADA" alt="IBM" onerror="this.style.display='none'"><span class="company-name">IBM</span></div>
+                <div class="marquee-item"><img src="https://cdn.simpleicons.org/deloitte/86BC25" alt="Deloitte" onerror="this.style.display='none'"><span class="company-name">Deloitte</span></div>
+                <div class="marquee-item"><img src="https://cdn.simpleicons.org/tata/1A1A1A" alt="TCS" onerror="this.style.display='none'"><span class="company-name">TCS</span></div>
+                <div class="marquee-item"><img src="https://cdn.simpleicons.org/goldmansachs/6EC1E4" alt="Goldman Sachs" onerror="this.style.display='none'"><span class="company-name">Goldman Sachs</span></div>
+                <div class="marquee-item"><img src="https://cdn.simpleicons.org/pepsico/004B93" alt="PepsiCo" onerror="this.style.display='none'"><span class="company-name">PepsiCo</span></div>
+                <div class="marquee-item"><img src="https://cdn.simpleicons.org/nvidia/76B900" alt="NVIDIA" onerror="this.style.display='none'"><span class="company-name">NVIDIA</span></div>
+                <div class="marquee-item"><img src="https://cdn.simpleicons.org/accenture/A100FF" alt="Accenture" onerror="this.style.display='none'"><span class="company-name">Accenture</span></div>
+                <div class="marquee-item"><img src="https://cdn.simpleicons.org/kyndryl/E31937" alt="Kyndryl" onerror="this.style.display='none'"><span class="company-name">Kyndryl</span></div>
+                <div class="marquee-item"><img src="https://cdn.simpleicons.org/cognizant/1A4CA1" alt="Cognizant" onerror="this.style.display='none'"><span class="company-name">Cognizant</span></div>
+                <div class="marquee-item"><img src="https://cdn.simpleicons.org/schneiderelectric/3DCD58" alt="Schneider Electric" onerror="this.style.display='none'"><span class="company-name">Schneider Electric</span></div>
+                <div class="marquee-item"><img src="https://cdn.simpleicons.org/nalsoft/FF0000" alt="Nalsoft" onerror="this.style.display='none'"><span class="company-name">Nalsoft</span></div>
+                <div class="marquee-item"><img src="https://cdn.simpleicons.org/bharatelectronics/0000FF" alt="Bharat Electronics" onerror="this.style.display='none'"><span class="company-name">Bharat Electronics</span></div>
+                <div class="marquee-item"><img src="https://cdn.simpleicons.org/maqsoftware/D32F2F" alt="MAQ Software" onerror="this.style.display='none'"><span class="company-name">MAQ Software</span></div>
+                <div class="marquee-item"><img src="https://cdn.simpleicons.org/oracle/F80000" alt="Oracle" onerror="this.style.display='none'"><span class="company-name">Oracle</span></div>
+                <div class="marquee-item"><img src="https://cdn.simpleicons.org/amd/ED1C24" alt="AMD" onerror="this.style.display='none'"><span class="company-name">AMD</span></div>
+                <div class="marquee-item"><img src="https://cdn.simpleicons.org/fanatics/000000" alt="Fanatics" onerror="this.style.display='none'"><span class="company-name">Fanatics</span></div>
+                <div class="marquee-item"><img src="https://cdn.simpleicons.org/motive/000000" alt="Motive" onerror="this.style.display='none'"><span class="company-name">Motive</span></div>
+                <div class="marquee-item"><img src="https://cdn.simpleicons.org/aplapollo/FF9900" alt="APL Apollo" onerror="this.style.display='none'"><span class="company-name">APL Apollo</span></div>
+                <div class="marquee-item"><img src="https://cdn.simpleicons.org/amararaja/00A859" alt="Amara Raja" onerror="this.style.display='none'"><span class="company-name">Amara Raja</span></div>
+                <div class="marquee-item"><img src="https://cdn.simpleicons.org/c2i/000000" alt="C2i" onerror="this.style.display='none'"><span class="company-name">C2i</span></div>
+                <div class="marquee-item"><img src="https://cdn.simpleicons.org/statestreet/0000FF" alt="State Street" onerror="this.style.display='none'"><span class="company-name">State Street</span></div>
+                <div class="marquee-item"><img src="https://cdn.simpleicons.org/hyundai/002C5F" alt="Hyundai" onerror="this.style.display='none'"><span class="company-name">Hyundai</span></div>
+                <div class="marquee-item"><img src="https://cdn.simpleicons.org/synopsys/5E35B1" alt="Synopsys" onerror="this.style.display='none'"><span class="company-name">Synopsys</span></div>
+                <div class="marquee-item"><img src="https://cdn.simpleicons.org/wipro/441E8E" alt="Wipro" onerror="this.style.display='none'"><span class="company-name">Wipro</span></div>
+                <div class="marquee-item"><img src="https://cdn.simpleicons.org/infosys/007CC3" alt="Infosys" onerror="this.style.display='none'"><span class="company-name">Infosys</span></div>
+                <div class="marquee-item"><img src="https://cdn.simpleicons.org/techmahindra/E31837" alt="Tech Mahindra" onerror="this.style.display='none'"><span class="company-name">Tech Mahindra</span></div>
+                <div class="marquee-item"><img src="https://cdn.simpleicons.org/broadridge/0033A0" alt="Broadridge" onerror="this.style.display='none'"><span class="company-name">Broadridge</span></div>
+                <div class="marquee-item"><img src="https://cdn.simpleicons.org/logicfruit/000000" alt="Logic fruit Technologies" onerror="this.style.display='none'"><span class="company-name">Logic fruit Technologies</span></div>
+                <div class="marquee-item"><img src="https://cdn.simpleicons.org/larsentoubro/0000FF" alt="Larsen & Toubro" onerror="this.style.display='none'"><span class="company-name">Larsen & Toubro</span></div>
+                <div class="marquee-item"><img src="https://cdn.simpleicons.org/carrier/1A1A1A" alt="Carrier" onerror="this.style.display='none'"><span class="company-name">Carrier</span></div>
+                <div class="marquee-item"><img src="https://cdn.simpleicons.org/hpe/01A982" alt="Hewlett Packard Enterprise" onerror="this.style.display='none'"><span class="company-name">Hewlett Packard Enterprise</span></div>
+                <div class="marquee-item"><img src="https://cdn.simpleicons.org/winjit/004B8D" alt="Winjit" onerror="this.style.display='none'"><span class="company-name">Winjit</span></div>
+                <div class="marquee-item"><img src="https://cdn.simpleicons.org/speedlabs/673AB7" alt="SpeedLabs" onerror="this.style.display='none'"><span class="company-name">SpeedLabs</span></div>
+                <div class="marquee-item"><img src="https://cdn.simpleicons.org/reliance/0056A5" alt="Reliance" onerror="this.style.display='none'"><span class="company-name">Reliance</span></div>
+                <div class="marquee-item"><img src="https://cdn.simpleicons.org/adp/D0271D" alt="ADP" onerror="this.style.display='none'"><span class="company-name">ADP</span></div>
+                <div class="marquee-item"><img src="https://cdn.simpleicons.org/motherson/000000" alt="Motherson Group" onerror="this.style.display='none'"><span class="company-name">Motherson Group</span></div>
+                <!-- Duplicate for seamless loop -->
+                <div class="marquee-item"><img src="https://cdn.simpleicons.org/amazon/FF9900" alt="Amazon" onerror="this.style.display='none'"><span class="company-name">Amazon</span></div>
+                <div class="marquee-item"><img src="https://cdn.simpleicons.org/google/4285F4" alt="Google" onerror="this.style.display='none'"><span class="company-name">Google</span></div>
+                <div class="marquee-item"><img src="https://cdn.simpleicons.org/samsung/1428A0" alt="Samsung" onerror="this.style.display='none'"><span class="company-name">Samsung</span></div>
+                <div class="marquee-item"><img src="https://cdn.simpleicons.org/ibm/054ADA" alt="IBM" onerror="this.style.display='none'"><span class="company-name">IBM</span></div>
+                <div class="marquee-item"><img src="https://cdn.simpleicons.org/deloitte/86BC25" alt="Deloitte" onerror="this.style.display='none'"><span class="company-name">Deloitte</span></div>
+                <div class="marquee-item"><img src="https://cdn.simpleicons.org/tata/1A1A1A" alt="TCS" onerror="this.style.display='none'"><span class="company-name">TCS</span></div>
+                <div class="marquee-item"><img src="https://cdn.simpleicons.org/goldmansachs/6EC1E4" alt="Goldman Sachs" onerror="this.style.display='none'"><span class="company-name">Goldman Sachs</span></div>
+                <div class="marquee-item"><img src="https://cdn.simpleicons.org/pepsico/004B93" alt="PepsiCo" onerror="this.style.display='none'"><span class="company-name">PepsiCo</span></div>
+                <div class="marquee-item"><img src="https://cdn.simpleicons.org/nvidia/76B900" alt="NVIDIA" onerror="this.style.display='none'"><span class="company-name">NVIDIA</span></div>
+                <div class="marquee-item"><img src="https://cdn.simpleicons.org/accenture/A100FF" alt="Accenture" onerror="this.style.display='none'"><span class="company-name">Accenture</span></div>
+                <div class="marquee-item"><img src="https://cdn.simpleicons.org/kyndryl/E31937" alt="Kyndryl" onerror="this.style.display='none'"><span class="company-name">Kyndryl</span></div>
+                <div class="marquee-item"><img src="https://cdn.simpleicons.org/cognizant/1A4CA1" alt="Cognizant" onerror="this.style.display='none'"><span class="company-name">Cognizant</span></div>
+                <div class="marquee-item"><img src="https://cdn.simpleicons.org/schneiderelectric/3DCD58" alt="Schneider Electric" onerror="this.style.display='none'"><span class="company-name">Schneider Electric</span></div>
+                <div class="marquee-item"><img src="https://cdn.simpleicons.org/nalsoft/FF0000" alt="Nalsoft" onerror="this.style.display='none'"><span class="company-name">Nalsoft</span></div>
+                <div class="marquee-item"><img src="https://cdn.simpleicons.org/bharatelectronics/0000FF" alt="Bharat Electronics" onerror="this.style.display='none'"><span class="company-name">Bharat Electronics</span></div>
+                <div class="marquee-item"><img src="https://cdn.simpleicons.org/maqsoftware/D32F2F" alt="MAQ Software" onerror="this.style.display='none'"><span class="company-name">MAQ Software</span></div>
+                <div class="marquee-item"><img src="https://cdn.simpleicons.org/oracle/F80000" alt="Oracle" onerror="this.style.display='none'"><span class="company-name">Oracle</span></div>
+                <div class="marquee-item"><img src="https://cdn.simpleicons.org/amd/ED1C24" alt="AMD" onerror="this.style.display='none'"><span class="company-name">AMD</span></div>
+                <div class="marquee-item"><img src="https://cdn.simpleicons.org/fanatics/000000" alt="Fanatics" onerror="this.style.display='none'"><span class="company-name">Fanatics</span></div>
+                <div class="marquee-item"><img src="https://cdn.simpleicons.org/motive/000000" alt="Motive" onerror="this.style.display='none'"><span class="company-name">Motive</span></div>
+                <div class="marquee-item"><img src="https://cdn.simpleicons.org/aplapollo/FF9900" alt="APL Apollo" onerror="this.style.display='none'"><span class="company-name">APL Apollo</span></div>
+                <div class="marquee-item"><img src="https://cdn.simpleicons.org/amararaja/00A859" alt="Amara Raja" onerror="this.style.display='none'"><span class="company-name">Amara Raja</span></div>
+                <div class="marquee-item"><img src="https://cdn.simpleicons.org/c2i/000000" alt="C2i" onerror="this.style.display='none'"><span class="company-name">C2i</span></div>
+                <div class="marquee-item"><img src="https://cdn.simpleicons.org/statestreet/0000FF" alt="State Street" onerror="this.style.display='none'"><span class="company-name">State Street</span></div>
+                <div class="marquee-item"><img src="https://cdn.simpleicons.org/hyundai/002C5F" alt="Hyundai" onerror="this.style.display='none'"><span class="company-name">Hyundai</span></div>
+                <div class="marquee-item"><img src="https://cdn.simpleicons.org/synopsys/5E35B1" alt="Synopsys" onerror="this.style.display='none'"><span class="company-name">Synopsys</span></div>
+                <div class="marquee-item"><img src="https://cdn.simpleicons.org/wipro/441E8E" alt="Wipro" onerror="this.style.display='none'"><span class="company-name">Wipro</span></div>
+                <div class="marquee-item"><img src="https://cdn.simpleicons.org/infosys/007CC3" alt="Infosys" onerror="this.style.display='none'"><span class="company-name">Infosys</span></div>
+                <div class="marquee-item"><img src="https://cdn.simpleicons.org/techmahindra/E31837" alt="Tech Mahindra" onerror="this.style.display='none'"><span class="company-name">Tech Mahindra</span></div>
+                <div class="marquee-item"><img src="https://cdn.simpleicons.org/broadridge/0033A0" alt="Broadridge" onerror="this.style.display='none'"><span class="company-name">Broadridge</span></div>
+                <div class="marquee-item"><img src="https://cdn.simpleicons.org/logicfruit/000000" alt="Logic fruit Technologies" onerror="this.style.display='none'"><span class="company-name">Logic fruit Technologies</span></div>
+                <div class="marquee-item"><img src="https://cdn.simpleicons.org/larsentoubro/0000FF" alt="Larsen & Toubro" onerror="this.style.display='none'"><span class="company-name">Larsen & Toubro</span></div>
+                <div class="marquee-item"><img src="https://cdn.simpleicons.org/carrier/1A1A1A" alt="Carrier" onerror="this.style.display='none'"><span class="company-name">Carrier</span></div>
+                <div class="marquee-item"><img src="https://cdn.simpleicons.org/hpe/01A982" alt="Hewlett Packard Enterprise" onerror="this.style.display='none'"><span class="company-name">Hewlett Packard Enterprise</span></div>
+                <div class="marquee-item"><img src="https://cdn.simpleicons.org/winjit/004B8D" alt="Winjit" onerror="this.style.display='none'"><span class="company-name">Winjit</span></div>
+                <div class="marquee-item"><img src="https://cdn.simpleicons.org/speedlabs/673AB7" alt="SpeedLabs" onerror="this.style.display='none'"><span class="company-name">SpeedLabs</span></div>
+                <div class="marquee-item"><img src="https://cdn.simpleicons.org/reliance/0056A5" alt="Reliance" onerror="this.style.display='none'"><span class="company-name">Reliance</span></div>
+                <div class="marquee-item"><img src="https://cdn.simpleicons.org/adp/D0271D" alt="ADP" onerror="this.style.display='none'"><span class="company-name">ADP</span></div>
+                <div class="marquee-item"><img src="https://cdn.simpleicons.org/motherson/000000" alt="Motherson Group" onerror="this.style.display='none'"><span class="company-name">Motherson Group</span></div>
+            </div>
+        </div>
+        <p style="text-align:center; color:var(--text-muted); font-size:0.95rem; margin-top:1rem; font-weight:500;">...and many more!</p>
+    </div>
+
+<script>
+function animateCounters(containerId) {
+    var container = document.getElementById(containerId);
+    if (!container) return;
+    var counters = container.querySelectorAll('.counter');
+    for (var i = 0; i < counters.length; i++) {
+        (function(counter) {
+            var target = parseFloat(counter.getAttribute('data-target'));
+            if (!target || target === 0) { counter.innerText = '0'; return; }
+            var isFloat = (target % 1 !== 0);
+            var duration = 1500;
+            var startTime = null;
+            counter.innerText = '0';
+            function step(timestamp) {
+                if (!startTime) startTime = timestamp;
+                var progress = Math.min((timestamp - startTime) / duration, 1);
+                var eased = 1 - Math.pow(1 - progress, 3);
+                var currentVal = eased * target;
+                if (progress < 1) {
+                    counter.innerText = isFloat ? currentVal.toFixed(2) : Math.ceil(currentVal);
+                    requestAnimationFrame(step);
+                } else {
+                    counter.innerText = isFloat ? target.toFixed(2) : target;
+                }
+            }
+            requestAnimationFrame(step);
+        })(counters[i]);
+    }
+}
+
+function showStats(year) {
+    var btns = document.querySelectorAll('.tab-btn');
+    for (var i = 0; i < btns.length; i++) {
+        btns[i].classList.remove('active');
+        if (btns[i].innerText.trim() === year) btns[i].classList.add('active');
+    }
+    var grids = document.querySelectorAll('.stat-grid');
+    for (var j = 0; j < grids.length; j++) {
+        grids[j].classList.remove('active');
+    }
+    var target = document.getElementById('stats-' + year);
+    if (target) {
+        target.classList.add('active');
+        animateCounters('stats-' + year);
+    }
+}
+
+// Trigger initial count-up after page loads
+window.addEventListener('load', function() {
+    setTimeout(function() {
+        animateCounters('stats-2025');
+    }, 600);
+});
+</script>
+<script>document.addEventListener("DOMContentLoaded", function() { document.querySelectorAll(".modal").forEach(function(m) { document.body.appendChild(m); }); });</script>
 </body>
 </html>

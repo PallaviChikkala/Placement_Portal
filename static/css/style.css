@@ -164,6 +164,36 @@ h1, h2, h3, h4, h5, h6 {
     box-shadow: 0 0 0 3px var(--accent-glow);
 }
 
+select, .form-select {
+    appearance: none;
+    background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23d97706%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+    background-size: 10px auto;
+    padding-right: 36px !important;
+}
+
+select option {
+    background-color: var(--bg-main, #fcfaf6);
+    color: var(--text-main, #3e2723);
+    padding: 10px;
+}
+
+select optgroup {
+    background-color: var(--bg-main, #fcfaf6);
+    color: var(--accent, #d97706);
+    font-weight: 700;
+    font-style: normal;
+}
+
+body.dark-mode select option,
+body.dark-mode select optgroup,
+[data-theme="dark"] select option,
+[data-theme="dark"] select optgroup {
+    background-color: #1e293b !important;
+    color: #f8fafc !important;
+}
+
 /* Sidebar Layout */
 .dashboard-layout {
     display: flex;
@@ -172,7 +202,10 @@ h1, h2, h3, h4, h5, h6 {
 
 .sidebar {
     width: 260px;
-    background-color: #ffffff;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.8) 100%);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-right: 1px solid rgba(217, 119, 6, 0.1);
     color: var(--text-main);
     padding: 30px 20px;
     display: flex;
@@ -194,6 +227,7 @@ h1, h2, h3, h4, h5, h6 {
     background-color: var(--bg-main);
     min-height: 100vh;
     transition: all 0.3s ease;
+    animation: fadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 @media (max-width: 991px) {
@@ -504,11 +538,10 @@ body.dark-mode {
 .dark-mode .modal-content-custom {
     background-color: #1f2937 !important;
     color: #f9fafb !important;
-    border: 1.5px solid #6b7280 !important;
 }
 
 .dark-mode .sidebar {
-    background-color: #1f2937 !important;
+    background: linear-gradient(180deg, rgba(31, 41, 55, 0.95) 0%, rgba(17, 24, 39, 0.9) 100%) !important;
     border-right-color: #374151 !important;
 }
 
@@ -738,9 +771,44 @@ body.dark-mode .alert-danger strong {
 }
 
 @keyframes floatAnim {
-    0% { transform: translateY(0px); }
-    50% { transform: translateY(-8px); }
-    100% { transform: translateY(0px); }
+    0% { transform: translateY(0px) rotate(0deg); }
+    50% { transform: translateY(-15px) rotate(5deg); }
+    100% { transform: translateY(0px) rotate(0deg); }
+}
+
+@keyframes ambientBlobs {
+    0% { transform: translate(0, 0) scale(1); opacity: 0.4; }
+    33% { transform: translate(30px, -50px) scale(1.1); opacity: 0.6; }
+    66% { transform: translate(-20px, 20px) scale(0.9); opacity: 0.3; }
+    100% { transform: translate(0, 0) scale(1); opacity: 0.4; }
+}
+
+.premium-animated-bg::before,
+.premium-animated-bg::after {
+    content: '';
+    position: fixed;
+    border-radius: 50%;
+    filter: blur(60px);
+    z-index: -1;
+    pointer-events: none;
+    animation: ambientBlobs 20s infinite alternate ease-in-out;
+}
+
+.premium-animated-bg::before {
+    width: 400px;
+    height: 400px;
+    top: -100px;
+    left: -100px;
+    background: radial-gradient(circle, rgba(245, 158, 11, 0.25) 0%, rgba(255,255,255,0) 70%);
+}
+
+.premium-animated-bg::after {
+    width: 500px;
+    height: 500px;
+    bottom: -150px;
+    right: -100px;
+    background: radial-gradient(circle, rgba(180, 83, 9, 0.18) 0%, rgba(255,255,255,0) 70%);
+    animation-delay: -10s;
 }
 
 .premium-floating-element {

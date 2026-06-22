@@ -94,10 +94,24 @@ def switch_active_db(db_name, year_str, year_name=None):
     if has_request_context():
         session["active_year_db"] = db_name
         session["active_year"] = year_str
-        if year_name:
-            session["active_year_name"] = year_name
-        else:
-            session["active_year_name"] = year_str
+        
+        actual_name = year_name
+        if not actual_name:
+            try:
+                import json, os
+                batches_file = os.path.join(app.root_path, "database", "batches.json")
+                if os.path.exists(batches_file):
+                    with open(batches_file, "r") as f:
+                        batches = json.load(f)
+                        for b in batches:
+                            if b["id"] == year_str:
+                                actual_name = b["name"]
+                                break
+            except Exception:
+                pass
+                
+        session["active_year_name"] = actual_name or year_str
+        
         if 'db' in g:
             try:
                 g.cursor.close()
@@ -420,11 +434,13 @@ def _init_database_single():
         # Insert Dr. Shankar only if not already present.
         # Students are intentionally NOT seeded here —
         # they arrive exclusively via Master Sheet uploads each year.
-        cursor.execute("SELECT COUNT(*) as count FROM faculty WHERE email = 'drshankar@gmail.com'")
+        cursor.execute("SELECT COUNT(*) as count FROM faculty")
         if cursor.fetchone()["count"] == 0:
             cursor.execute("""
-                INSERT INTO faculty (name, email, password)
-                VALUES ('Dr. Shankar', 'drshankar@gmail.com', 'shankar123')
+               INSERT INTO faculty (faculty_id, name, email, password)
+VALUES
+(1, 'Placement Officer', 'tap@nitandhra.ac.in', 'placementOfficerNITandhra2015'),
+(2, 'Placement Officer', 'tapc@nitandhra.ac.in', 'placementOfficerNITandhra2015');
             """)
 
         db.commit()
@@ -940,6 +956,11 @@ def student_dashboard():
     cursor.execute("SELECT * FROM students WHERE student_id = %s", (session["student_id"],))
     student = cursor.fetchone()
 
+    if not student:
+        session.pop("student_id", None)
+        session.pop("student_name", None)
+        return redirect("/student_login?error=Session+expired.+Please+log+in+again.")
+
     try:
         cursor.execute("SELECT * FROM jobs ORDER BY id DESC")
     except Exception:
@@ -959,9 +980,16 @@ def student_dashboard():
         eligible_branches = [normalize_branch(b) for b in job.get("branches", "").split(",")] if job.get("branches") else []
         student_branch = normalize_branch(student["branch"]) if student["branch"] else ""
 
-        cgpa_ok = float(student["cgpa"] or 0) >= float(job.get("cgpa_cutoff") or 0)
-        backlogs_ok = student["backlogs"] <= int(job.get("active_backlogs") or 0)
-        backlog_history_ok = student["backlog_history"] <= int(job.get("backlog_history") or 0)
+        cgpa_ok = float(student.get("cgpa") or 0) >= float(job.get("cgpa_cutoff") or 0)
+        
+        s_backlogs = int(student.get("backlogs") or 0)
+        s_history = int(student.get("backlog_history") or 0)
+        j_backlogs = int(job.get("active_backlogs") or 0)
+        j_history = int(job.get("backlog_history") or 0)
+        
+        backlogs_ok = s_backlogs <= j_backlogs
+        backlog_history_ok = s_history <= j_history
+        
         branch_ok = student_branch in eligible_branches or not eligible_branches
 
         student_selected_tier = student.get("selected_tier")
@@ -1060,6 +1088,11 @@ def student_profile():
     cursor.execute(query, (student_id,))
     student = cursor.fetchone()
 
+    if not student:
+        session.pop("student_id", None)
+        session.pop("student_name", None)
+        return redirect("/student_login?error=Session+expired.+Please+log+in+again.")
+
     return render_template(
     "student/profile.html",
     student=student,
@@ -1132,11 +1165,41 @@ def update_skills():
         from flask import flash
         flash("Skills updated successfully!", "success")
     except Exception as e:
-        db.rollback()
+        print("Error updating skills:", e)
         from flask import flash
-        flash("Failed to update skills.", "error")
-       
+        flash("Error updating skills.", "danger")
+        
     return redirect("/student_profile")
+
+@app.route("/remove_skill", methods=["POST"])
+def remove_skill():
+    ensure_connection()
+    if "student_id" not in session:
+        return redirect("/student_login")
+        
+    student_id = session["student_id"]
+    skill_to_remove = request.form.get("skill", "").strip()
+    
+    if skill_to_remove:
+        try:
+            cursor.execute("SELECT skills FROM students WHERE student_id = %s", (student_id,))
+            student = cursor.fetchone()
+            if student and student.get("skills"):
+                current_skills = [s.strip() for s in student["skills"].split(',') if s.strip()]
+                if skill_to_remove in current_skills:
+                    current_skills.remove(skill_to_remove)
+                    new_skills = ", ".join(current_skills)
+                    cursor.execute("UPDATE students SET skills = %s WHERE student_id = %s", (new_skills, student_id))
+                    db.commit()
+                    from flask import flash
+                    flash(f"Skill '{skill_to_remove}' removed successfully!", "success")
+        except Exception as e:
+            print("Error removing skill:", e)
+            from flask import flash
+            flash("Error removing skill.", "danger")
+            
+    return redirect("/student_profile")
+
 
 @app.route("/eligible_companies")
 def eligible_companies():
@@ -1147,6 +1210,11 @@ def eligible_companies():
     student_id = session["student_id"]
     cursor.execute("SELECT * FROM students WHERE student_id = %s", (student_id,))
     student = cursor.fetchone()
+    
+    if not student:
+        session.pop("student_id", None)
+        session.pop("student_name", None)
+        return redirect("/student_login?error=Session+expired.+Please+log+in+again.")
    
     try:
         cursor.execute("SELECT * FROM jobs ORDER BY id DESC")
@@ -1170,9 +1238,16 @@ def eligible_companies():
         eligible_branches = [normalize_branch(b) for b in job.get('branches', '').split(',')] if job.get('branches') else []
         student_branch = normalize_branch(student['branch']) if student['branch'] else ""
        
-        cgpa_ok = float(student['cgpa'] or 0) >= float(job.get('cgpa_cutoff') or 0) if student['cgpa'] is not None else True
-        backlogs_ok = student['backlogs'] <= int(job.get('active_backlogs') or 0) if student['backlogs'] is not None else True
-        backlog_history_ok = student['backlog_history'] <= int(job.get('backlog_history') or 0) if student['backlog_history'] is not None else True
+        cgpa_ok = float(student.get('cgpa') or 0) >= float(job.get('cgpa_cutoff') or 0)
+        
+        s_backlogs = int(student.get("backlogs") or 0)
+        s_history = int(student.get("backlog_history") or 0)
+        j_backlogs = int(job.get("active_backlogs") or 0)
+        j_history = int(job.get("backlog_history") or 0)
+        
+        backlogs_ok = s_backlogs <= j_backlogs
+        backlog_history_ok = s_history <= j_history
+        
         branch_ok = (student_branch in eligible_branches) or (not eligible_branches)
        
         # Tier check
@@ -1292,7 +1367,12 @@ def apply_job():
     cursor.execute("SELECT * FROM jobs WHERE job_id = %s", (job_id,))
     job = cursor.fetchone()
    
-    if not student or not job:
+    if not student:
+        session.pop("student_id", None)
+        session.pop("student_name", None)
+        return redirect("/student_login?error=Session+expired.+Please+log+in+again.")
+
+    if not job:
         return "Invalid request."
        
     # Check if deadline has passed
@@ -1414,6 +1494,11 @@ def my_applications():
     cursor.execute("SELECT * FROM students WHERE student_id = %s", (student_id,))
     student = cursor.fetchone()
     
+    if not student:
+        session.pop("student_id", None)
+        session.pop("student_name", None)
+        return redirect("/student_login?error=Session+expired.+Please+log+in+again.")
+    
     query = """
         SELECT a.applied_date, a.status, a.resume_path, a.job_id, a.drive_link,
                j.company_name, j.role, j.ctc as package_lpa, j.tier, j.deadline,
@@ -1461,13 +1546,30 @@ def my_applications():
     links_data = cursor.fetchall()
     
     round_links_map = {}
+    import re
+    def is_valid_url(url):
+        regex = re.compile(
+            r'^(?:http|ftp)s?://' 
+            r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+(?:[A-Z]{2,6}\.?|[A-Z0-9-]{2,}\.?)|'
+            r'localhost|'
+            r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}|'
+            r'\[?[A-F0-9]*:[A-F0-9:]+\]?)'
+            r'(?::\d+)?'
+            r'(?:/?|[/?]\S+)$', re.IGNORECASE)
+        return re.match(regex, url) is not None
+
     for row in links_data:
         jid = row['job_id']
         if jid not in round_links_map:
             round_links_map[jid] = []
-        round_links_map[jid].append({'round_number': row['round_number'], 'link': row['drive_link']})
+        raw_val = str(row['drive_link']).strip()
+        is_u = is_valid_url(raw_val)
+        round_links_map[jid].append({'round_number': row['round_number'], 'is_url': is_u, 'url': raw_val if is_u else '', 'raw_text': raw_val})
 
-    return render_template("student/my_applications.html", applications=apps, student=student, round_links_map=round_links_map)
+    for app in apps:
+        app['round_links'] = round_links_map.get(app['job_id'], [])
+
+    return render_template("student/my_applications.html", applications=apps, student=student)
 
 @app.route("/student_selected_companies")
 def student_selected_companies():
@@ -1478,6 +1580,11 @@ def student_selected_companies():
     student_id = session["student_id"]
     cursor.execute("SELECT * FROM students WHERE student_id = %s", (student_id,))
     student = cursor.fetchone()
+    
+    if not student:
+        session.pop("student_id", None)
+        session.pop("student_name", None)
+        return redirect("/student_login?error=Session+expired.+Please+log+in+again.")
     
     # Fetch jobs where they are formally 'Selected'
     query = """
@@ -1501,6 +1608,11 @@ def ongoing_rounds():
     student_id = session["student_id"]
     cursor.execute("SELECT * FROM students WHERE student_id = %s", (student_id,))
     student = cursor.fetchone()
+    
+    if not student:
+        session.pop("student_id", None)
+        session.pop("student_name", None)
+        return redirect("/student_login?error=Session+expired.+Please+log+in+again.")
     
     query = """
         SELECT a.applied_date, a.status, a.resume_path, a.job_id, a.drive_link,
@@ -1566,12 +1678,26 @@ def student_logout():
     session.pop("must_change_password", None)
     return redirect("/student_login")
 
+def get_active_batch_name():
+    from flask import session
+    import json, os
+    year_str = session.get("active_year", "2025-2026")
+    try:
+        batches_file = os.path.join(app.root_path, "database", "batches.json")
+        if os.path.exists(batches_file):
+            with open(batches_file, "r") as f:
+                batches = json.load(f)
+                for b in batches:
+                    if b["id"] == year_str:
+                        return b["name"]
+    except Exception:
+        pass
+    return session.get("active_year_name", year_str)
+
 @app.context_processor
 def inject_global_settings():
     ensure_connection()
-    from flask import session
-    active_year = session.get("active_year", "2025-2026")
-    active_year_name = session.get("active_year_name", active_year)
+    active_year_name = get_active_batch_name()
     try:
         cursor.execute("SELECT setting_key, setting_value FROM global_settings")
         rows = cursor.fetchall()
@@ -1637,9 +1763,13 @@ def get_dashboard_stats():
         denominator = total_interested + not_interested_applied
 
         if denominator > 0:
-            # Numerator: all students who got selected (from either group)
+            # Numerator: all students who are marked as selected in the master sheet
             cursor.execute("""
-                SELECT COUNT(DISTINCT student_id) AS c FROM applications WHERE status = 'Selected'
+                SELECT COUNT(DISTINCT student_id) AS c 
+                FROM students 
+                WHERE selected_tiers IS NOT NULL 
+                  AND TRIM(selected_tiers) != '' 
+                  AND TRIM(selected_tiers) != '-'
             """)
             total_selected = cursor.fetchone()["c"] or 0
             placement_rate = round((total_selected / denominator * 100), 1)
@@ -1648,13 +1778,7 @@ def get_dashboard_stats():
 
     return total_students, active_jobs, placement_rate
 
-@app.route("/faculty_login")
-def faculty_login_page():
-    if "faculty_email" in session:
-        if "active_year_db" not in session:
-            return redirect("/faculty/select_year")
-        return redirect("/faculty_dashboard")
-    
+def get_login_batches_stats():
     batches_file = os.path.join(app.root_path, "database", "batches.json")
     batches_stats = []
     
@@ -1662,7 +1786,6 @@ def faculty_login_page():
         try:
             with open(batches_file, "r") as f:
                 batches = json.load(f)
-                # Take only the first two batches for the UI layout
                 for batch in batches[:2]:
                     try:
                         switch_active_db(batch["db"], batch["id"])
@@ -1678,8 +1801,12 @@ def faculty_login_page():
                     })
         except Exception:
             pass
+    return batches_stats
 
-    return render_template("faculty/login.html", batches_stats=batches_stats)
+@app.route("/faculty_login")
+def faculty_login_page():
+    # Always show the login form - never auto-redirect
+    return render_template("faculty/login.html", batches_stats=get_login_batches_stats())
 
 @app.route("/faculty_login_check", methods=["POST"])
 def faculty_login_check():
@@ -1706,16 +1833,8 @@ def faculty_login_check():
         session.permanent = True
         return redirect("/faculty/select_year")
 
-    # Fallback for hardcoded Dr. Shankar
-    if email == "drshankar@gmail.com" and password == "shankar123":
-        session["faculty_email"] = email
-        session["faculty_name"] = "Dr. Shankar"
-        session.permanent = True
-        return redirect("/faculty/select_year")
-
-    total_students, active_jobs, placement_rate = get_dashboard_stats()
     return render_template("faculty/login.html", error="Invalid email or password.",
-                           total_students=total_students, active_jobs=active_jobs, placement_rate=placement_rate)
+                           batches_stats=get_login_batches_stats())
 
 
 def faculty_required():
@@ -1988,12 +2107,6 @@ def faculty_manage_batches():
         # Update session if renaming the currently active batch
         if session.get("active_year") == edit_id:
             session["active_year_name"] = edit_name
-            # Also update global settings so login page shows correct recruitment title
-            try:
-                cursor.execute("UPDATE global_settings SET setting_value = %s WHERE setting_key = 'recruitment_title'", (f"{edit_name} Recruitment Season Live",))
-                db.commit()
-            except Exception:
-                pass
             
         flash(f"Batch '{edit_name}' updated successfully.", "success")
         
@@ -2026,7 +2139,7 @@ def faculty_reset_batch():
         return redirect("/faculty/master_sheet")
         
     active_year = session.get("active_year", "2025-2026")
-    active_year_name = session.get("active_year_name", active_year)
+    active_year_name = get_active_batch_name()
     
     # 1. Delete all uploaded files for this year (profile photos, job PDFs, master sheets)
     import shutil
@@ -3834,7 +3947,7 @@ def faculty_master_sheet():
         file_type = "CSV Document"
         file_size = round(os.path.getsize(os.path.join(upload_dir, current_file)) / 1024)
 
-    active_year_name = session.get("active_year_name", active_year)
+    active_year_name = get_active_batch_name()
 
     return render_template("faculty/master_sheet.html", current_file=current_file, file_type=file_type, file_size=file_size, active_year=active_year_name)
 
@@ -3987,6 +4100,9 @@ def faculty_upload_master_sheet():
 
         cgpa_val = _safe_float(row.get("cgpa", 0))
         cgpa = cgpa_val if cgpa_val is not None else 0.0
+        # If student gives percentage for CGPA (e.g. 85.5), convert it to out of 10.
+        if cgpa > 10.0 and cgpa <= 100.0:
+            cgpa = round(cgpa / 10.0, 2)
 
         active_backlogs = _safe_int_val(row.get("active_backlogs", row.get("backlog_count", 0)))
         raw_backlog_hist = row.get("backlog_history", 0)
@@ -4014,6 +4130,12 @@ def faculty_upload_master_sheet():
         # '10th Score' normalizes to '10th_score'; '12th Score' → '12th_score'
         tenth_score_ms = _safe_float(row.get("10th_score", row.get("10th_%", row.get("tenth_score", None))))
         inter_score_ms = _safe_float(row.get("12th_score", row.get("12th_%", row.get("inter_score", None))))
+        
+        # If student gives CGPA for 10th/12th (e.g. 9.8), convert to percentage
+        if tenth_score_ms is not None and tenth_score_ms <= 10.0 and tenth_score_ms > 0:
+            tenth_score_ms = round(tenth_score_ms * 10.0, 2)
+        if inter_score_ms is not None and inter_score_ms <= 10.0 and inter_score_ms > 0:
+            inter_score_ms = round(inter_score_ms * 10.0, 2)
         # 'Phone Number' normalizes to 'phone_number'
         raw_phone = str(row.get("phone_number", row.get("phone_no", row.get("phone", "")))).strip()
         phone_ms = raw_phone if raw_phone and raw_phone != "nan" else None
@@ -4486,7 +4608,7 @@ def reset_password():
             session.pop('reset_verified', None)
            
             from flask import flash
-            active_year_name = session.get("active_year_name", "the active batch")
+            active_year_name = get_active_batch_name()
             flash(f"Password has been reset successfully for {active_year_name}! You can now log in.", "success")
             return redirect("/")
         except Exception as e:
