@@ -52,6 +52,7 @@ A web-based Placement Portal designed to streamline the campus recruitment proce
 ## 🗄️ Database Tables
 
 * Students
+* Faculty
 * Jobs
 * Applications
 
