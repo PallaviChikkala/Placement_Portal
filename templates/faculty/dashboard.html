@@ -6,6 +6,7 @@
 <title>Admin Dashboard — NIT AP Placement Portal</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/css/tour.css">
 <script>
   (function() {
     const savedTheme = localStorage.getItem('faculty-theme') || 'light';
@@ -246,11 +247,11 @@ body { min-height: 100vh; font-family: 'DM Sans', sans-serif; background: var(--
         <input type="text" name="recruitment_title" value="{{ global_settings.recruitment_title }}" placeholder="Recruitment Season" required style="background: transparent; border: none; color: var(--text-main); font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 600; outline: none; width: 200px;">
         <button type="submit" style="background: var(--button-gradient); color: white; border: none; padding: 6px 16px; border-radius: 24px; font-weight: 700; font-size: 13px; cursor: pointer; transition: opacity 0.2s;" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">Save</button>
       </form>
-      <a href="/faculty_logout" class="logout-btn"><i class="ti ti-logout"></i> Logout</a>
+      <a href="/faculty_logout" class="logout-btn" data-tour="admin-logout"><i class="ti ti-logout"></i> Logout</a>
     </div>
   </div>
 
-  <div class="stats-row">
+  <div class="stats-row" data-tour="admin-stats">
     <div class="stat-card-horiz">
       <div class="stat-icon"><i class="ti ti-users"></i></div>
       <div><div class="stat-number" id="stat-total-students">{{ total_students }}</div><div class="stat-label">Total Students</div></div>
@@ -272,7 +273,7 @@ body { min-height: 100vh; font-family: 'DM Sans', sans-serif; background: var(--
   <!-- Manage jobs bar removed as per request -->
   <div class="action-grid">
 
-    <a href="/faculty/master_sheet" class="option-card">
+    <a href="/faculty/master_sheet" class="option-card" data-tour="admin-master">
       <div class="card-icon"><i class="ti ti-file-spreadsheet"></i></div>
       <h3>Master Sheet</h3>
       <p>Upload and download the master student excel sheet PDF</p>
@@ -282,7 +283,7 @@ body { min-height: 100vh; font-family: 'DM Sans', sans-serif; background: var(--
       </div>
     </a>
     
-    <a href="/faculty/jobs" class="option-card">
+    <a href="/faculty/jobs" class="option-card" data-tour="admin-jobs">
       <div class="card-icon"><i class="ti ti-briefcase"></i></div>
       <h3>JOBS</h3>
       <p>Manage criteria, edit cutoffs, CTC, tiers &amp; upload details</p>
@@ -292,7 +293,7 @@ body { min-height: 100vh; font-family: 'DM Sans', sans-serif; background: var(--
       </div>
     </a>
     
-    <a href="/faculty/applied_students" class="option-card">
+    <a href="/faculty/applied_students" class="option-card" data-tour="admin-applied">
       <div class="card-icon"><i class="ti ti-clipboard-list"></i></div>
       <h3>Applied Students</h3>
       <p>View job-wise student applicant tables and download spreadsheets</p>
@@ -302,7 +303,7 @@ body { min-height: 100vh; font-family: 'DM Sans', sans-serif; background: var(--
       </div>
     </a>
     
-    <a href="/faculty/recruitment_process" class="option-card">
+    <a href="/faculty/recruitment_process" class="option-card" data-tour="admin-recruitment">
       <div class="card-icon"><i class="ti ti-git-branch"></i></div>
       <h3><small><b>Recruitment</b></small> Process</h3>
       <p>Track multi-round recruitment: set rounds, mark results, and export Excel per job</p>
@@ -312,7 +313,7 @@ body { min-height: 100vh; font-family: 'DM Sans', sans-serif; background: var(--
       </div>
     </a>
     
-    <a href="/faculty/job_results" class="option-card">
+    <a href="/faculty/job_results" class="option-card" data-tour="admin-results">
       <div class="card-icon"><i class="ti ti-report-analytics"></i></div>
       <h3>Job Results Tracker</h3>
       <p>View selection and not-selected tables for each available job opening</p>
@@ -322,12 +323,22 @@ body { min-height: 100vh; font-family: 'DM Sans', sans-serif; background: var(--
       </div>
     </a>
 
-    <a href="/faculty/selected_students" class="option-card">
+    <a href="/faculty/selected_students" class="option-card" data-tour="admin-selected">
       <div class="card-icon"><i class="ti ti-trophy"></i></div>
       <h3>Selected Students</h3>
       <p>View placement outcomes, company selections, and student tier distribution</p>
       <div class="card-meta">
         <span class="badge-count">Placed tracking</span>
+        <i class="ti ti-arrow-right" style="color:#d97706;"></i>
+      </div>
+    </a>
+
+    <a href="/faculty/job_analysis" class="option-card" data-tour="admin-analysis">
+      <div class="card-icon"><i class="ti ti-chart-bar"></i></div>
+      <h3>Job Analysis</h3>
+      <p>See how many students applied &amp; got selected per job, with selection rates</p>
+      <div class="card-meta">
+        <span class="badge-count">Applied vs Selected</span>
         <i class="ti ti-arrow-right" style="color:#d97706;"></i>
       </div>
     </a>
@@ -464,5 +475,14 @@ if (themeToggle) {
 })();
 </script>
 <script>document.addEventListener("DOMContentLoaded", function() { document.querySelectorAll(".modal").forEach(function(m) { document.body.appendChild(m); }); });</script>
+
+<script src="/static/js/tour.js"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        if (typeof initAdminTour === 'function') {
+            window._adminTour = initAdminTour();
+        }
+    });
+</script>
 </body>
 </html>

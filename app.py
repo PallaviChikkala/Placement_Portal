@@ -749,6 +749,8 @@ def upload():
 
 @app.route("/student_login")
 def student_login_page():
+    # Clear any residual temporary session state
+    session.pop("resume_score", None)
     # Always show the login form - never auto-redirect (user must explicitly log in)
     error = request.args.get('error')
     return render_template("student/login.html", error=error)
@@ -1676,6 +1678,7 @@ def student_logout():
     session.pop("student_id", None)
     session.pop("student_name", None)
     session.pop("must_change_password", None)
+    session.pop("resume_score", None)
     return redirect("/student_login")
 
 def get_active_batch_name():
@@ -1705,10 +1708,10 @@ def inject_global_settings():
         for r in rows:
             settings[r["setting_key"]] = r["setting_value"]
         if 'recruitment_title' not in settings:
-            settings['recruitment_title'] = f'{active_year_name} Recruitment Season Live'
+            settings['recruitment_title'] = 'Recruitment Season Live'
         return dict(global_settings=settings, active_year=active_year_name)
     except Exception:
-        return dict(global_settings={'recruitment_title': f'{active_year_name} Recruitment Season Live'}, active_year=active_year_name)
+        return dict(global_settings={'recruitment_title': 'Recruitment Season Live'}, active_year=active_year_name)
 
 @app.route("/faculty/update_settings", methods=["POST"])
 def faculty_update_settings():
@@ -1767,9 +1770,10 @@ def get_dashboard_stats():
             cursor.execute("""
                 SELECT COUNT(DISTINCT student_id) AS c 
                 FROM students 
-                WHERE selected_tiers IS NOT NULL 
-                  AND TRIM(selected_tiers) != '' 
-                  AND TRIM(selected_tiers) != '-'
+                WHERE (selected_tier IS NOT NULL AND selected_tier > 0)
+                   OR (tier_1 IS NOT NULL AND TRIM(tier_1) != '' AND LOWER(TRIM(tier_1)) != 'nan')
+                   OR (tier_2 IS NOT NULL AND TRIM(tier_2) != '' AND LOWER(TRIM(tier_2)) != 'nan')
+                   OR (tier_3 IS NOT NULL AND TRIM(tier_3) != '' AND LOWER(TRIM(tier_3)) != 'nan')
             """)
             total_selected = cursor.fetchone()["c"] or 0
             placement_rate = round((total_selected / denominator * 100), 1)
@@ -1892,9 +1896,16 @@ def faculty_dashboard():
         denominator = total_interested + not_interested_applied
 
         if denominator > 0:
-            cursor.execute("SELECT COUNT(DISTINCT student_id) AS c FROM applications")
-            total_applied = cursor.fetchone()["c"] or 0
-            placement_rate = round((total_applied / denominator * 100), 1)
+            cursor.execute("""
+                SELECT COUNT(DISTINCT student_id) AS c 
+                FROM students 
+                WHERE (selected_tier IS NOT NULL AND selected_tier > 0)
+                   OR (tier_1 IS NOT NULL AND TRIM(tier_1) != '' AND LOWER(TRIM(tier_1)) != 'nan')
+                   OR (tier_2 IS NOT NULL AND TRIM(tier_2) != '' AND LOWER(TRIM(tier_2)) != 'nan')
+                   OR (tier_3 IS NOT NULL AND TRIM(tier_3) != '' AND LOWER(TRIM(tier_3)) != 'nan')
+            """)
+            total_placed = cursor.fetchone()["c"] or 0
+            placement_rate = round((total_placed / denominator * 100), 1)
         else:
             placement_rate = 0.0
     except Exception:
@@ -2152,6 +2163,10 @@ def faculty_reset_batch():
             
     # 2. Clear all tables in the active year database (except faculty)
     try:
+        cursor.execute("SELECT setting_value FROM global_settings WHERE setting_key = 'recruitment_title'")
+        res = cursor.fetchone()
+        current_title = res["setting_value"] if res else "Recruitment Season Live"
+
         cursor.execute("SET FOREIGN_KEY_CHECKS = 0")
         cursor.execute("DELETE FROM round_results")
         cursor.execute("DELETE FROM recruitment_rounds")
@@ -2160,7 +2175,7 @@ def faculty_reset_batch():
         cursor.execute("DELETE FROM students")
         cursor.execute("DELETE FROM jobs")
         cursor.execute("DELETE FROM global_settings")
-        cursor.execute("INSERT INTO global_settings (setting_key, setting_value) VALUES ('recruitment_title', %s)", (f"{active_year_name} Recruitment Season Live",))
+        cursor.execute("INSERT INTO global_settings (setting_key, setting_value) VALUES ('recruitment_title', %s)", (current_title,))
         cursor.execute("SET FOREIGN_KEY_CHECKS = 1")
         db.commit()
         
@@ -2984,6 +2999,76 @@ def faculty_job_results():
         j["applicant_count"] = cursor.fetchone()["c"]
 
     return render_template("faculty/job_results.html", jobs=jobs)
+
+
+@app.route("/faculty/job_analysis")
+def faculty_job_analysis():
+    ensure_connection()
+    redir = faculty_required()
+    if redir: return redir
+
+    try:
+        cursor.execute("""
+            SELECT
+                j.job_id,
+                j.company_name,
+                j.role,
+                j.tier,
+                j.ctc,
+                j.deadline,
+                COUNT(a.student_id) AS total_applied,
+                SUM(CASE WHEN LOWER(TRIM(COALESCE(a.status,''))) = 'selected' THEN 1 ELSE 0 END) AS total_selected,
+                SUM(CASE WHEN LOWER(TRIM(COALESCE(a.status,''))) IN ('rejected','not selected') THEN 1 ELSE 0 END) AS total_rejected,
+                SUM(CASE WHEN LOWER(TRIM(COALESCE(a.status,''))) IN ('applied','pending','interview','under review') THEN 1 ELSE 0 END) AS total_pending
+            FROM jobs j
+            LEFT JOIN applications a ON j.job_id = a.job_id
+            GROUP BY j.job_id, j.company_name, j.role, j.tier, j.ctc, j.deadline
+            ORDER BY j.company_name, j.role
+        """)
+        jobs_analysis = cursor.fetchall()
+
+        # Compute totals
+        grand_applied = sum((r["total_applied"] or 0) for r in jobs_analysis)
+        grand_selected = sum((r["total_selected"] or 0) for r in jobs_analysis)
+
+        # Compute per-job selection rate
+        analysis_list = []
+        for row in jobs_analysis:
+            applied = row["total_applied"] or 0
+            selected = row["total_selected"] or 0
+            rejected = row["total_rejected"] or 0
+            pending = row["total_pending"] or 0
+            rate = round((selected / applied * 100), 1) if applied > 0 else 0.0
+            analysis_list.append({
+                "job_id": row["job_id"],
+                "company_name": row["company_name"],
+                "role": row["role"],
+                "tier": row["tier"] or "—",
+                "ctc": row["ctc"] or "—",
+                "deadline": str(row["deadline"]) if row["deadline"] else "Ongoing",
+                "total_applied": applied,
+                "total_selected": selected,
+                "total_rejected": rejected,
+                "total_pending": pending,
+                "selection_rate": rate,
+            })
+
+    except Exception as e:
+        print("Job analysis error:", e)
+        analysis_list = []
+        grand_applied = 0
+        grand_selected = 0
+
+    grand_rate = round((grand_selected / grand_applied * 100), 1) if grand_applied > 0 else 0.0
+
+    return render_template(
+        "faculty/job_analysis.html",
+        analysis_list=analysis_list,
+        grand_applied=grand_applied,
+        grand_selected=grand_selected,
+        grand_rate=grand_rate,
+        total_jobs=len(analysis_list),
+    )
 
 
 # ─── FACULTY: RECRUITMENT PROCESS TRACKER ─────────────────────────────────────
