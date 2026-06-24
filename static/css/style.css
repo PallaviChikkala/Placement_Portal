@@ -320,6 +320,7 @@ body.dark-mode select optgroup,
     font-size: 0.75rem;
     letter-spacing: 0.5px;
     text-transform: uppercase;
+    white-space: nowrap;
 }
 
 .badge-eligible {

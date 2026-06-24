@@ -128,7 +128,7 @@ body { min-height:100vh; font-family:'DM Sans',sans-serif; background:var(--bg-g
 
 <div class="page-body">
   <div class="page-header">
-    <h1><i class="ti ti-file-spreadsheet"></i> Master Sheet Manager <span class="badge bg-warning text-dark ms-2" style="font-size: 14px; border-radius: 12px; font-weight:700;">{{ active_year }}</span></h1>
+    <h1><i class="ti ti-file-spreadsheet"></i> Master Student Records <span class="badge bg-warning text-dark ms-2" style="font-size: 14px; border-radius: 12px; font-weight:700;">{{ active_year }}</span></h1>
     <div>
       <a href="/faculty/select_year" class="back-home-btn me-2" style="border-color: var(--text-accent); color: var(--text-accent);"><i class="ti ti-arrows-exchange"></i> Change Batch</a>
       <a href="/faculty_dashboard" class="back-home-btn"><i class="ti ti-home"></i> Back to Dashboard</a>
@@ -156,18 +156,17 @@ body { min-height:100vh; font-family:'DM Sans',sans-serif; background:var(--bg-g
           <i class="ti ti-file-spreadsheet mb-3" style="font-size: 48px; color: #d97706;"></i>
           <h3 style="font-family:'Syne',sans-serif; font-size:20px; color:#78350f; font-weight:800; margin-bottom:12px;">Upload Master Sheet</h3>
           <p style="font-size:13px; color:#b97f10; margin-bottom:24px;">
-            Upload the master sheet in <strong>.xlsx, .csv, or .pdf</strong> format for student data management and record keeping.
-          </p>
+           Upload a master student data file (.xlsx, .csv, or .pdf) to update and synchronize student records across the placement portal.</br> The Master Sheet serves as the central data repository for eligibility verification, tier-based placement restrictions, placement status tracking, and application validation.          </p>
           <form action="{{ url_for('faculty_upload_master_sheet') }}" method="POST" enctype="multipart/form-data" class="w-100 mb-4" style="max-width:320px;">
             <input type="file" name="master_file" accept=".xlsx,.csv,.pdf" class="form-control mb-3" style="border-radius:10px; border-color:rgba(253,230,138,0.8);" required />
             <button type="submit" class="edit-action-btn w-100 justify-content-center">
-              <i class="ti ti-upload"></i>&nbsp; Upload & Notify Students
+              <i class="ti ti-upload"></i>&nbsp; Upload and Synchronize Master Records
             </button>
           </form>
 
           {% if current_file %}
           <div class="w-100 pt-3" style="border-top: 1px dashed var(--card-border); max-width: 380px;">
-            <h4 style="font-family:'Syne',sans-serif; font-size:15px; color:#78350f; font-weight:800; margin-bottom:8px;">Current Master Sheet</h4>
+            <h4 style="font-family:'Syne',sans-serif; font-size:15px; color:#78350f; font-weight:800; margin-bottom:8px;">Active Master Sheet</h4>
             <p style="font-size:12px; color:#5c3b1a; margin-bottom:12px;"><strong>Type:</strong> {{ file_type }} | <strong>Size:</strong> {{ file_size }} KB</p>
             <div class="d-flex justify-content-center gap-2">
               <a href="{{ url_for('faculty_download_master_sheet') }}" class="back-home-btn" style="border-color:#d97706; color:#d97706; padding: 6px 14px; font-size: 12px; height: 36px; display: inline-flex; align-items: center; justify-content: center;">
@@ -175,7 +174,7 @@ body { min-height:100vh; font-family:'DM Sans',sans-serif; background:var(--bg-g
               </a>
               <form action="{{ url_for('faculty_delete_master_sheet') }}" method="POST" style="display:inline;">
                 <button type="submit" class="btn btn-outline-danger" style="border-radius:40px; padding: 6px 14px; font-size: 12px; font-weight:600; height: 36px;">
-                  <i class="ti ti-trash"></i> Delete Sheet Only
+                  <i class="ti ti-trash"></i> Delete Active Master Sheet
                 </button>
               </form>
             </div>
@@ -190,20 +189,20 @@ body { min-height:100vh; font-family:'DM Sans',sans-serif; background:var(--bg-g
           <i class="ti ti-alert-triangle mb-3" style="font-size: 48px; color: #ef4444;"></i>
           <h3 style="font-family:'Syne',sans-serif; font-size:20px; color:#ef4444; font-weight:800; margin-bottom:12px;">Reset {{ active_year }}</h3>
           <p style="font-size:13px; color: var(--text-muted); margin-bottom:24px; max-width: 400px;">
-            Permanently delete all students, jobs, applications, round results, notifications, and master sheet files for <strong style="color: #ef4444;">{{ active_year }}</strong>. This action is irreversible.
+            Permanently delete all students, jobs, applications, round results, notifications, and master sheet files for <strong style="color: #ef4444;">{{ active_year }}</strong>.<br><b>This action is irreversible.</b>
           </p>
           <form action="/faculty/reset_batch" method="POST" class="w-100" style="max-width:360px;" id="resetForm">
             <div class="form-check text-start mb-3" style="font-size: 13px; color: var(--text-main); background: var(--card-bg); padding: 10px 12px 10px 32px; border-radius: 10px; border: 1px solid rgba(239, 68, 68, 0.3);">
               <input class="form-check-input" type="checkbox" id="confirmSaveCheck" name="confirm_save" value="yes" required onchange="toggleResetButton()">
               <label class="form-check-label" for="confirmSaveCheck">
-                I confirm that I have saved all the students' data for this batch.
+                I confirm that all student records for this batch have been reviewed and successfully saved.
               </label>
             </div>
             <div class="mb-2">
-              <input type="email" name="confirm_email" id="confirmEmail" class="form-control form-premium" placeholder="Enter your faculty email" required oninput="toggleResetButton()" style="border-radius:10px; font-size:13px; border: 1px solid rgba(239,68,68,0.3);">
+              <input type="email" name="confirm_email" id="confirmEmail" class="form-control form-premium" placeholder="Enter your admin email" required oninput="toggleResetButton()" style="border-radius:10px; font-size:13px; border: 1px solid rgba(239,68,68,0.3);">
             </div>
             <div class="mb-3">
-              <input type="password" name="confirm_password" id="confirmPassword" class="form-control form-premium" placeholder="Enter your faculty password" required oninput="toggleResetButton()" style="border-radius:10px; font-size:13px; border: 1px solid rgba(239,68,68,0.3);">
+              <input type="password" name="confirm_password" id="confirmPassword" class="form-control form-premium" placeholder="Enter your admin password" required oninput="toggleResetButton()" style="border-radius:10px; font-size:13px; border: 1px solid rgba(239,68,68,0.3);">
             </div>
             <button type="submit" id="resetSubmitBtn" class="btn btn-danger w-100 justify-content-center" disabled style="border-radius:40px; padding: 10px 24px; font-weight:700; font-size:14px; display:inline-flex; align-items:center; gap:8px;">
               <i class="ti ti-refresh"></i> Reset All Batch Data

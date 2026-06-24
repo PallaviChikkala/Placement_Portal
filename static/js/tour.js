@@ -475,7 +475,7 @@ function initAdminTour() {
       title:    'Manage Jobs',
       icon:     '💼',
       position: 'auto',
-      description: 'Post new placement drives with criteria (CGPA, branch, backlogs), set tier, CTC, and application deadlines. Students see only drives they\'re eligible for based on these criteria.',
+      description: 'Post and manage placement drives by defining eligibility criteria such as CGPA, branch, and backlog requirements, along with tier classification, CTC, and application deadlines. All students can view available opportunities, while the system automatically validates eligibility and allows applications only for drives they qualify for.',
     },
     {
       element:  '[data-tour="admin-applied"]',
@@ -510,7 +510,7 @@ function initAdminTour() {
       title:    'Job Analysis',
       icon:     '📈',
       position: 'auto',
-      description: 'Compare every job drive side-by-side: how many students applied, got selected, rejected, or are pending — with a colour-coded selection rate bar. Export to XLSX for reports.',
+      description: 'Compare every job drive side-by-side: how many students applied, got selected, not selected, or are pending — with a colour-coded selection rate bar. Export to XLSX for reports.',
     },
     {
       element:  '[data-tour="admin-logout"]',
