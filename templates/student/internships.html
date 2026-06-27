@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Internships - Placement Portal</title>
+    <!-- Bootstrap & Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <!-- Custom Style System -->
+    <link rel="stylesheet" href="/static/css/style.css?v=2.1">
+    <style>
+        .internship-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--card-border);
+            border-radius: 20px;
+            padding: 24px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.02);
+        }
+        .internship-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 25px rgba(217, 119, 6, 0.08);
+            border-color: rgba(217, 119, 6, 0.3);
+        }
+        .company-badge {
+            width: 50px;
+            height: 50px;
+            border-radius: 12px;
+            background-color: var(--primary-light);
+            color: var(--accent);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.4rem;
+            font-weight: 700;
+        }
+        .table-glass {
+            background: var(--card-bg);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            overflow: hidden;
+            border: 1px solid var(--card-border);
+        }
+        /* Dark mode: prevent Bootstrap's white table bg override */
+        .table,
+        .table > :not(caption) > * > * {
+            background-color: transparent !important;
+            color: var(--text-main) !important;
+        }
+        body.dark-mode .table,
+        body.dark-mode .table > :not(caption) > * > * {
+            color: #f8fafc !important;
+        }
+        .table tbody tr {
+            background-color: transparent !important;
+        }
+        body.dark-mode .table tbody tr:hover {
+            background-color: rgba(255,255,255,0.04) !important;
+        }
+        .table thead th {
+            background-color: rgba(217, 119, 6, 0.10) !important;
+            color: var(--text-accent, #78350f) !important;
+            font-weight: 700;
+            border-bottom: 2px solid var(--card-border, rgba(253,230,138,0.4));
+        }
+        body.dark-mode .table thead th {
+            background-color: rgba(217, 119, 6, 0.15) !important;
+            color: #fbbf24 !important;
+        }
+        .table td {
+            border-bottom: 1px solid var(--card-border, rgba(253,230,138,0.4));
+            color: var(--text-main);
+        }
+        /* Heading text — fix text-dark in dark mode */
+        body.dark-mode h4.text-dark,
+        body.dark-mode h6.text-dark {
+            color: #f1f5f9 !important;
+        }
+        /* Modal inputs in dark mode */
+        body.dark-mode .modal-content {
+            background: var(--card-bg) !important;
+            color: var(--text-main) !important;
+        }
+        body.dark-mode .modal-content .form-control {
+            background-color: rgba(255,255,255,0.06) !important;
+            color: #f1f5f9 !important;
+            border-color: rgba(255,255,255,0.15) !important;
+        }
+        body.dark-mode .modal-content .form-label {
+            color: #d1d5db !important;
+        }
+        body.dark-mode .modal-content .form-text {
+            color: #9ca3af !important;
+        }
+        body.dark-mode .btn-close {
+            filter: invert(1);
+        }
+    </style>
+</head>
+<body>
+<script>
+  /* Apply saved dark mode immediately — prevents white flash */
+  (function() {
+    try {
+      /* Support both storage keys used across the portal */
+      var dm = localStorage.getItem('darkMode') || localStorage.getItem('theme');
+      if (dm === 'enabled' || dm === 'dark') {
+        document.body.classList.add('dark-mode');
+        /* Normalise to the standard key */
+        localStorage.setItem('darkMode', 'enabled');
+      }
+    } catch(e) {}
+  })();
+</script>
+
+    <div class="dashboard-layout">
+        <!-- Sidebar Navigation -->
+        <div class="sidebar">
+            <div class="sidebar-logo">
+                <img src="/static/StudentLogin.png" width="45" height="45" alt="NIT AP Logo">
+                <div>
+                    <h5 class="mb-0 fw-bold" style="font-family: var(--font-heading); color: var(--primary);">NIT AP</h5>
+                    <small class="text-muted" style="font-size: 0.75rem;">Placement Cell</small>
+                </div>
+            </div>
+            
+            <div class="sidebar-menu">
+                <a href="/student_dashboard" class="sidebar-link">
+                    <i class="bi bi-speedometer2"></i> Dashboard
+                </a>
+                <a href="/student_profile" class="sidebar-link">
+                    <i class="bi bi-person"></i> Profile
+                </a>
+                <a href="/eligible_companies" class="sidebar-link">
+                    <i class="bi bi-building"></i> Eligible Companies
+                </a>
+                <a href="/student/internships" class="sidebar-link active">
+                    <i class="bi bi-award"></i> Internships
+                </a>
+                <a href="/my_applications" class="sidebar-link">
+                    <i class="bi bi-file-earmark-text"></i> Placement History
+                </a>
+                <a href="/student_selected_companies" class="sidebar-link">
+                    <i class="bi bi-trophy"></i> Selected Companies
+                </a>
+            </div>
+            
+            <div class="sidebar-footer">
+                <hr style="background-color: rgba(255,255,255,0.1); margin-bottom: 20px;">
+                <a href="/student_logout" class="sidebar-link" style="color: #ef4444;">
+                    <i class="bi bi-box-arrow-right"></i> Logout
+                </a>
+            </div>
+        </div>
+
+        <!-- Main Body Content -->
+        <div class="main-content">
+            <!-- Header bar -->
+            <div class="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom">
+                <div>
+                    <h2 class="mb-1 text-primary fw-extrabold" style="font-family: var(--font-heading);">Internships</h2>
+                    <p class="text-muted mb-0 small">View internship opportunities and submit completion certificates.</p>
+                </div>
+            </div>
+
+            <!-- Flash Messages -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ 'success' if category == 'success' else 'danger' }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <!-- Available Opportunities -->
+            <h4 class="mb-3 fw-bold" style="font-family: var(--font-heading); color: var(--text-main);">Available Internships</h4>
+            <div class="row g-4 mb-5">
+                {% if postings %}
+                    {% for post in postings %}
+                    <div class="col-md-6 col-lg-4">
+                        <div class="internship-card h-100 d-flex flex-column justify-content-between">
+                            <div>
+                                <div class="d-flex align-items-center gap-3 mb-3">
+                                    <div class="company-badge">{{ post.company_name[0] }}</div>
+                                    <div>
+                                        <h5 class="mb-0 fw-bold text-primary" style="font-family: var(--font-heading);">{{ post.company_name }}</h5>
+                                        <small class="text-muted"><i class="bi bi-calendar-event me-1"></i>Posted on: {{ post.posted_date.strftime('%Y-%m-%d') if post.posted_date else 'N/A' }}</small>
+                                    </div>
+                                </div>
+                                <h6 class="fw-bold mb-2" style="color: var(--text-main);">{{ post.role }}</h6>
+                                <p class="text-muted small text-wrap mb-4">{{ post.details }}</p>
+                            </div>
+                            
+                            <div class="d-flex gap-2">
+                                {% if post.link %}
+                                <a href="{{ post.link }}" target="_blank" class="btn btn-outline-primary btn-sm flex-grow-1"><i class="bi bi-link-45deg"></i> Apply Link</a>
+                                {% endif %}
+                                
+                                {% if post.completed %}
+                                    <button class="btn btn-success btn-sm flex-grow-1" disabled><i class="bi bi-check-circle-fill"></i> Completed</button>
+                                {% else %}
+                                    <button class="btn btn-premium btn-sm flex-grow-1" onclick="openCompletionModal({{ post.posting_id }}, '{{ post.company_name }}', '{{ post.role }}')">
+                                        <i class="bi bi-file-earmark-arrow-up"></i> Submit Completion
+                                    </button>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="col-12 text-center py-5 text-muted">
+                        <i class="bi bi-award fs-1 d-block mb-3 text-warning"></i>
+                        <h5>No Internship Postings Available</h5>
+                        <p class="small text-muted">Check back later for postings from the T&P Cell.</p>
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- My Completions -->
+            <h4 class="mb-3 fw-bold" style="font-family: var(--font-heading); color: var(--text-main);">My Completed Internships</h4>
+            <div class="card glass-card p-4 mb-4">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th>Company</th>
+                                <th>Role</th>
+                                <th>Type</th>
+                                <th>Project/Description</th>
+                                <th>Certificate</th>
+                                <th>Submitted</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% if completions %}
+                                {% for comp in completions %}
+                                <tr>
+                                    <td><strong>{{ comp.company_name }}</strong></td>
+                                    <td>{{ comp.role }}</td>
+                                    <td>
+                                        {% if comp.details and '[EXTERNAL]' in (comp.details or '') %}
+                                            <span style="font-size:11px;padding:2px 8px;border-radius:10px;background:rgba(124,58,237,0.12);color:#7c3aed;font-weight:700;">External</span>
+                                        {% else %}
+                                            <span style="font-size:11px;padding:2px 8px;border-radius:10px;background:rgba(16,185,129,0.12);color:#059669;font-weight:700;">College</span>
+                                        {% endif %}
+                                    </td>
+                                    <td><span class="small text-muted">{{ comp.completion_description }}</span></td>
+                                    <td>
+                                        {% if comp.certificate_path %}
+                                            <a href="{{ comp.certificate_path }}" target="_blank" class="btn btn-outline-secondary btn-sm">
+                                                <i class="bi bi-file-earmark-pdf"></i> View
+                                            </a>
+                                        {% else %}
+                                            <span class="text-muted small">Not uploaded</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="small text-muted">{{ comp.submitted_at.strftime('%Y-%m-%d') if comp.submitted_at else 'N/A' }}</td>
+                                </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td colspan="6" class="text-center py-4 text-muted">
+                                        <i class="bi bi-info-circle me-1"></i> You have not submitted any internship completion certificates yet.
+                                    </td>
+                                </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Add External Internship -->
+            <h4 class="mb-3 fw-bold" style="font-family: var(--font-heading); color: var(--text-main);">Add Your Own Internship</h4>
+            <div class="card glass-card p-4">
+                <p class="text-muted small mb-3"><i class="bi bi-info-circle me-1"></i>Did an internship outside the college portal? Add it here so faculty can view your experience. Certificate is <strong>optional</strong>.</p>
+                <form action="/student/internships/add_external" method="POST" enctype="multipart/form-data">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold">Company Name <span class="text-danger">*</span></label>
+                            <input type="text" name="ext_company" class="form-control" placeholder="e.g. Google, Infosys" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold">Role / Position <span class="text-danger">*</span></label>
+                            <input type="text" name="ext_role" class="form-control" placeholder="e.g. Software Intern" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold">Duration</label>
+                            <input type="text" name="ext_duration" class="form-control" placeholder="e.g. 2 months (May-June 2024)">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold">Certificate (Optional)</label>
+                            <input class="form-control" type="file" name="ext_certificate" accept=".pdf,.png,.jpg,.jpeg,.docx">
+                            <div class="form-text small">PDF, image, or Word document</div>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label small fw-bold">What did you do? <span class="text-danger">*</span></label>
+                            <textarea class="form-control" name="ext_description" rows="3"
+                                placeholder="Briefly describe your role, project, and learnings..." required></textarea>
+                        </div>
+                        <div class="col-12 d-flex justify-content-end">
+                            <button type="submit" class="btn btn-premium">
+                                <i class="bi bi-plus-circle me-1"></i> Add Internship
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Submit Completion Modal -->
+    <div class="modal fade" id="completionModal" tabindex="-1" aria-labelledby="completionModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content glass-card border">
+                <div class="modal-header border-bottom-0">
+                    <h5 class="modal-title fw-bold text-primary" id="completionModalLabel" style="font-family: var(--font-heading);">Submit Internship Completion</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form action="/student/internships/submit" method="POST" enctype="multipart/form-data">
+                    <div class="modal-body">
+                        <input type="hidden" name="posting_id" id="modal_posting_id">
+                        
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold">Company</label>
+                            <input type="text" class="form-control" id="modal_company_name" readonly style="background: rgba(0,0,0,0.03);">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold">Role</label>
+                            <input type="text" class="form-control" id="modal_role" readonly style="background: rgba(0,0,0,0.03);">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="description" class="form-label small fw-bold">Project Details / Internship Summary <span class="text-danger">*</span></label>
+                            <textarea class="form-control" id="description" name="description" rows="4" placeholder="Briefly describe what you did during this internship..." required></textarea>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="certificate" class="form-label small fw-bold">Upload Certificate <span class="text-muted fw-normal">(Optional)</span></label>
+                            <input class="form-control" type="file" id="certificate" name="certificate">
+                            <div class="form-text small">PDF, PNG, JPG, Word, or any format. You can leave this blank.</div>
+                        </div>
+                    </div>
+                    <div class="modal-footer border-top-0">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-premium">Submit Details</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap Bundle JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        /* ── Dark mode toggle (use consistent 'darkMode' key) ── */
+        (function() {
+            var dm = localStorage.getItem('darkMode') || localStorage.getItem('theme');
+            if (dm === 'enabled' || dm === 'dark') {
+                document.body.classList.add('dark-mode');
+                localStorage.setItem('darkMode', 'enabled');
+            }
+        })();
+
+        function openCompletionModal(postingId, companyName, role) {
+            document.getElementById('modal_posting_id').value = postingId;
+            document.getElementById('modal_company_name').value = companyName;
+            document.getElementById('modal_role').value = role;
+            var modal = new bootstrap.Modal(document.getElementById('completionModal'));
+            modal.show();
+        }
+    </script>
+</body>
+</html>

@@ -154,8 +154,8 @@ body { min-height:100vh; font-family:'DM Sans',sans-serif; background:var(--bg-g
       <div class="col-lg-6">
         <div class="card-custom h-100 d-flex flex-column text-center align-items-center justify-content-center">
           <i class="ti ti-file-spreadsheet mb-3" style="font-size: 48px; color: #d97706;"></i>
-          <h3 style="font-family:'Syne',sans-serif; font-size:20px; color:#78350f; font-weight:800; margin-bottom:12px;">Upload Master Sheet</h3>
-          <p style="font-size:13px; color:#b97f10; margin-bottom:24px;">
+          <h3 style="font-family:'Syne',sans-serif; font-size:20px; color:#f59e0b; font-weight:800; margin-bottom:12px;">Upload Master Sheet</h3>
+          <p style="font-size:13px; color:#e2e8f0; margin-bottom:24px; max-width: 700px;">
            Upload a master student data file (.xlsx, .csv, or .pdf) to update and synchronize student records across the placement portal.</br> The Master Sheet serves as the central data repository for eligibility verification, tier-based placement restrictions, placement status tracking, and application validation.          </p>
           <form action="{{ url_for('faculty_upload_master_sheet') }}" method="POST" enctype="multipart/form-data" class="w-100 mb-4" style="max-width:320px;">
             <input type="file" name="master_file" accept=".xlsx,.csv,.pdf" class="form-control mb-3" style="border-radius:10px; border-color:rgba(253,230,138,0.8);" required />
@@ -166,8 +166,8 @@ body { min-height:100vh; font-family:'DM Sans',sans-serif; background:var(--bg-g
 
           {% if current_file %}
           <div class="w-100 pt-3" style="border-top: 1px dashed var(--card-border); max-width: 380px;">
-            <h4 style="font-family:'Syne',sans-serif; font-size:15px; color:#78350f; font-weight:800; margin-bottom:8px;">Active Master Sheet</h4>
-            <p style="font-size:12px; color:#5c3b1a; margin-bottom:12px;"><strong>Type:</strong> {{ file_type }} | <strong>Size:</strong> {{ file_size }} KB</p>
+            <h4 style="font-family:'Syne',sans-serif; font-size:15px; color:#f59e0b; font-weight:800; margin-bottom:8px;">Active Master Sheet</h4>
+            <p style="font-size:12px; color:#cbd5e1; margin-bottom:12px;"><strong>Type:</strong> {{ file_type }} | <strong>Size:</strong> {{ file_size }} KB</p>
             <div class="d-flex justify-content-center gap-2">
               <a href="{{ url_for('faculty_download_master_sheet') }}" class="back-home-btn" style="border-color:#d97706; color:#d97706; padding: 6px 14px; font-size: 12px; height: 36px; display: inline-flex; align-items: center; justify-content: center;">
                 <i class="ti ti-download"></i> Download
@@ -189,7 +189,7 @@ body { min-height:100vh; font-family:'DM Sans',sans-serif; background:var(--bg-g
           <i class="ti ti-alert-triangle mb-3" style="font-size: 48px; color: #ef4444;"></i>
           <h3 style="font-family:'Syne',sans-serif; font-size:20px; color:#ef4444; font-weight:800; margin-bottom:12px;">Reset {{ active_year }}</h3>
           <p style="font-size:13px; color: var(--text-muted); margin-bottom:24px; max-width: 400px;">
-            Permanently delete all students, jobs, applications, round results, notifications, and master sheet files for <strong style="color: #ef4444;">{{ active_year }}</strong>.<br><b>This action is irreversible.</b>
+            Permanently delete all students, jobs, applications, round results, notifications, and Master Sheet data for <strong style="color: #ef4444;">{{ active_year }}</strong>.<br><b>This action is irreversible.</b>
           </p>
           <form action="/faculty/reset_batch" method="POST" class="w-100" style="max-width:360px;" id="resetForm">
             <div class="form-check text-start mb-3" style="font-size: 13px; color: var(--text-main); background: var(--card-bg); padding: 10px 12px 10px 32px; border-radius: 10px; border: 1px solid rgba(239, 68, 68, 0.3);">

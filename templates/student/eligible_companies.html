@@ -33,10 +33,21 @@
             border-top: 1px solid var(--border-color);
             padding-top: 15px;
         }
-    
+        /* Job card value text — visible in both modes */
+        .job-value {
+            font-weight: 600;
+            color: var(--text-main);
+        }
     </style>
 </head>
 <body>
+<script>
+  /* Apply saved dark mode class immediately to avoid flash */
+  (function() {
+    const dm = localStorage.getItem('darkMode');
+    if (dm === 'enabled') document.body.classList.add('dark-mode');
+  })();
+</script>
 
     <div class="dashboard-layout">
         <!-- Sidebar Navigation -->
@@ -59,8 +70,8 @@
                 <a href="/eligible_companies" class="sidebar-link active">
                     <i class="bi bi-building"></i> Eligible Companies
                 </a>
-                <a href="/ongoing_rounds" class="sidebar-link">
-                    <i class="bi bi-arrow-repeat"></i> Ongoing Rounds
+                <a href="/student/internships" class="sidebar-link">
+                    <i class="bi bi-award"></i> Internships
                 </a>
                 <a href="/my_applications" class="sidebar-link">
                     <i class="bi bi-file-earmark-text"></i> Placement History
@@ -109,7 +120,7 @@
                     <!-- Status Filter -->
                     <div class="col-md-3 col-sm-6">
                         <select id="statusFilter" class="form-select form-premium" onchange="filterCards()">
-                            <option value="all">All Statuses</option>
+                            <option value="all">All Status</option>
                             <option value="eligible">Eligible Only</option>
                             <option value="ineligible">Ineligible Only</option>
                             <option value="applied">Already Applied</option>
@@ -153,16 +164,16 @@
                             </div>
                             
                             <h5 class="card-title text-primary fw-bold mb-1" style="font-family: var(--font-heading);">{{ job.company_name }}</h5>
-                            <h6 class="text-dark small mb-3">{{ job.role }}</h6>
+                            <h6 class="job-value small mb-3">{{ job.role }}</h6>
                             
                             <div class="mb-4">
                                 <div class="d-flex justify-content-between text-muted small mb-1">
                                     <span><i class="bi bi-cash me-1"></i> Compensation:</span>
-                                    <strong class="text-dark">{{ job.package_lpa }} LPA</strong>
+                                    <strong class="job-value">{{ job.package_lpa }} LPA</strong>
                                 </div>
                                 <div class="d-flex justify-content-between text-muted small mb-1">
                                     <span><i class="bi bi-tag-fill me-1"></i> Job Category:</span>
-                                    <strong class="text-dark">{{ job.tier or 'Tier 2' }}</strong>
+                                    <strong class="job-value">{{ job.tier or 'Tier 2' }}</strong>
                                 </div>
                                 <div class="d-flex justify-content-between text-muted small">
                                     <span><i class="bi bi-calendar-x me-1"></i> Apply Before:</span>
@@ -295,27 +306,27 @@
                         <div class="p-3 border rounded bg-white h-100">
                             <span class="badge bg-danger mb-2" style="font-size: 0.75rem;">Tier 1 Roles</span>
                             <p class="mb-0 small text-muted"><strong>Package:</strong> Above 17.00 LPA</p>
-                            <p class="mb-0 small text-muted"><strong>Rule:</strong> High-priority placement category. Once selected, student is blocked from lower tiers.</p>
+                            <p class="mb-0 small text-muted"><strong>Rule:</strong> High-priority placement category. Once selected, student is removed from applying any of the tiers.</p>
                         </div>
                     </div>
                     <div class="col-md-4">
                         <div class="p-3 border rounded bg-white h-100">
                             <span class="badge bg-warning text-dark mb-2" style="font-size: 0.75rem;">Tier 2 Roles</span>
                             <p class="mb-0 small text-muted"><strong>Package:</strong> Between 7.00 LPA and 17.00 LPA</p>
-                            <p class="mb-0 small text-muted"><strong>Rule:</strong> Mid-tier placement category. Students can only upgrade to Tier 1 roles.</p>
+                            <p class="mb-0 small text-muted"><strong>Rule:</strong> Mid-tier placement category. Students can only apply to Tier 1 roles.</p>
                         </div>
                     </div>
                     <div class="col-md-4">
                         <div class="p-3 border rounded bg-white h-100">
                             <span class="badge bg-secondary mb-2" style="font-size: 0.75rem;">Tier 3 Roles</span>
                             <p class="mb-0 small text-muted"><strong>Package:</strong> Below 7.00 LPA</p>
-                            <p class="mb-0 small text-muted"><strong>Rule:</strong> Foundation placement category. Students can upgrade to Tier 1 and Tier 2 roles.</p>
+                            <p class="mb-0 small text-muted"><strong>Rule:</strong> Foundation placement category. Students can apply to Tier 1 and Tier 2 roles.</p>
                         </div>
                     </div>
                 </div>
                 <div class="alert alert-warning py-2 px-3 mt-4 mb-0 small" style="border-radius: var(--radius-sm); font-size: 0.8rem;">
                     <i class="bi bi-info-circle me-1"></i>
-                    <strong>Policy Restriction:</strong> Students who are selected for a Tier 1 company <strong>cannot</strong> apply for companies in Tier 2 and Tier 3. Students selected in Tier 2 <strong>cannot</strong> apply for Tier 2 or Tier 3 (they can only upgrade to Tier 1). Students selected in Tier 3 <strong>cannot</strong> apply for Tier 3 (they can upgrade to Tier 1 and Tier 2).
+                    <strong>Policy Restriction:</strong> Students who are selected for a Tier 1 company <strong>cannot</strong> apply for companies in Tier 1, Tier 2 and Tier 3. Students selected in Tier 2 <strong>cannot</strong> apply for Tier 2 and Tier 3 (they can only apply to Tier 1). Students selected in Tier 3 <strong>cannot</strong> apply for Tier 3 (they can apply to Tier 1 and Tier 2).
                 </div>
             </div>
         </div>

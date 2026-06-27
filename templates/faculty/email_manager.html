@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Email Manager — NIT AP Placement Portal</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+<script>
+  (function() {
+    const savedTheme = localStorage.getItem('faculty-theme') || 'light';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+  })();
+</script>
+<style>
+:root {
+  --bg-gradient: linear-gradient(145deg, #fffdf5 0%, #fff8e1 40%, #fef3c0 75%, #fffdf5 100%);
+  --header-bg: rgba(255, 255, 255, 0.95);
+  --header-border: rgba(253, 230, 138, 0.6);
+  --card-bg: rgba(255, 255, 255, 0.78);
+  --card-hover-bg: rgba(255, 255, 255, 0.94);
+  --card-border: rgba(253, 230, 138, 0.4);
+  --text-main: #78350f;
+  --text-muted: #b97f10;
+  --text-accent: #b45309;
+  --badge-bg: rgba(253, 230, 138, 0.4);
+  --input-bg: rgba(255, 255, 255, 0.85);
+  --input-border: rgba(253, 230, 138, 0.6);
+  --button-gradient: linear-gradient(135deg, #f59e0b, #d97706);
+  --logout-bg: rgba(255, 255, 240, 0.6);
+  --table-hdr-bg: rgba(253, 230, 138, 0.35);
+  --table-border: rgba(253, 230, 138, 0.4);
+}
+[data-theme="dark"] {
+  --bg-gradient: linear-gradient(145deg, #0f172a 0%, #1e293b 40%, #0f172a 100%);
+  --header-bg: rgba(30, 41, 59, 0.95);
+  --header-border: rgba(245, 158, 11, 0.3);
+  --card-bg: rgba(30, 41, 59, 0.7);
+  --card-hover-bg: rgba(30, 41, 59, 0.9);
+  --card-border: rgba(245, 158, 11, 0.2);
+  --text-main: #f8fafc;
+  --text-muted: #fbbf24;
+  --text-accent: #fbbf24;
+  --badge-bg: rgba(245, 158, 11, 0.2);
+  --input-bg: rgba(15, 23, 42, 0.6);
+  --input-border: rgba(245, 158, 11, 0.3);
+  --button-gradient: linear-gradient(135deg, #fbbf24, #d97706);
+  --logout-bg: rgba(15, 23, 42, 0.4);
+  --table-hdr-bg: rgba(245, 158, 11, 0.15);
+  --table-border: rgba(245, 158, 11, 0.2);
+}
+[data-theme="dark"] .table,
+[data-theme="dark"] .table > :not(caption) > * > * {
+  background-color: transparent !important;
+  color: var(--text-main) !important;
+}
+[data-theme="dark"] .table tbody tr {
+  background-color: transparent !important;
+}
+[data-theme="dark"] ::placeholder {
+  color: rgba(255, 255, 255, 0.35) !important;
+}
+[data-theme="dark"] :-ms-input-placeholder {
+  color: rgba(255, 255, 255, 0.35) !important;
+}
+[data-theme="dark"] ::-ms-input-placeholder {
+  color: rgba(255, 255, 255, 0.35) !important;
+}
+* { box-sizing:border-box; margin:0; padding:0; }
+body { min-height:100vh; font-family:'DM Sans',sans-serif; background:var(--bg-gradient); color:var(--text-main); }
+.global-header {
+  position:fixed; top:0; left:0; right:0; z-index:100;
+  background:var(--header-bg); backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--header-border); padding:10px 28px;
+  display:flex; align-items:center; justify-content:space-between;
+}
+.logo-area { display:flex; align-items:center; gap:14px; }
+.logo-text h2 { font-family:'Syne',sans-serif; font-size:16px; font-weight:800; color:var(--text-main); margin-bottom:0; }
+.logo-text p { font-size:9px; letter-spacing:0.5px; color:var(--text-muted); text-transform:uppercase; margin-bottom:0; }
+.header-right { font-size: 11px; background: var(--badge-bg); padding: 6px 14px; border-radius: 30px; color: var(--text-accent); display: flex; align-items: center; gap: 6px; text-decoration: none; font-weight: 600; }
+.page-body { padding:100px 32px 40px; max-width:1400px; margin:0 auto; }
+.glass-card {
+  background: var(--card-bg); backdrop-filter: blur(12px);
+  border-radius: 24px; border: 1px solid var(--card-border);
+  padding: 24px; margin-bottom: 24px;
+}
+.theme-btn { background:var(--logout-bg); border:1px solid var(--card-border); padding:6px 10px; border-radius:30px; color:var(--text-main); cursor:pointer; }
+.btn-premium { background: var(--button-gradient); color:white; border:none; padding:10px 24px; border-radius:40px; font-weight:600; }
+.form-control, .form-select { background: var(--input-bg); border: 1px solid var(--input-border); color: var(--text-main); }
+[data-theme="dark"] .form-control { background-color: rgba(15,23,42,0.7) !important; color: #f1f5f9 !important; border-color: rgba(245,158,11,0.35) !important; }
+[data-theme="dark"] label, [data-theme="dark"] h3, [data-theme="dark"] h4 { color: #f1f5f9 !important; }
+
+/* Toggle Switch Styles */
+.email-toggle { position:relative; display:inline-block; width:52px; height:28px; }
+.email-toggle input { opacity:0; width:0; height:0; }
+.email-toggle-slider { position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background-color:#e5e7eb; transition:.3s; border-radius:30px; box-shadow:inset 0 2px 4px rgba(0,0,0,0.1); }
+.email-toggle-slider:before { position:absolute; content:""; height:20px; width:20px; left:4px; bottom:4px; background-color:white; transition:.3s; border-radius:50%; box-shadow:0 2px 5px rgba(0,0,0,0.2); }
+input:checked + .email-toggle-slider { background:linear-gradient(135deg, #10b981, #059669); }
+input:checked + .email-toggle-slider:before { transform:translateX(24px); }
+</style>
+</head>
+<body>
+
+<div class="global-header">
+  <div class="logo-area">
+    <img src="/static/nitap_logo.png" class="logo-img" alt="NIT AP Logo" style="height: 40px; width: auto;">
+    <div class="logo-text">
+      <h2>National Institute of Technology<br>Andhra Pradesh</h2>
+      <p>Training &amp; Placement Cell</p>
+    </div>
+  </div>
+  <div style="display:flex; align-items:center; gap:16px;">
+    <button id="themeToggleBtn" class="theme-btn"><i class="ti ti-moon"></i></button>
+    <a href="/faculty_dashboard" class="header-right"><i class="ti ti-arrow-left"></i> Dashboard</a>
+  </div>
+</div>
+
+<div class="page-body">
+  <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+    <div>
+      <h1 style="font-family:'Syne',sans-serif; font-size:28px; font-weight:800; color:var(--text-main);"><i class="ti ti-mail-bolt"></i> Email Manager</h1>
+      <p style="color:var(--text-muted); margin-top:4px; font-size:13px; font-weight:500;">Configure settings and send bulk emails to students.</p>
+    </div>
+  </div>
+
+  <div class="row g-4 mb-4">
+    <!-- Settings Card -->
+    <div class="col-lg-4">
+      <div class="glass-card h-100">
+        <div class="d-flex justify-content-between align-items-start mb-3">
+          <h3 style="font-family:'Syne',sans-serif; font-size:18px;"><i class="ti ti-settings"></i> Settings & Status</h3>
+          <label class="email-toggle" title="Toggle email notifications">
+            <input type="checkbox" id="emailToggleInput">
+            <span class="email-toggle-slider"></span>
+          </label>
+        </div>
+        <p id="emailToggleStatus" class="fw-bold mb-3">Loading…</p>
+        
+        <div id="smtpStatusChip" style="display:none;margin-bottom:20px;font-size:12px;padding:6px 12px;border-radius:20px;font-weight:700;display:inline-block;"></div>
+
+        <div class="d-flex flex-column gap-2 mb-4" style="font-size:13px;color:var(--text-muted);">
+          <div><i class="ti ti-users"></i> <strong id="emailTotalStudents">—</strong> students with registered emails</div>
+          <div><i class="ti ti-check"></i> <strong id="emailTotalSent">—</strong> emails sent</div>
+          <div><i class="ti ti-x"></i> <strong id="emailTotalFailed">—</strong> emails failed</div>
+        </div>
+
+        <button onclick="sendTestEmail()" id="testEmailBtn" class="btn w-100 fw-bold" style="background:linear-gradient(135deg,#059669,#047857);color:white;border-radius:20px;">
+          <i class="ti ti-send"></i> Send Test Email
+        </button>
+      </div>
+    </div>
+
+    <!-- Announcement Card -->
+    <div class="col-lg-4">
+      <div class="glass-card h-100">
+        <h3 style="font-family:'Syne',sans-serif; font-size:18px; margin-bottom:16px;"><i class="ti ti-speakerphone"></i> Send Announcement</h3>
+        <p style="font-size:13px; color:var(--text-muted); margin-bottom:16px;">Emails all registered students.</p>
+        
+        <label class="form-label small fw-bold">Announcement Title</label>
+        <input type="text" id="annTitle" class="form-control mb-3" placeholder="e.g. Pre-Placement Talk">
+        
+        <label class="form-label small fw-bold">Message</label>
+        <textarea id="annMessage" class="form-control mb-3" rows="4" placeholder="Write your announcement here…"></textarea>
+
+        <button onclick="sendAnnouncementEmail()" id="annSendBtn" class="btn w-100 fw-bold" style="background:var(--button-gradient);color:white;border-radius:20px;">
+          <i class="ti ti-send"></i> <span id="annSendBtnText">Send to All Students</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Selective Email Card -->
+    <div class="col-lg-4">
+      <div class="glass-card h-100">
+        <h3 style="font-family:'Syne',sans-serif; font-size:18px; margin-bottom:16px;"><i class="ti ti-users"></i> Selective Email</h3>
+        <p style="font-size:13px; color:var(--text-muted); margin-bottom:16px;">Filter and email specific students.</p>
+        
+        <button onclick="openSelectiveEmailModal()" class="btn w-100 fw-bold" style="background:linear-gradient(135deg,#7c3aed,#5b21b6);color:white;border-radius:20px;padding:12px;">
+          <i class="ti ti-filter"></i> Select Students & Compose
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Email Logs -->
+  <div class="glass-card">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h3 style="font-family:'Syne',sans-serif; font-size:18px;"><i class="ti ti-list-details"></i> Email Delivery Logs</h3>
+      <button onclick="loadEmailLogs()" class="btn btn-sm" style="background:var(--badge-bg);color:var(--text-accent);border-radius:12px;"><i class="ti ti-refresh"></i> Refresh</button>
+    </div>
+    <div class="table-responsive">
+      <div id="emailLogsTable" style="font-size:13px;">Loading logs…</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ── Selective Email Modal ─────────────────────────────────────────── -->
+<div id="selectiveEmailModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:600;align-items:flex-start;justify-content:center;overflow-y:auto;padding:24px 0;">
+  <div style="background:var(--header-bg);border:1px solid var(--header-border);border-radius:24px;padding:28px 32px;max-width:760px;width:95%;box-shadow:0 24px 60px rgba(0,0,0,0.3);position:relative;margin:auto;">
+    <button onclick="closeSelectiveEmailModal()" style="position:absolute;top:16px;right:16px;background:none;border:none;font-size:22px;color:var(--text-main);cursor:pointer;">&times;</button>
+    <h3 style="font-family:'Syne',sans-serif;color:var(--text-main);margin-bottom:4px;">👥 Send Email to Selected Students</h3>
+    <p style="font-size:13px;color:var(--text-muted);margin-bottom:20px;">Filter students by company/status, select who to email, then compose your message.</p>
+
+    <!-- Filter Row -->
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;">
+      <select id="selJobFilter" onchange="loadSelectiveStudents()" class="form-select" style="flex:1;min-width:180px;border-radius:10px;font-size:13px;">
+        <option value="">All Students</option>
+      </select>
+      <select id="selStatusFilter" onchange="loadSelectiveStudents()" class="form-select" style="flex:1;min-width:150px;border-radius:10px;font-size:13px;">
+        <option value="">Any Status</option>
+        <option value="Applied">Applied</option>
+        <option value="Shortlisted">Shortlisted</option>
+        <option value="Interview Scheduled">Interview Scheduled</option>
+        <option value="Selected">Selected</option>
+        <option value="Not Selected">Not Selected</option>
+      </select>
+      <button onclick="toggleSelectAll()" class="btn fw-bold" style="border-radius:10px;border:1px solid var(--card-border);background:var(--badge-bg);color:var(--text-main);font-size:12px;white-space:nowrap;">
+        ☑ Select All
+      </button>
+    </div>
+
+    <!-- Student List -->
+    <div id="selStudentList" style="max-height:240px;overflow-y:auto;border:1px solid var(--card-border);border-radius:12px;padding:8px;margin-bottom:16px;background:var(--input-bg);">
+      <p style="color:var(--text-muted);text-align:center;padding:20px;">Loading students…</p>
+    </div>
+    <p id="selCountLabel" style="font-size:12px;color:var(--text-muted);margin-bottom:14px;"></p>
+
+    <!-- Compose -->
+    <label style="font-size:13px;font-weight:700;color:var(--text-main);display:block;margin-bottom:6px;">Email Subject</label>
+    <input type="text" id="selSubject" placeholder="e.g. Congratulations! Next Round Details" class="form-control mb-3" style="border-radius:12px;font-size:14px;">
+
+    <label style="font-size:13px;font-weight:700;color:var(--text-main);display:block;margin-bottom:6px;">Message</label>
+    <textarea id="selMessage" rows="5" placeholder="Write your message to the selected students…" class="form-control mb-3" style="border-radius:12px;font-size:14px;"></textarea>
+
+    <div style="display:flex;gap:10px;margin-top:20px;justify-content:flex-end;">
+      <button onclick="closeSelectiveEmailModal()" class="btn fw-bold" style="background:var(--badge-bg);color:var(--text-main);border-radius:20px;">Cancel</button>
+      <button onclick="sendSelectiveEmail()" id="selSendBtn" class="btn fw-bold text-white" style="background:linear-gradient(135deg,#7c3aed,#5b21b6);border-radius:20px;display:flex;align-items:center;gap:6px;">
+        <i class="ti ti-send"></i> <span id="selSendBtnText">Send Email</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<div id="toastContainer"></div>
+<script>
+// Theme Toggle
+const themeBtn = document.getElementById('themeToggleBtn');
+themeBtn.addEventListener('click', () => {
+  const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
+  const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+  document.documentElement.setAttribute('data-theme', newTheme);
+  localStorage.setItem('faculty-theme', newTheme);
+});
+
+function showToast(msg, type="success") {
+  const container = document.getElementById("toastContainer");
+  if(!container) return;
+  const toast = document.createElement("div");
+  const colors = { success:"linear-gradient(135deg,#10b981,#059669)", error:"linear-gradient(135deg,#ef4444,#dc2626)", warning:"linear-gradient(135deg,#f59e0b,#d97706)", info:"linear-gradient(135deg,#3b82f6,#2563eb)" };
+  toast.style.cssText = `position:fixed;bottom:20px;right:20px;z-index:9999;background:${colors[type]||colors.success};color:white;padding:14px 24px;border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,0.15);display:flex;align-items:center;gap:12px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;opacity:0;transform:translateY(20px);transition:all 0.3s cubic-bezier(0.175,0.885,0.32,1.275);`;
+  toast.innerHTML = `<i class="ti ti-circle-check" style="font-size:18px;"></i><span>${msg}</span>`;
+  container.appendChild(toast);
+  setTimeout(() => { toast.style.opacity="1"; toast.style.transform="translateY(0)"; }, 10);
+  setTimeout(() => { toast.style.opacity="0"; toast.style.transform="translateY(-20px)"; setTimeout(() => toast.remove(), 300); }, 3200);
+}
+
+const toggleInput = document.getElementById('emailToggleInput');
+const statusText = document.getElementById('emailToggleStatus');
+const smtpChip = document.getElementById('smtpStatusChip');
+const totalStudents = document.getElementById('emailTotalStudents');
+const totalSent = document.getElementById('emailTotalSent');
+const totalFailed = document.getElementById('emailTotalFailed');
+
+function loadEmailStatus() {
+  fetch('/api/faculty/email_status')
+    .then(r => r.json())
+    .then(data => {
+      if (!data || data.error) return;
+      toggleInput.checked = data.enabled;
+      toggleInput.disabled = false;
+      statusText.textContent = data.enabled ? 'Email notifications are ON' : 'Email notifications are OFF';
+      statusText.style.color = data.enabled ? '#10b981' : (document.documentElement.getAttribute('data-theme') === 'dark' ? '#fbbf24' : '#92400e');
+      smtpChip.style.display = 'inline-block';
+      if (data.smtp_ready) {
+        smtpChip.textContent = '✅ SMTP Ready (' + (data.smtp_email || '') + ')';
+        smtpChip.style.background = '#d1fae5'; smtpChip.style.color = '#065f46';
+      } else {
+        smtpChip.textContent = '⚠️ SMTP Not Configured';
+        smtpChip.style.background = '#fef3c7'; smtpChip.style.color = '#92400e';
+      }
+      if (totalStudents) totalStudents.textContent = data.total_email_students;
+      if (totalSent) totalSent.textContent = data.total_sent;
+      if (totalFailed) totalFailed.textContent = data.total_failed;
+    });
+}
+if (toggleInput) {
+  toggleInput.disabled = true;
+  toggleInput.addEventListener('change', function () {
+    const isEnabled = toggleInput.checked;
+    toggleInput.disabled = true;
+    statusText.textContent = 'Saving…';
+    fetch('/faculty/email_settings', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ enabled: isEnabled })
+    }).then(r => r.json()).then(data => {
+      showToast(data.message || (isEnabled ? 'Email notifications enabled!' : 'Email notifications disabled.'), data.success ? 'success' : 'error');
+      loadEmailStatus();
+    });
+  });
+}
+loadEmailStatus();
+
+function loadEmailLogs() {
+  document.getElementById('emailLogsTable').innerHTML = '<p style="color:var(--text-muted);">Loading logs…</p>';
+  fetch('/api/faculty/email_logs')
+    .then(r => r.json())
+    .then(data => {
+      const logs = data.logs || [];
+      if (logs.length === 0) {
+        document.getElementById('emailLogsTable').innerHTML = '<p style="color:var(--text-muted);">No email logs found.</p>';
+        return;
+      }
+      const eventLabels = { new_job: '🆕 New Job', job_update: '✏️ Job Update', job_cancelled: '❌ Cancelled', status_update: '📋 Status', announcement: '📣 Announcement', general: '📧 General' };
+      let html = `<table class="table table-hover table-borderless" style="font-size:13px;">
+        <thead><tr style="border-bottom:2px solid var(--card-border);">
+          <th style="color:var(--text-accent);">Recipient</th>
+          <th style="color:var(--text-accent);">Event</th>
+          <th style="color:var(--text-accent);">Subject</th>
+          <th style="color:var(--text-accent);">Status</th>
+          <th style="color:var(--text-accent);">Sent At</th>
+        </tr></thead><tbody>`;
+      logs.forEach(log => {
+        const statusBadge = log.status === 'sent'
+          ? '<span style="background:#d1fae5;color:#065f46;padding:2px 8px;border-radius:10px;font-weight:700;">Sent</span>'
+          : '<span style="background:#fee2e2;color:#991b1b;padding:2px 8px;border-radius:10px;font-weight:700;" title="' + (log.error_message || '') + '">Failed</span>';
+        html += `<tr style="border-bottom:1px solid var(--card-border);">
+          <td style="color:var(--text-main);">${log.recipient_email}</td>
+          <td>${eventLabels[log.event_type] || log.event_type}</td>
+          <td style="color:var(--text-muted);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${log.subject || ''}</td>
+          <td>${statusBadge}</td>
+          <td style="color:var(--text-muted);">${(log.sent_at || '').slice(0, 16)}</td>
+        </tr>`;
+      });
+      html += '</tbody></table>';
+      document.getElementById('emailLogsTable').innerHTML = html;
+    }).catch(() => { document.getElementById('emailLogsTable').innerHTML = '<p style="color:#ef4444;">Failed to load logs.</p>'; });
+}
+loadEmailLogs();
+
+window.sendAnnouncementEmail = function () {
+  const title = document.getElementById('annTitle').value.trim();
+  const message = document.getElementById('annMessage').value.trim();
+  if (!title || !message) { showToast('Please fill in the title and message.', 'warning'); return; }
+  const btn = document.getElementById('annSendBtn');
+  const btnText = document.getElementById('annSendBtnText');
+  btn.disabled = true; btnText.textContent = 'Sending…';
+  fetch('/faculty/send_announcement_email', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ title, message })
+  }).then(r => r.json()).then(data => {
+    if (data.success) {
+      showToast(`✅ Announcement sent to ${data.recipients} students!`, 'success');
+      document.getElementById('annTitle').value = ''; document.getElementById('annMessage').value = '';
+      loadEmailStatus(); loadEmailLogs();
+    } else { showToast('Error: ' + (data.error || 'Unknown error'), 'error'); }
+    btn.disabled = false; btnText.textContent = 'Send to All Students';
+  });
+};
+
+/* Selective Email Logic */
+let _allStudents = []; let _selectedIds = new Set();
+function loadJobsForFilter() {
+  fetch('/api/faculty/students_with_email')
+    .then(r => r.json())
+    .then(() => fetch('/api/faculty/jobs_list'))
+    .then(r => r.ok ? r.json() : { jobs: [] })
+    .then(data => {
+      const sel = document.getElementById('selJobFilter');
+      if (!sel) return;
+      sel.innerHTML = '<option value="">All Students (no job filter)</option>';
+      (data.jobs || []).forEach(j => {
+        const opt = document.createElement('option');
+        opt.value = j.job_id; opt.textContent = `${j.company_name} — ${j.role}`;
+        sel.appendChild(opt);
+      });
+    });
+}
+window.loadSelectiveStudents = function () {
+  const jobId = document.getElementById('selJobFilter').value;
+  const status = document.getElementById('selStatusFilter').value;
+  const listEl = document.getElementById('selStudentList');
+  listEl.innerHTML = '<p style="color:var(--text-muted);text-align:center;padding:20px;">Loading…</p>';
+  _selectedIds.clear(); updateCountLabel();
+  let url = '/api/faculty/students_with_email';
+  const params = [];
+  if (jobId) params.push('job_id=' + encodeURIComponent(jobId));
+  if (status) params.push('status=' + encodeURIComponent(status));
+  if (params.length) url += '?' + params.join('&');
+  fetch(url).then(r => r.json()).then(data => {
+    _allStudents = data.students || [];
+    renderStudentList();
+  });
+};
+function renderStudentList() {
+  const listEl = document.getElementById('selStudentList');
+  if (_allStudents.length === 0) {
+    listEl.innerHTML = '<p style="color:var(--text-muted);text-align:center;padding:20px;">No students found with registered emails.</p>';
+    updateCountLabel(); return;
+  }
+  let html = '';
+  _allStudents.forEach(s => {
+    const checked = _selectedIds.has(s.student_id) ? 'checked' : '';
+    const statusBadge = s.application_status ? `<span style="font-size:10px;padding:2px 8px;border-radius:10px;background:rgba(245,158,11,0.15);color:#d97706;font-weight:700;margin-left:6px;">${s.application_status}</span>` : '';
+    html += `<label style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;cursor:pointer;">
+      <input type="checkbox" data-sid="${s.student_id}" ${checked} style="width:15px;height:15px;accent-color:#7c3aed;cursor:pointer;" onchange="toggleStudent(${s.student_id}, this.checked)">
+      <span style="flex:1;"><strong style="color:var(--text-main);font-size:13px;">${s.name}</strong>${statusBadge}<br>
+      <span style="font-size:11px;color:var(--text-muted);">${s.roll_no || ''} &bull; ${s.branch || ''} &bull; ${s.email}</span></span>
+    </label>`;
+  });
+  listEl.innerHTML = html; updateCountLabel();
+}
+window.toggleStudent = function(sid, checked) { if (checked) _selectedIds.add(sid); else _selectedIds.delete(sid); updateCountLabel(); };
+window.toggleSelectAll = function() {
+  if (_allStudents.every(s => _selectedIds.has(s.student_id))) _selectedIds.clear();
+  else _allStudents.forEach(s => _selectedIds.add(s.student_id));
+  renderStudentList();
+};
+function updateCountLabel() { document.getElementById('selCountLabel').textContent = `${_selectedIds.size} of ${_allStudents.length} student(s) selected`; }
+window.openSelectiveEmailModal = function () {
+  document.getElementById('selectiveEmailModal').style.display = 'flex';
+  loadJobsForFilter(); loadSelectiveStudents();
+};
+window.closeSelectiveEmailModal = function () { document.getElementById('selectiveEmailModal').style.display = 'none'; };
+window.sendSelectiveEmail = function () {
+  const ids = Array.from(_selectedIds);
+  const subject = document.getElementById('selSubject').value.trim();
+  const message = document.getElementById('selMessage').value.trim();
+  if (!ids.length) { showToast('Please select at least one student.', 'warning'); return; }
+  if (!subject || !message) { showToast('Please enter subject and message.', 'warning'); return; }
+  const btn = document.getElementById('selSendBtn'); const btnText = document.getElementById('selSendBtnText');
+  btn.disabled = true; btnText.textContent = 'Sending…';
+  fetch('/faculty/send_selective_email', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ student_ids: ids, subject, title: subject, message })
+  }).then(r => r.json()).then(data => {
+    if (data.success) {
+      showToast(`✅ Email sent to ${data.recipients} student(s)!`, 'success');
+      closeSelectiveEmailModal();
+      document.getElementById('selSubject').value = ''; document.getElementById('selMessage').value = '';
+      loadEmailStatus(); loadEmailLogs();
+    } else { showToast('Error: ' + (data.error || 'Unknown'), 'error'); }
+    btn.disabled = false; btnText.textContent = 'Send Email';
+  });
+};
+
+window.sendTestEmail = function () {
+  const btn = document.getElementById('testEmailBtn');
+  if (btn) { btn.disabled = true; btn.innerHTML = '<i class="ti ti-loader-2"></i> Testing…'; }
+  fetch('/faculty/test_smtp_email', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) })
+  .then(r => r.json()).then(data => {
+    if (data.success) showToast('✅ Test email sent successfully! Check your Gmail inbox.', 'success');
+    else showToast('❌ Email failed: ' + (data.error || 'Unknown error'), 'error');
+    if (btn) { btn.disabled = false; btn.innerHTML = '<i class="ti ti-send"></i> Send Test Email'; }
+  });
+};
+</script>
+</body>
+</html>

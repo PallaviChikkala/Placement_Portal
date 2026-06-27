@@ -142,6 +142,10 @@ body { min-height: 100vh; font-family: 'DM Sans', sans-serif; background: var(--
 .option-card:nth-child(6) { animation-delay: 0.8s; }
 .option-card:nth-child(7) { animation-delay: 0.9s; }
 .option-card:nth-child(8) { animation-delay: 1.0s; }
+.option-card:nth-child(9) { animation-delay: 1.1s; }
+.option-card:nth-child(10) { animation-delay: 1.2s; }
+.option-card:nth-child(11) { animation-delay: 1.3s; }
+.option-card:nth-child(12) { animation-delay: 1.4s; }
 
 .option-card::after {
   content: '';
@@ -193,7 +197,17 @@ body { min-height: 100vh; font-family: 'DM Sans', sans-serif; background: var(--
 .cal-day.today { background: linear-gradient(135deg, #f59e0b, #d97706); color: white; font-weight: 700; box-shadow: 0 4px 10px rgba(217,119,6,0.3); }
 .calendar-toggle-btn { background: var(--badge-bg); padding: 6px 14px; border-radius: 30px; color: var(--text-accent); font-weight: 600; display: flex; align-items: center; gap: 6px; font-size: 12px; cursor: pointer; user-select: none; border: 1px solid var(--card-border); transition: background 0.3s, color 0.3s, border-color 0.3s; }
 .calendar-toggle-btn:hover { background: var(--button-gradient); color: #fff; }
+
+/* ── Email Notification Toggle Switch ── */
+.email-toggle { position: relative; display: inline-block; width: 50px; height: 26px; cursor: pointer; flex-shrink: 0; }
+.email-toggle input { opacity: 0; width: 0; height: 0; }
+.email-toggle-slider { position: absolute; inset: 0; background: #d1d5db; border-radius: 26px; transition: 0.3s; }
+.email-toggle-slider::before { content: ''; position: absolute; width: 20px; height: 20px; left: 3px; bottom: 3px; background: white; border-radius: 50%; transition: 0.3s; box-shadow: 0 1px 4px rgba(0,0,0,0.2); }
+.email-toggle input:checked + .email-toggle-slider { background: linear-gradient(135deg, #f59e0b, #d97706); }
+.email-toggle input:checked + .email-toggle-slider::before { transform: translateX(24px); }
+.email-toggle input:disabled + .email-toggle-slider { opacity: 0.5; cursor: not-allowed; }
 </style>
+
 </head>
 <body class="premium-animated-bg">
 <div class="blob blob-1"></div>
@@ -235,7 +249,22 @@ body { min-height: 100vh; font-family: 'DM Sans', sans-serif; background: var(--
 <div class="page-body">
   <div class="welcome-section">
     <div class="welcome-text">
-      <h1>Namasthe, {{ name }} ✨</h1>
+      <h1 id="greetingHeading">Hello, {{ name }} ✨</h1>
+      <script>
+        (function() {
+          var hour = new Date().getHours();
+          var greeting;
+          if (hour >= 5 && hour < 12) {
+            greeting = "Good Morning,";
+          } else if (hour >= 12 && hour < 17) {
+            greeting = "Good Afternoon,";
+          } else {
+            greeting = "Good Evening,";
+          }
+          document.getElementById("greetingHeading").textContent = greeting + " {{ name }} ✨";
+        })();
+      </script>
+
       <p>Placement dashboard · manage students &amp; placements</p>
     </div>
     <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
@@ -250,6 +279,65 @@ body { min-height: 100vh; font-family: 'DM Sans', sans-serif; background: var(--
       <a href="/faculty_logout" class="logout-btn" data-tour="admin-logout"><i class="ti ti-logout"></i> Logout</a>
     </div>
   </div>
+
+  {% if due_reminders and due_reminders|length > 0 %}
+  <div id="remindersSection" style="background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.4); border-radius: 12px; padding: 16px 20px; margin-bottom: 24px;">
+    <h3 style="margin-bottom: 12px; font-size: 16px; display: flex; align-items: center; gap: 8px;">
+      <i class="ti ti-bell-ringing" style="color: #d97706; font-size: 20px;"></i>
+      Pending Follow-ups (<span id="reminderCount">{{ due_reminders|length }}</span>)
+    </h3>
+    <div id="reminderList" style="display: flex; flex-direction: column; gap: 10px;">
+      {% for rem in due_reminders %}
+      <div id="rem-{{ rem.id }}" style="background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 8px; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; transition: opacity 0.3s, transform 0.3s;">
+        <div>
+          <strong style="color: var(--text-main); font-size: 14px;">{{ rem.company_name }} ({{ rem.role }})</strong>
+          <p style="margin-top: 4px; font-size: 13px; color: var(--text-muted);">
+            <i class="ti ti-clock"></i> Due: {{ rem.reminder_date.strftime('%Y-%m-%d %H:%M') if rem.reminder_date else 'Unknown' }}
+            <br>
+            <span style="color: var(--text-main);">Note: {{ rem.reminder_note or 'None' }}</span>
+          </p>
+        </div>
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <a href="/faculty/jobs" style="background: var(--button-gradient); color: white; padding: 6px 14px; border-radius: 20px; text-decoration: none; font-size: 12px; font-weight: 700;">View Jobs</a>
+          <button onclick="dismissReminder({{ rem.id }}, this)" title="Dismiss" style="background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3); color: #ef4444; width: 28px; height: 28px; border-radius: 50%; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: background 0.2s;" onmouseover="this.style.background='rgba(239,68,68,0.2)'" onmouseout="this.style.background='rgba(239,68,68,0.1)'">&times;</button>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  <script>
+  function dismissReminder(jobId, btn) {
+    const card = document.getElementById('rem-' + jobId);
+    btn.disabled = true;
+    fetch('/faculty/jobs/dismiss_reminder', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({job_id: jobId})
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (data.success) {
+        card.style.opacity = '0';
+        card.style.transform = 'translateX(30px)';
+        setTimeout(() => {
+          card.remove();
+          const remaining = document.querySelectorAll('#reminderList > div').length;
+          if (remaining === 0) {
+            document.getElementById('remindersSection').remove();
+          } else {
+            document.getElementById('reminderCount').textContent = remaining;
+          }
+        }, 300);
+      } else {
+        btn.disabled = false;
+        alert('Could not dismiss: ' + (data.error || 'Unknown error'));
+      }
+    })
+    .catch(() => { btn.disabled = false; });
+  }
+  </script>
+  {% endif %}
+
 
   <div class="stats-row" data-tour="admin-stats">
     <div class="stat-card-horiz">
@@ -343,8 +431,42 @@ body { min-height: 100vh; font-family: 'DM Sans', sans-serif; background: var(--
       </div>
     </a>
 
-  </div>
-</div>
+    <a href="/faculty/internships" class="option-card" data-tour="admin-internships">
+      <div class="card-icon"><i class="ti ti-certificate"></i></div>
+      <h3>Internships</h3>
+      <p>Post internship links & track student completion certificates</p>
+      <div class="card-meta">
+        <span class="badge-count">Track certifications</span>
+        <i class="ti ti-arrow-right" style="color:#d97706;"></i>
+      </div>
+    </a>
+
+    <a href="/faculty/manage_homepage" class="option-card" data-tour="admin-manage-homepage">
+      <div class="card-icon"><i class="ti ti-home-edit"></i></div>
+      <h3>Manage Homepage</h3>
+      <p>Manage visitor homepage updates, events, and achievements</p>
+      <div class="card-meta">
+        <span class="badge-count">Configure homepage</span>
+        <i class="ti ti-arrow-right" style="color:#d97706;"></i>
+      </div>
+    </a>
+
+    <!-- ── Email Notifications Card ───────────────────────────────────── -->
+    <a href="/faculty/email_manager" class="option-card" data-tour="admin-email-manager">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;">
+        <div class="card-icon" style="margin-bottom:0;font-size:34px;"><i class="ti ti-mail-bolt"></i></div>
+      </div>
+      <h3 style="margin-bottom:6px;">Email <small>Notifications</small></h3>
+      <p style="margin-bottom:12px;">Send announcements, select students, view logs, and configure SMTP settings.</p>
+      
+      <div class="card-meta">
+        <span class="badge-count">Manage emails & settings</span>
+        <i class="ti ti-arrow-right" style="color:#d97706;"></i>
+      </div>
+    </a>
+
+  </div><!-- end action-grid -->
+
 
 <div id="toastContainer"></div>
 <script>
@@ -474,15 +596,14 @@ if (themeToggle) {
   setInterval(refreshStats, 30000);
 })();
 </script>
-<script>document.addEventListener("DOMContentLoaded", function() { document.querySelectorAll(".modal").forEach(function(m) { document.body.appendChild(m); }); });</script>
 
+</body>
 <script src="/static/js/tour.js"></script>
 <script>
-    document.addEventListener("DOMContentLoaded", function() {
-        if (typeof initAdminTour === 'function') {
-            window._adminTour = initAdminTour();
-        }
-    });
+  // Reset admin tour so it picks up new steps on next load
+  // Remove this reset line after first visit
+  document.addEventListener('DOMContentLoaded', function() {
+    initAdminTour();
+  });
 </script>
-</body>
 </html>

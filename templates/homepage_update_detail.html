@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ item.title }} — NIT AP Placement Portal</title>
+    <meta name="description" content="{{ item.description[:160] }}">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <style>
+        :root {
+            --primary: #d97706;
+            --primary-light: #fbbf24;
+            --accent: #f59e0b;
+            --bg-color: #fcfaf8;
+            --text-main: #1c1917;
+            --text-muted: #78716c;
+            --card-bg: rgba(255, 255, 255, 0.82);
+            --card-border: rgba(217, 119, 6, 0.2);
+            --shadow: 0 8px 40px rgba(120,53,15,0.08);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            min-height: 100vh;
+        }
+
+        /* Animated ambient background */
+        .bg-glow {
+            position: fixed; inset: 0; z-index: 0;
+            background: linear-gradient(135deg, #fdfbf7 0%, #f6ecd9 100%);
+            overflow: hidden;
+        }
+        .bg-glow::before {
+            content: '';
+            position: absolute;
+            width: 60vw; height: 60vw;
+            background: radial-gradient(circle, rgba(245,158,11,0.12) 0%, transparent 70%);
+            top: -20%; right: -10%;
+            animation: float 12s infinite alternate ease-in-out;
+        }
+        .bg-glow::after {
+            content: '';
+            position: absolute;
+            width: 40vw; height: 40vw;
+            background: radial-gradient(circle, rgba(217,119,6,0.08) 0%, transparent 70%);
+            bottom: -10%; left: -10%;
+            animation: float 15s infinite alternate-reverse ease-in-out;
+        }
+        @keyframes float {
+            0% { transform: scale(1) translate(0, 0); }
+            100% { transform: scale(1.1) translate(20px, 20px); }
+        }
+
+        /* ─── Navigation ─── */
+        nav {
+            position: relative; z-index: 10;
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 1.5rem 5%;
+            background: rgba(255,255,255,0.85);
+            backdrop-filter: blur(16px);
+            border-bottom: 1px solid var(--card-border);
+            box-shadow: 0 2px 16px rgba(120,53,15,0.04);
+        }
+        .nav-brand {
+            display: flex; align-items: center; gap: 14px;
+            text-decoration: none;
+        }
+        .nav-brand img { height: 42px; width: auto; }
+        .nav-brand-text { display: flex; flex-direction: column; }
+        .nav-brand-text strong {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1rem; font-weight: 800;
+            color: #1c1917; line-height: 1.2;
+        }
+        .nav-brand-text span {
+            font-size: 0.72rem; color: var(--text-muted); font-weight: 500;
+            letter-spacing: 0.3px;
+        }
+        .nav-back {
+            display: inline-flex; align-items: center; gap: 8px;
+            text-decoration: none; font-weight: 600; font-size: 0.9rem;
+            color: var(--primary);
+            padding: 0.5rem 1.2rem;
+            border-radius: 100px;
+            background: rgba(217,119,6,0.08);
+            border: 1px solid var(--card-border);
+            transition: all 0.2s ease;
+        }
+        .nav-back:hover {
+            background: rgba(217,119,6,0.15);
+            transform: translateX(-3px);
+        }
+
+        /* ─── Hero Banner ─── */
+        .detail-hero {
+            position: relative; z-index: 2;
+            padding: 3.5rem 5% 2rem;
+            max-width: 1200px; margin: 0 auto;
+        }
+        .category-pill {
+            display: inline-flex; align-items: center; gap: 8px;
+            padding: 0.45rem 1.1rem;
+            border-radius: 100px;
+            font-size: 0.8rem; font-weight: 700;
+            letter-spacing: 0.5px; text-transform: uppercase;
+            margin-bottom: 1.25rem;
+        }
+        .category-pill.academic   { background: rgba(59,130,246,0.1); color: #1d4ed8; border: 1px solid rgba(59,130,246,0.2); }
+        .category-pill.news       { background: rgba(245,158,11,0.12); color: #b45309; border: 1px solid rgba(245,158,11,0.25); }
+        .category-pill.advertisements { background: rgba(16,185,129,0.1); color: #065f46; border: 1px solid rgba(16,185,129,0.2); }
+
+        .detail-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: clamp(1.8rem, 4vw, 3rem);
+            font-weight: 800; line-height: 1.15;
+            color: #1c1917; margin-bottom: 1rem;
+        }
+        .detail-meta {
+            display: flex; align-items: center; gap: 20px;
+            flex-wrap: wrap;
+        }
+        .meta-chip {
+            display: inline-flex; align-items: center; gap: 6px;
+            font-size: 0.85rem; color: var(--text-muted); font-weight: 500;
+        }
+        .meta-chip i { color: var(--accent); }
+
+        /* ─── Main Content Grid ─── */
+        .detail-grid {
+            position: relative; z-index: 2;
+            max-width: 1200px; margin: 0 auto;
+            padding: 2rem 5% 5rem;
+            display: grid;
+            grid-template-columns: 1fr 340px;
+            gap: 2rem;
+        }
+        @media (max-width: 900px) {
+            .detail-grid { grid-template-columns: 1fr; }
+        }
+
+        /* ─── Glass Card ─── */
+        .glass-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--card-border);
+            border-radius: 24px;
+            padding: 2rem 2.25rem;
+            box-shadow: var(--shadow);
+            animation: fadeUp 0.6s ease forwards;
+            opacity: 0; transform: translateY(16px);
+        }
+        @keyframes fadeUp {
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Description section */
+        .section-label {
+            font-size: 0.72rem; font-weight: 700; letter-spacing: 1px;
+            text-transform: uppercase; color: var(--primary); margin-bottom: 0.75rem;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .section-label::after {
+            content: ''; flex: 1; height: 1px;
+            background: var(--card-border);
+        }
+        .detail-description {
+            font-size: 1.05rem; line-height: 1.85;
+            color: #44403c; white-space: pre-wrap; word-break: break-word;
+        }
+
+        /* External link block */
+        .ext-link-block {
+            margin-top: 2.25rem;
+            padding: 1.25rem 1.5rem;
+            background: rgba(217,119,6,0.06);
+            border: 1px solid var(--card-border);
+            border-radius: 16px;
+            display: flex; align-items: center; justify-content: space-between;
+            gap: 1rem; flex-wrap: wrap;
+        }
+        .ext-link-block p { font-size: 0.9rem; color: var(--text-muted); margin: 0; }
+        .ext-link-btn {
+            display: inline-flex; align-items: center; gap: 8px;
+            padding: 0.65rem 1.5rem;
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: white; border-radius: 100px; font-weight: 700;
+            font-size: 0.9rem; text-decoration: none;
+            transition: opacity 0.2s ease, transform 0.2s ease;
+            white-space: nowrap;
+        }
+        .ext-link-btn:hover { opacity: 0.88; transform: translateY(-1px); color: white; }
+
+        /* ─── Sidebar ─── */
+        .sidebar-stack { display: flex; flex-direction: column; gap: 1.5rem; }
+
+        /* Category icon card */
+        .icon-card {
+            animation-delay: 0.15s;
+        }
+        .big-icon {
+            width: 80px; height: 80px;
+            border-radius: 22px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 2.2rem; margin: 0.5rem auto 1rem;
+        }
+        .big-icon.academic   { background: rgba(59,130,246,0.1); color: #1d4ed8; }
+        .big-icon.news       { background: rgba(245,158,11,0.1); color: #b45309; }
+        .big-icon.advertisements { background: rgba(16,185,129,0.1); color: #065f46; }
+
+        .icon-card-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1rem; font-weight: 700; color: var(--text-main);
+            text-align: center; margin-bottom: 0.25rem;
+        }
+        .icon-card-sub {
+            font-size: 0.8rem; color: var(--text-muted);
+            text-align: center;
+        }
+
+        /* Image card */
+        .detail-image-card {
+            animation-delay: 0.25s;
+        }
+        .detail-image-card img {
+            width: 100%; height: auto;
+            border-radius: 14px;
+            object-fit: contain;
+            display: block;
+        }
+
+        /* Quick facts */
+        .quick-facts { animation-delay: 0.35s; }
+        .fact-row {
+            display: flex; align-items: flex-start; gap: 10px;
+            padding: 0.65rem 0;
+            border-bottom: 1px solid var(--card-border);
+        }
+        .fact-row:last-child { border-bottom: none; }
+        .fact-row i { color: var(--accent); font-size: 1.1rem; padding-top: 1px; flex-shrink: 0; }
+        .fact-label { font-size: 0.72rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; }
+        .fact-value { font-size: 0.9rem; color: var(--text-main); font-weight: 500; margin-top: 1px; }
+
+        /* ─── Footer divider ─── */
+        .back-footer {
+            position: relative; z-index: 2;
+            text-align: center; padding-bottom: 3rem;
+        }
+        .back-footer a {
+            color: var(--text-muted); font-size: 0.9rem; font-weight: 500;
+            text-decoration: none; display: inline-flex; align-items: center; gap: 6px;
+        }
+        .back-footer a:hover { color: var(--primary); }
+
+        /* divider line */
+        .hero-divider {
+            position: relative; z-index: 2;
+            max-width: 1200px; margin: 0 auto; padding: 0 5%;
+        }
+        .hero-divider hr {
+            border: none;
+            border-top: 1px solid var(--card-border);
+            margin: 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-glow"></div>
+
+    <!-- Navigation -->
+    <nav>
+        <a href="/" class="nav-brand">
+            <img src="{{ url_for('static', filename='nitap_logo.png') }}" alt="NIT AP Logo">
+            <div class="nav-brand-text">
+                <strong>National Institute of Technology<br>Andhra Pradesh</strong>
+                <span>Training &amp; Placement Cell</span>
+            </div>
+        </a>
+        <a href="/" class="nav-back">
+            <i class="bi bi-arrow-left"></i> Back to Home
+        </a>
+    </nav>
+
+    <!-- Hero Section -->
+    <div class="detail-hero">
+        {% set type_lower = item.type | lower | replace(' ', '') | replace('/', '') %}
+        {% if item.type == 'Academic Updates' %}
+            <span class="category-pill academic">
+                <i class="bi bi-journal-text"></i> Academic Update
+            </span>
+        {% elif item.type == 'News / Events' %}
+            <span class="category-pill news">
+                <i class="bi bi-calendar-event"></i> News / Event
+            </span>
+        {% elif item.type == 'Advertisements' %}
+            <span class="category-pill advertisements">
+                <i class="bi bi-megaphone"></i> Advertisement
+            </span>
+        {% else %}
+            <span class="category-pill news">
+                <i class="bi bi-bell"></i> {{ item.type }}
+            </span>
+        {% endif %}
+
+        <h1 class="detail-title">{{ item.title }}</h1>
+
+        <div class="detail-meta">
+            <span class="meta-chip">
+                <i class="bi bi-calendar3"></i>
+                Published on {{ item.created_at[:10] }}
+            </span>
+            {% if item.link %}
+            <span class="meta-chip">
+                <i class="bi bi-link-45deg"></i>
+                External resource available
+            </span>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Divider -->
+    <div class="hero-divider"><hr></div>
+
+    <!-- Main Content -->
+    <div class="detail-grid">
+
+        <!-- Left: Description -->
+        <div>
+            <div class="glass-card">
+                <div class="section-label"><i class="bi bi-file-text"></i> Full Details</div>
+                <p class="detail-description">{{ item.description }}</p>
+
+                {% if item.link %}
+                <div class="ext-link-block">
+                    <p><i class="bi bi-link-45deg" style="color: var(--accent);"></i>&nbsp; This update has an external resource or official page attached.</p>
+                    <a href="{{ item.link }}" target="_blank" rel="noopener" class="ext-link-btn">
+                        <i class="bi bi-box-arrow-up-right"></i> Open Link
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+
+            {% if item.image_path %}
+            <div class="glass-card detail-image-card" style="margin-top: 16px;">
+                <div class="section-label"><i class="bi bi-image"></i> Attachment</div>
+                <img src="{{ item.image_path }}" alt="{{ item.title }}" style="max-width:100%; border-radius: 10px; margin-top: 8px;">
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Right: Sidebar -->
+        <div class="sidebar-stack">
+
+            <!-- Category Icon Card -->
+            <div class="glass-card icon-card">
+                <div class="section-label"><i class="bi bi-tag"></i> Category</div>
+                {% if item.type == 'Academic Updates' %}
+                    <div class="big-icon academic"><i class="bi bi-journal-text"></i></div>
+                    <div class="icon-card-title">Academic Update</div>
+                    <div class="icon-card-sub">Research, proposals, academic programs &amp; curriculum-related announcements</div>
+                {% elif item.type == 'News / Events' %}
+                    <div class="big-icon news"><i class="bi bi-calendar-event"></i></div>
+                    <div class="icon-card-title">News / Event</div>
+                    <div class="icon-card-sub">Upcoming events, workshops, seminars, fairs &amp; campus activities</div>
+                {% elif item.type == 'Advertisements' %}
+                    <div class="big-icon advertisements"><i class="bi bi-megaphone"></i></div>
+                    <div class="icon-card-title">Advertisement</div>
+                    <div class="icon-card-sub">Internship opportunities, recruitment drives &amp; program advertisements</div>
+                {% else %}
+                    <div class="big-icon news"><i class="bi bi-bell"></i></div>
+                    <div class="icon-card-title">{{ item.type }}</div>
+                    <div class="icon-card-sub">Notice from the Training &amp; Placement Cell</div>
+                {% endif %}
+            </div>
+
+
+            <!-- Quick Facts -->
+            <div class="glass-card quick-facts">
+                <div class="section-label"><i class="bi bi-info-circle"></i> Quick Info</div>
+                <div class="fact-row">
+                    <i class="bi bi-building"></i>
+                    <div>
+                        <div class="fact-label">Source</div>
+                        <div class="fact-value">NIT Andhra Pradesh — T&amp;P Cell</div>
+                    </div>
+                </div>
+                <div class="fact-row">
+                    <i class="bi bi-calendar3"></i>
+                    <div>
+                        <div class="fact-label">Date Published</div>
+                        <div class="fact-value">{{ item.created_at[:10] }}</div>
+                    </div>
+                </div>
+                <div class="fact-row">
+                    <i class="bi bi-tag"></i>
+                    <div>
+                        <div class="fact-label">Category</div>
+                        <div class="fact-value">{{ item.type }}</div>
+                    </div>
+                </div>
+                {% if item.link %}
+                <div class="fact-row">
+                    <i class="bi bi-link-45deg"></i>
+                    <div>
+                        <div class="fact-label">External Resource</div>
+                        <div class="fact-value">
+                            <a href="{{ item.link }}" target="_blank" rel="noopener" style="color: var(--primary); font-weight: 600; word-break: break-all;">
+                                View Resource →
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Footer Back Link -->
+    <div class="back-footer">
+        <a href="/">
+            <i class="bi bi-arrow-left-circle"></i> Return to Placement Portal Home
+        </a>
+    </div>
+
+</body>
+</html>

@@ -11,6 +11,14 @@ import re
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
+# ── Email notification service (optional — works when .env is configured) ──
+try:
+    import email_service as _email_svc
+    _EMAIL_SVC_LOADED = True
+except Exception as _e:
+    _EMAIL_SVC_LOADED = False
+    print(f"[EmailService] Could not load email_service module: {_e}")
+
 app = Flask(__name__)
 app.secret_key = "placement_portal_secret"
 app.permanent_session_lifetime = timedelta(days=30)
@@ -133,7 +141,7 @@ def check_routes_and_master_sheet():
     if request.path.startswith("/static"):
         return None
 
-    # 1. Enforce student master sheet check on protected student pages
+    # 1. Enforce student Student Directory Data check on protected student pages
     if "student_id" in session:
         protected_prefixes = [
             "/student_dashboard", "/eligible_companies", "/my_applications",
@@ -224,7 +232,7 @@ def _init_database_single():
     ensure_connection()
     try:
         # ── Students table ──────────────────────────────────────────────────────
-        # Students are populated exclusively via Master Sheet uploads.
+        # Students are populated exclusively via Student Directory Data uploads.
         # Do NOT insert hardcoded mock students here — every new year
         # brings a fresh set of students from the master sheet.
         cursor.execute("""
@@ -332,7 +340,10 @@ def _init_database_single():
                 req_pan         TINYINT(1) DEFAULT 0,
                 req_other       VARCHAR(200),
                 pdf_path        VARCHAR(300),
-                deadline        DATETIME DEFAULT NULL
+                deadline        DATETIME DEFAULT NULL,
+                reminder_date   DATETIME DEFAULT NULL,
+                reminder_note   TEXT DEFAULT NULL,
+                reminder_sent   TINYINT(1) DEFAULT 0
             )
         """)
 
@@ -348,7 +359,10 @@ def _init_database_single():
             "ALTER TABLE jobs ADD COLUMN req_pan TINYINT(1) DEFAULT 0",
             "ALTER TABLE jobs ADD COLUMN req_other VARCHAR(200)",
             "ALTER TABLE jobs ADD COLUMN pdf_path VARCHAR(300)",
-            "ALTER TABLE jobs ADD COLUMN deadline DATETIME DEFAULT NULL"
+            "ALTER TABLE jobs ADD COLUMN deadline DATETIME DEFAULT NULL",
+            "ALTER TABLE jobs ADD COLUMN reminder_date DATETIME DEFAULT NULL",
+            "ALTER TABLE jobs ADD COLUMN reminder_note TEXT DEFAULT NULL",
+            "ALTER TABLE jobs ADD COLUMN reminder_sent TINYINT(1) DEFAULT 0"
         ]:
             try:
                 cursor.execute(col_sql)
@@ -429,11 +443,28 @@ def _init_database_single():
             )
         """)
         cursor.execute("INSERT IGNORE INTO global_settings (setting_key, setting_value) VALUES ('recruitment_year', '2025')")
+        cursor.execute("INSERT IGNORE INTO global_settings (setting_key, setting_value) VALUES ('email_notifications_enabled', 'false')")
+
+        # ── Email logs table ─────────────────────────────────────────────────────
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS email_logs (
+                id              INT AUTO_INCREMENT PRIMARY KEY,
+                recipient_email VARCHAR(150) NOT NULL,
+                student_name    VARCHAR(100),
+                event_type      VARCHAR(100) NOT NULL,
+                subject         VARCHAR(255),
+                sent_at         TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                status          ENUM('sent','failed') DEFAULT 'sent',
+                error_message   TEXT DEFAULT NULL,
+                INDEX idx_event (event_type),
+                INDEX idx_sent_at (sent_at)
+            )
+        """)
 
         # ── Faculty seed account ─────────────────────────────────────────────────
         # Insert Dr. Shankar only if not already present.
         # Students are intentionally NOT seeded here —
-        # they arrive exclusively via Master Sheet uploads each year.
+        # they arrive exclusively via Student Directory Data uploads each year.
         cursor.execute("SELECT COUNT(*) as count FROM faculty")
         if cursor.fetchone()["count"] == 0:
             cursor.execute("""
@@ -442,6 +473,48 @@ VALUES
 (1, 'Placement Officer', 'tap@nitandhra.ac.in', 'placementOfficerNITandhra2015'),
 (2, 'Placement Officer', 'tapc@nitandhra.ac.in', 'placementOfficerNITandhra2015');
             """)
+
+        # ── Internship postings table ─────────────────────────────────────────────
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS internship_postings (
+                posting_id   INT AUTO_INCREMENT PRIMARY KEY,
+                company_name VARCHAR(100) NOT NULL,
+                role         VARCHAR(100) NOT NULL,
+                details      TEXT,
+                link         TEXT,
+                posted_date  TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+
+        # ── Student internships table ─────────────────────────────────────────────
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS student_internships (
+                id                     INT AUTO_INCREMENT PRIMARY KEY,
+                student_id             INT NOT NULL,
+                posting_id             INT DEFAULT NULL,
+                status                 VARCHAR(50) DEFAULT 'Interested',
+                completion_description TEXT DEFAULT NULL,
+                certificate_path       VARCHAR(255) DEFAULT NULL,
+                submitted_at           DATETIME DEFAULT NULL,
+                ext_company_name       VARCHAR(200) DEFAULT NULL,
+                ext_role               VARCHAR(200) DEFAULT NULL,
+                ext_duration           VARCHAR(100) DEFAULT NULL,
+                is_external            TINYINT(1) DEFAULT 0,
+                FOREIGN KEY (student_id) REFERENCES students(student_id) ON DELETE CASCADE
+            )
+        """)
+        # Safe additions for older databases
+        for _col_sql in [
+            "ALTER TABLE student_internships ADD COLUMN ext_company_name VARCHAR(200) DEFAULT NULL",
+            "ALTER TABLE student_internships ADD COLUMN ext_role VARCHAR(200) DEFAULT NULL",
+            "ALTER TABLE student_internships ADD COLUMN ext_duration VARCHAR(100) DEFAULT NULL",
+            "ALTER TABLE student_internships ADD COLUMN is_external TINYINT(1) DEFAULT 0",
+        ]:
+            try:
+                cursor.execute(_col_sql)
+                db.commit()
+            except Exception:
+                db.rollback()
 
         db.commit()
         print("Database tables initialized successfully.")
@@ -515,9 +588,148 @@ def notify_students_new_job(company_name, role):
     except Exception as e:
         print("Failed to notify students:", e)
 
+
+def _is_email_notifications_enabled() -> bool:
+    """Check if the global email notifications toggle is ON in the DB."""
+    try:
+        cursor.execute("SELECT setting_value FROM global_settings WHERE setting_key='email_notifications_enabled'")
+        row = cursor.fetchone()
+        return row and row['setting_value'] == 'true'
+    except Exception:
+        return False
+
+
+def _log_email(recipient_email, student_name, event_type, subject, status, error_msg=None, db_name=None):
+    """Write a row to email_logs. Safe to call from background threads — does NOT use Flask session."""
+    try:
+        # Resolve db_name without touching Flask session (safe in threads)
+        if not db_name:
+            db_name = 'placement_portal_2025_2026'
+            try:
+                from flask import has_request_context
+                if has_request_context():
+                    db_name = session.get('active_year_db', db_name)
+            except Exception:
+                pass
+        conn2 = get_connection(db_name)
+        c2 = conn2.cursor()
+        c2.execute("""
+            INSERT INTO email_logs (recipient_email, student_name, event_type, subject, status, error_message)
+            VALUES (%s, %s, %s, %s, %s, %s)
+        """, (recipient_email, student_name, event_type, subject, status, error_msg))
+        conn2.commit()
+        c2.close()
+        conn2.close()
+    except Exception as ex:
+        print(f"[EmailLog] Could not write log: {ex}")
+
+
+
+def _get_eligible_students_for_job(job_cgpa, job_backlogs, job_branches, job_tier):
+    """
+    Query students who meet the eligibility criteria for a given job.
+    Returns list of dicts: {student_id, name, email}
+    """
+    try:
+        # Build branch filter: branches is a comma-separated string
+        branch_list = [b.strip().upper() for b in job_branches.split(',') if b.strip()] if job_branches else []
+
+        cursor.execute("""
+            SELECT student_id, name, email, cgpa, backlogs, branch, selected_tier
+            FROM students
+            WHERE email IS NOT NULL AND email != ''
+        """)
+        all_students = cursor.fetchall()
+
+        eligible = []
+        for s in all_students:
+            # CGPA check
+            if float(s.get('cgpa') or 0) < float(job_cgpa or 0):
+                continue
+            # Backlogs check
+            if int(s.get('backlogs') or 0) > int(job_backlogs or 0):
+                continue
+            # Branch check
+            if branch_list:
+                norm_branch = normalize_branch(str(s.get('branch') or ''))
+                if not any(b in norm_branch for b in branch_list) and not any(norm_branch in b for b in branch_list):
+                    continue
+            # Tier restriction (skip if student already placed at same/higher tier)
+            tier_num = 1 if '1' in str(job_tier) else (2 if '2' in str(job_tier) else 3)
+            student_tier = s.get('selected_tier')
+            if student_tier is not None and int(student_tier) <= tier_num:
+                continue
+
+            eligible.append({
+                'student_id': s['student_id'],
+                'name': s['name'],
+                'email': s['email']
+            })
+
+        return eligible
+    except Exception as ex:
+        print(f"[EmailService] Could not fetch eligible students: {ex}")
+        return []
+
+
+def _send_new_job_emails_async(job_id, company, role, ctc, tier, deadline, location, min_cgpa, branches, subject_override=None):
+    """Fetch eligible students and send new-job emails asynchronously."""
+    if not _EMAIL_SVC_LOADED or not _email_svc.is_configured():
+        print("[EmailService] SMTP not configured, skipping email send.")
+        return
+
+    db_name = session.get('active_year_db', 'placement_portal_2025_2026')
+    subject = subject_override or f"New Placement Drive: {company} – {role}"
+
+    try:
+        recipients = _get_eligible_students_for_job(min_cgpa, 0, branches, tier)
+    except Exception as ex:
+        print(f"[EmailService] Error fetching recipients: {ex}")
+        return
+
+    if not recipients:
+        print("[EmailService] No eligible recipients found.")
+        return
+
+    def html_fn(rec):
+        return _email_svc.build_new_job_email(
+            rec, company, role, ctc, tier, deadline, location, min_cgpa, branches
+        )
+
+    def log_fn(sid, email, status, err):
+        _log_email(email, None, 'new_job', subject, status, err)
+
+    _email_svc.send_bulk_emails_async(recipients, subject, html_fn, log_fn, event_type='new_job')
+    print(f"[EmailService] Triggered bulk email for {len(recipients)} eligible students for {company}")
+
 @app.route("/")
 def home():
-    return render_template("index.html")
+    stats_file = os.path.join(app.root_path, "database", "yearly_statistics.json")
+    past_stats = []
+    if os.path.exists(stats_file):
+        try:
+            import json as _json
+            with open(stats_file, "r") as f:
+                past_stats = _json.load(f)
+                # Sort by year descending
+                past_stats.sort(key=lambda x: x.get('year', ''), reverse=True)
+        except Exception as e:
+            print("Error loading past stats:", e)
+            
+    # Load homepage updates
+    updates_file = os.path.join(app.root_path, "database", "homepage_updates.json")
+    updates = []
+    if os.path.exists(updates_file):
+        try:
+            import json as _json
+            with open(updates_file, "r") as f:
+                updates = _json.load(f)
+                # Sort descending by id (timestamp)
+                updates.sort(key=lambda x: x.get('id', ''), reverse=True)
+        except Exception as e:
+            print("Error loading homepage updates:", e)
+            
+    return render_template("index.html", past_stats=past_stats, updates=updates)
 
 @app.route("/resume_analyzer")
 def resume_analyzer():
@@ -775,7 +987,7 @@ def student_login_check():
         student = cursor.fetchone()
 
     if student:
-        # Check if master sheet exists
+        # Check if Student Directory Data exists
         upload_dir = os.path.join(app.static_folder, "uploads", session["active_year"])
         has_xlsx = os.path.exists(os.path.join(upload_dir, "master_sheet.xlsx"))
         has_pdf = os.path.exists(os.path.join(upload_dir, "master_sheet.pdf"))
@@ -829,7 +1041,7 @@ def google_login_check():
             student = cursor.fetchone()
 
         if student:
-            # Check if master sheet exists
+            # Check if Student Directory Data exists
             upload_dir = os.path.join(app.static_folder, "uploads", session["active_year"])
             has_xlsx = os.path.exists(os.path.join(upload_dir, "master_sheet.xlsx"))
             has_pdf = os.path.exists(os.path.join(upload_dir, "master_sheet.pdf"))
@@ -1603,6 +1815,10 @@ def student_selected_companies():
 
 @app.route("/ongoing_rounds")
 def ongoing_rounds():
+    return redirect("/my_applications")
+
+@app.route("/student/internships")
+def student_internships():
     ensure_connection()
     if "student_id" not in session:
         return redirect("/student_login")
@@ -1610,68 +1826,455 @@ def ongoing_rounds():
     student_id = session["student_id"]
     cursor.execute("SELECT * FROM students WHERE student_id = %s", (student_id,))
     student = cursor.fetchone()
-    
     if not student:
         session.pop("student_id", None)
         session.pop("student_name", None)
         return redirect("/student_login?error=Session+expired.+Please+log+in+again.")
+        
+    cursor.execute("""
+        SELECT * FROM internship_postings 
+        WHERE details IS NULL OR details NOT LIKE '[EXTERNAL]%' 
+        ORDER BY posting_id DESC
+    """)
+    postings = cursor.fetchall()
     
-    query = """
-        SELECT a.applied_date, a.status, a.resume_path, a.job_id, a.drive_link,
-               j.company_name, j.role, j.ctc as package_lpa, j.tier, j.deadline,
-               (SELECT MAX(round_number) FROM round_results rr WHERE rr.job_id = a.job_id AND rr.student_id = a.student_id AND rr.result = 'Selected') as max_cleared_round,
-               (SELECT MAX(round_number) FROM round_results rr WHERE rr.job_id = a.job_id AND rr.student_id = a.student_id) as max_attempted_round,
-               (SELECT num_rounds FROM recruitment_rounds WHERE job_id = a.job_id) as total_rounds,
-               (SELECT result FROM round_results rr WHERE rr.job_id = a.job_id AND rr.student_id = a.student_id ORDER BY round_number DESC LIMIT 1) as latest_round_result,
-               (SELECT drive_link FROM round_results rr WHERE rr.job_id = a.job_id AND rr.student_id = a.student_id AND drive_link IS NOT NULL ORDER BY round_number DESC LIMIT 1) as latest_drive_link,
-               (SELECT round_number FROM round_results rr WHERE rr.job_id = a.job_id AND rr.student_id = a.student_id AND drive_link IS NOT NULL ORDER BY round_number DESC LIMIT 1) as latest_drive_round
-        FROM applications a
-        JOIN jobs j ON a.job_id = j.job_id
-        WHERE a.student_id = %s AND a.status NOT IN ('Selected', 'Rejected', 'Not Selected')
-        ORDER BY a.applied_date DESC
+    cursor.execute("""
+        SELECT si.*, 
+               IFNULL(ip.company_name, si.ext_company_name) AS company_name,
+               IFNULL(ip.role, si.ext_role) AS role,
+               IFNULL(ip.details, IF(si.is_external=1, '[EXTERNAL] External (self-arranged)', NULL)) AS details
+        FROM student_internships si
+        LEFT JOIN internship_postings ip ON si.posting_id = ip.posting_id
+        WHERE si.student_id = %s AND si.status = 'Completed'
+    """, (student_id,))
+    completions = cursor.fetchall()
+    completed_posting_ids = {c["posting_id"] for c in completions}
+    
+    for post in postings:
+        post["completed"] = post["posting_id"] in completed_posting_ids
+        
+    return render_template("student/internships.html", postings=postings, completions=completions, student=student)
+
+@app.route("/student/internships/submit", methods=["POST"])
+def student_internships_submit():
+    ensure_connection()
+    if "student_id" not in session:
+        return redirect("/student_login")
+        
+    student_id  = session["student_id"]
+    posting_id  = request.form.get("posting_id", type=int)
+    description = request.form.get("description", "").strip()
+    
+    if not posting_id or not description:
+        flash("Invalid submission details.", "error")
+        return redirect("/student/internships")
+
+    cursor.execute("SELECT company_name, role FROM internship_postings WHERE posting_id = %s", (posting_id,))
+    posting = cursor.fetchone()
+    if not posting:
+        flash("Internship posting not found.", "error")
+        return redirect("/student/internships")
+
+    # Certificate upload is OPTIONAL
+    db_path = None
+    file = request.files.get("certificate")
+    if file and file.filename and file.filename.strip() != "":
+        from werkzeug.utils import secure_filename
+        filename = secure_filename(file.filename)
+        active_year   = session.get("active_year", "2025-2026")
+        upload_folder = os.path.join(app.root_path, "static", "uploads", active_year, "certificates")
+        os.makedirs(upload_folder, exist_ok=True)
+        import time
+        timestamp     = int(time.time())
+        dest_filename = f"student_{student_id}_{posting_id}_{timestamp}_{filename}"
+        filepath      = os.path.join(upload_folder, dest_filename)
+        file.save(filepath)
+        db_path = f"/static/uploads/{active_year}/certificates/{dest_filename}"
+
+    cursor.execute("SELECT id FROM student_internships WHERE student_id = %s AND posting_id = %s", (student_id, posting_id))
+    existing = cursor.fetchone()
+    
+    if existing:
+        if db_path:
+            cursor.execute("""
+                UPDATE student_internships 
+                SET status = 'Completed', completion_description = %s, certificate_path = %s, submitted_at = NOW()
+                WHERE id = %s
+            """, (description, db_path, existing["id"]))
+        else:
+            cursor.execute("""
+                UPDATE student_internships 
+                SET status = 'Completed', completion_description = %s, submitted_at = NOW()
+                WHERE id = %s
+            """, (description, existing["id"]))
+    else:
+        cursor.execute("""
+            INSERT INTO student_internships (student_id, posting_id, status, completion_description, certificate_path, submitted_at)
+            VALUES (%s, %s, 'Completed', %s, %s, NOW())
+        """, (student_id, posting_id, description, db_path))
+        
+    cursor.execute("SELECT COUNT(*) as count FROM student_internships WHERE student_id = %s AND status = 'Completed'", (student_id,))
+    completed_count = cursor.fetchone()["count"]
+    cursor.execute("UPDATE students SET internships_count = %s WHERE student_id = %s", (completed_count, student_id))
+    db.commit()
+    flash("Internship completion details submitted successfully!", "success")
+    return redirect("/student/internships")
+
+
+@app.route("/student/internships/add_external", methods=["POST"])
+def student_add_external_internship():
     """
-    cursor.execute(query, (student_id,))
-    apps = cursor.fetchall()
-    
-    for app in apps:
-        app['pipeline_status'] = 'Reviewing'
-        if app.get('max_cleared_round'):
-            next_round = app['max_cleared_round'] + 1
-            if app.get('total_rounds') and next_round > app['total_rounds']:
-                app['pipeline_status'] = f"Cleared Round {app['max_cleared_round']}"
-            else:
-                app['pipeline_status'] = f"Qualified for Round {next_round}"
-        elif app.get('status') == 'Shortlisted' or app.get('status') == 'Interview':
-            app['pipeline_status'] = 'Interviewing'
+    Allows students to add an internship they arranged themselves (outside college)
+    without needing a faculty-posted listing. Certificate upload is optional.
+    """
+    ensure_connection()
+    if "student_id" not in session:
+        return redirect("/student_login")
+
+    student_id   = session["student_id"]
+    company_name = request.form.get("ext_company", "").strip()
+    role         = request.form.get("ext_role", "").strip()
+    description  = request.form.get("ext_description", "").strip()
+    duration     = request.form.get("ext_duration", "").strip()
+
+    if not company_name or not role or not description:
+        flash("Company name, role, and description are required.", "error")
+        return redirect("/student/internships")
+
+    # Certificate upload — optional
+    db_path = None
+    file = request.files.get("ext_certificate")
+    if file and file.filename and file.filename.strip() != "":
+        from werkzeug.utils import secure_filename
+        filename      = secure_filename(file.filename)
+        active_year   = session.get("active_year", "2025-2026")
+        upload_folder = os.path.join(app.root_path, "static", "uploads", active_year, "certificates")
+        os.makedirs(upload_folder, exist_ok=True)
+        import time
+        timestamp     = int(time.time())
+        dest_filename = f"ext_{student_id}_{timestamp}_{filename}"
+        filepath      = os.path.join(upload_folder, dest_filename)
+        file.save(filepath)
+        db_path = f"/static/uploads/{active_year}/certificates/{dest_filename}"
 
     cursor.execute("""
-        SELECT job_id, round_number, drive_link 
-        FROM round_results 
-        WHERE student_id = %s AND drive_link IS NOT NULL AND drive_link != '' 
-        ORDER BY job_id, round_number ASC
-    """, (student_id,))
-    all_round_links = cursor.fetchall()
-    links_by_job = {}
-    for rl in all_round_links:
-        if rl['job_id'] not in links_by_job:
-            links_by_job[rl['job_id']] = []
-        
-        link_val = rl['drive_link'].strip()
-        is_url = link_val.startswith('http://') or link_val.startswith('https://') or link_val.startswith('www.')
-        if link_val.startswith('www.'):
-            link_val = 'https://' + link_val
-            
-        links_by_job[rl['job_id']].append({
-            "round_number": rl['round_number'], 
-            "raw_text": rl['drive_link'],
-            "is_url": is_url,
-            "url": link_val
-        })
-        
-    for app in apps:
-        app['round_links'] = links_by_job.get(app['job_id'], [])
+        INSERT INTO student_internships (
+            student_id, posting_id, status, completion_description, 
+            certificate_path, submitted_at, ext_company_name, ext_role, 
+            ext_duration, is_external
+        )
+        VALUES (%s, NULL, 'Completed', %s, %s, NOW(), %s, %s, %s, 1)
+    """, (student_id, description, db_path, company_name, role, duration))
 
-    return render_template("student/ongoing_rounds.html", applications=apps, student=student)
+    cursor.execute("SELECT COUNT(*) as count FROM student_internships WHERE student_id = %s AND status = 'Completed'", (student_id,))
+    completed_count = cursor.fetchone()["count"]
+    cursor.execute("UPDATE students SET internships_count = %s WHERE student_id = %s", (completed_count, student_id))
+    db.commit()
+
+    flash(f"External internship at {company_name} added successfully!", "success")
+    return redirect("/student/internships")
+
+
+@app.route("/faculty/internships", methods=["GET", "POST"])
+def faculty_internships():
+    ensure_connection()
+    redir = faculty_required()
+    if redir: return redir
+    
+    if request.method == "POST":
+        action = request.form.get("action")
+        if action == "post_internship":
+            company_name = request.form.get("company_name", "").strip()
+            role = request.form.get("role", "").strip()
+            details = request.form.get("details", "").strip()
+            link = request.form.get("link", "").strip()
+            
+            if not company_name or not role or not details or not link:
+                flash("All fields are required to post an internship.", "error")
+                return redirect("/faculty/internships")
+                
+            cursor.execute("""
+                INSERT INTO internship_postings (company_name, role, details, link)
+                VALUES (%s, %s, %s, %s)
+            """, (company_name, role, details, link))
+            
+            cursor.execute("SELECT student_id FROM students")
+            students = cursor.fetchall()
+            for s in students:
+                cursor.execute("""
+                    INSERT INTO notifications (student_id, message, link, is_read)
+                    VALUES (%s, %s, %s, 0)
+                """, (s["student_id"], f"New Internship Opportunity: {company_name} - {role}", "/student/internships"))
+                
+            db.commit()
+            flash("Internship opportunity posted and students notified successfully!", "success")
+            
+        elif action == "delete_posting":
+            posting_id = request.form.get("posting_id", type=int)
+            if posting_id:
+                cursor.execute("DELETE FROM internship_postings WHERE posting_id = %s", (posting_id,))
+                db.commit()
+                flash("Internship posting deleted successfully.", "success")
+                
+        return redirect("/faculty/internships")
+        
+    cursor.execute("""
+        SELECT * FROM internship_postings
+        WHERE details IS NULL OR details NOT LIKE '[EXTERNAL]%'
+        ORDER BY posting_id DESC
+    """)
+    postings = cursor.fetchall()
+
+    
+    cursor.execute("""
+        SELECT si.*, s.name as student_name, s.roll_number, s.branch, s.cgpa,
+               IFNULL(ip.company_name, si.ext_company_name) AS company_name,
+               IFNULL(ip.role, si.ext_role) AS role,
+               IFNULL(ip.details, IF(si.is_external=1, '[EXTERNAL] External (self-arranged)', NULL)) AS posting_details
+        FROM student_internships si
+        JOIN students s ON si.student_id = s.student_id
+        LEFT JOIN internship_postings ip ON si.posting_id = ip.posting_id
+        WHERE si.status = 'Completed'
+        ORDER BY si.submitted_at DESC
+    """)
+    completions = cursor.fetchall()
+    
+    active_year_name = get_active_batch_name()
+    return render_template("faculty/internships.html", postings=postings, completions=completions, active_year=active_year_name)
+
+@app.route("/faculty/internships/export")
+def faculty_internships_export():
+    ensure_connection()
+    redir = faculty_required()
+    if redir: return redir
+    
+    cursor.execute("""
+        SELECT s.roll_number, s.name as student_name, s.branch, s.cgpa, 
+               IFNULL(ip.company_name, si.ext_company_name) AS company_name, 
+               IFNULL(ip.role, si.ext_role) AS role, 
+               si.completion_description, si.certificate_path, si.submitted_at
+        FROM student_internships si
+        JOIN students s ON si.student_id = s.student_id
+        LEFT JOIN internship_postings ip ON si.posting_id = ip.posting_id
+        WHERE si.status = 'Completed'
+        ORDER BY s.roll_number ASC
+    """)
+    completions = cursor.fetchall()
+    
+    import openpyxl
+    from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
+    from openpyxl.utils import get_column_letter
+    import io
+    from flask import Response
+    
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Internship Certificates"
+    
+    title_font = Font(name="Calibri", size=14, bold=True, color="78350F")
+    header_font = Font(name="Calibri", size=11, bold=True, color="FFFFFF")
+    regular_font = Font(name="Calibri", size=11)
+    amber_fill = PatternFill(start_color="F59E0B", end_color="F59E0B", fill_type="solid")
+    center_align = Alignment(horizontal="center", vertical="center")
+    left_align = Alignment(horizontal="left", vertical="center")
+    
+    thin_border = Border(
+        left=Side(style='thin', color='E5E7EB'), right=Side(style='thin', color='E5E7EB'),
+        top=Side(style='thin', color='E5E7EB'), bottom=Side(style='thin', color='E5E7EB')
+    )
+    
+    ws.merge_cells("A1:I1")
+    ws["A1"] = f"Internship Completion Report — Batch: {get_active_batch_name()}"
+    ws["A1"].font = title_font
+    ws["A1"].alignment = Alignment(horizontal="center", vertical="center")
+    ws.row_dimensions[1].height = 40
+    
+    headers = ["Roll Number", "Student Name", "Branch", "CGPA", "Company", "Role", "Completion Details", "Certificate Link", "Submitted Date"]
+    ws.append([])
+    ws.row_dimensions[2].height = 10
+    
+    ws.append(headers)
+    ws.row_dimensions[3].height = 25
+    
+    for col_idx, header in enumerate(headers, 1):
+        cell = ws.cell(row=3, column=col_idx)
+        cell.font = header_font
+        cell.fill = amber_fill
+        cell.alignment = center_align
+        cell.border = thin_border
+        
+    row_num = 4
+    for comp in completions:
+        sub_date = comp["submitted_at"].strftime('%Y-%m-%d %H:%M') if comp["submitted_at"] else "N/A"
+        cert_url = f"{request.host_url.rstrip('/')}{comp['certificate_path']}" if comp["certificate_path"] else "N/A"
+        
+        row_data = [
+            comp["roll_number"] or "N/A",
+            comp["student_name"],
+            comp["branch"].upper(),
+            comp["cgpa"],
+            comp["company_name"],
+            comp["role"],
+            comp["completion_description"],
+            cert_url,
+            sub_date
+        ]
+        ws.append(row_data)
+        ws.row_dimensions[row_num].height = 20
+        
+        for col_idx in range(1, 10):
+            cell = ws.cell(row=row_num, column=col_idx)
+            cell.font = regular_font
+            cell.border = thin_border
+            if col_idx in [1, 3, 4, 8, 9]:
+                cell.alignment = center_align
+            else:
+                cell.alignment = left_align
+            if col_idx == 8 and cert_url != "N/A":
+                cell.hyperlink = cert_url
+                cell.font = Font(name="Calibri", size=11, color="0563C1", underline="single")
+        row_num += 1
+        
+    for col in ws.columns:
+        max_len = 0
+        col_letter = get_column_letter(col[0].column)
+        for cell in col:
+            if cell.row > 1 and cell.value:
+                max_len = max(max_len, len(str(cell.value)))
+        ws.column_dimensions[col_letter].width = max(max_len + 3, 12)
+        
+    output = io.BytesIO()
+    wb.save(output)
+    output.seek(0)
+    
+    filename = f"internships_{session.get('active_year', 'batch').replace('-', '_')}.xlsx"
+    return Response(
+        output.read(),
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-disposition": f"attachment; filename={filename}"}
+    )
+
+@app.route("/faculty/manage_homepage", methods=["GET", "POST"])
+def faculty_manage_homepage():
+    ensure_connection()
+    redir = faculty_required()
+    if redir: return redir
+    
+    updates_file = os.path.join(app.root_path, "database", "homepage_updates.json")
+    updates = []
+    if os.path.exists(updates_file):
+        try:
+            import json as _json
+            with open(updates_file, "r") as f:
+                updates = _json.load(f)
+        except Exception as e:
+            print("Error loading homepage updates:", e)
+            
+    if request.method == "POST":
+        action = request.form.get("action")
+        if action == "add_update":
+            title = request.form.get("title", "").strip()
+            type_val = request.form.get("type", "").strip()
+            description = request.form.get("description", "").strip()
+            link = request.form.get("link", "").strip()
+            
+            if not title or not type_val or not description:
+                flash("Title, type, and description are required.", "error")
+                return redirect("/faculty/manage_homepage")
+                
+            image_path = None
+            if "photo" in request.files:
+                photo = request.files["photo"]
+                if photo.filename != "":
+                    from werkzeug.utils import secure_filename
+                    filename = secure_filename(photo.filename)
+                    upload_folder = os.path.join(app.root_path, "static", "uploads", "homepage")
+                    os.makedirs(upload_folder, exist_ok=True)
+                    
+                    import time
+                    timestamp = int(time.time())
+                    dest_filename = f"{timestamp}_{filename}"
+                    filepath = os.path.join(upload_folder, dest_filename)
+                    photo.save(filepath)
+                    image_path = f"/static/uploads/homepage/{dest_filename}"
+                    
+            import time
+            from datetime import datetime
+            new_item = {
+                "id": str(int(time.time() * 1000)),
+                "title": title,
+                "type": type_val,
+                "description": description,
+                "link": link if link else None,
+                "image_path": image_path,
+                "created_at": datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            }
+            
+            updates.append(new_item)
+            
+            try:
+                import json as _json
+                with open(updates_file, "w") as f:
+                    _json.dump(updates, f, indent=4)
+                flash("Homepage item added successfully!", "success")
+            except Exception as e:
+                flash(f"Error saving update: {str(e)}", "error")
+                
+        elif action == "delete_update":
+            update_id = request.form.get("update_id")
+            if update_id:
+                item_to_remove = None
+                for item in updates:
+                    if item.get("id") == update_id:
+                        item_to_remove = item
+                        break
+                        
+                if item_to_remove:
+                    updates.remove(item_to_remove)
+                    if item_to_remove.get("image_path"):
+                        try:
+                            photo_path = os.path.join(app.root_path, item_to_remove["image_path"].lstrip("/"))
+                            if os.path.exists(photo_path):
+                                os.remove(photo_path)
+                        except Exception as e:
+                            print("Error deleting image file:", e)
+                            
+                    try:
+                        import json as _json
+                        with open(updates_file, "w") as f:
+                            _json.dump(updates, f, indent=4)
+                        flash("Homepage item deleted successfully.", "success")
+                    except Exception as e:
+                        flash(f"Error deleting update: {str(e)}", "error")
+                        
+        return redirect("/faculty/manage_homepage")
+        
+    updates.sort(key=lambda x: x.get("id", ""), reverse=True)
+    return render_template("faculty/manage_homepage.html", updates=updates)
+
+@app.route("/homepage_updates/<string:update_id>")
+def homepage_update_detail(update_id):
+    ensure_connection()
+    updates_file = os.path.join(app.root_path, "database", "homepage_updates.json")
+    updates = []
+    if os.path.exists(updates_file):
+        try:
+            import json as _json
+            with open(updates_file, "r") as f:
+                updates = _json.load(f)
+        except Exception as e:
+            print("Error loading homepage updates:", e)
+            
+    selected_update = None
+    for u in updates:
+        if u.get("id") == update_id:
+            selected_update = u
+            break
+            
+    if not selected_update:
+        return "Update not found", 404
+        
+    return render_template("homepage_update_detail.html", item=selected_update)
 
 @app.route("/student_logout")
 def student_logout():
@@ -1730,6 +2333,345 @@ def faculty_update_settings():
         flash("Settings updated successfully!", "success")
     return redirect("/faculty_dashboard")
 
+
+@app.route("/faculty/email_manager")
+def faculty_email_manager():
+    """Render the dedicated email management page."""
+    ensure_connection()
+    redir = faculty_required()
+    if redir: return redir
+    return render_template("faculty/email_manager.html")
+
+
+@app.route("/faculty/email_settings", methods=["POST"])
+def faculty_email_settings():
+    """Toggle the global email notifications ON/OFF."""
+    ensure_connection()
+    redir = faculty_required()
+    if redir: return jsonify({"success": False, "error": "Unauthorized"}), 401
+
+    data    = request.get_json() or {}
+    enabled = data.get("enabled", False)
+    value   = "true" if enabled else "false"
+
+    try:
+        cursor.execute("""
+            INSERT INTO global_settings (setting_key, setting_value)
+            VALUES ('email_notifications_enabled', %s)
+            ON DUPLICATE KEY UPDATE setting_value = %s
+        """, (value, value))
+        db.commit()
+
+        smtp_ok = _EMAIL_SVC_LOADED and _email_svc.is_configured()
+
+        return jsonify({
+            "success":   True,
+            "enabled":   enabled,
+            "smtp_ready": smtp_ok,
+            "message":  ("Email notifications enabled." if enabled else "Email notifications disabled.")
+                        + ("" if smtp_ok else " ⚠️ SMTP not configured in .env — emails will not be sent.")
+        })
+    except Exception as e:
+        db.rollback()
+        return jsonify({"success": False, "error": str(e)})
+
+
+@app.route("/faculty/test_smtp_email", methods=["POST"])
+def faculty_test_smtp_email():
+    """
+    Send a SYNCHRONOUS test email so faculty can verify SMTP credentials work.
+    Returns the real SMTP result immediately (not async).
+    """
+    redir = faculty_required()
+    if redir: return jsonify({"success": False, "error": "Unauthorized"}), 401
+
+    if not _EMAIL_SVC_LOADED:
+        return jsonify({"success": False, "error": "email_service.py failed to load. Check server logs."})
+
+    # Reload credentials fresh from disk each time (in case .env was updated)
+    try:
+        from dotenv import load_dotenv
+        load_dotenv(override=True)
+        import importlib
+        import email_service as _esvc_mod
+        importlib.reload(_esvc_mod)
+    except Exception:
+        pass
+
+    if not _email_svc.is_configured():
+        return jsonify({
+            "success": False,
+            "error": "SMTP not configured. Fill in SMTP_EMAIL and SMTP_PASSWORD in .env, then restart the server."
+        })
+
+    data       = request.get_json() or {}
+    to_email   = data.get("to_email", "").strip()
+    if not to_email:
+        # Default: send to the logged-in faculty's email
+        to_email = session.get("faculty_email")
+        if not to_email:
+            to_email = _email_svc.SMTP_EMAIL
+
+    subject  = "✅ NIT AP Portal — SMTP Test Email"
+    html_body = _email_svc._base_template(f"""
+        <p class="greeting">Test Email 🎉</p>
+        <p>This is a test email sent from the <strong>NIT AP Placement Portal</strong> to verify that SMTP credentials are working correctly.</p>
+        <div class="info-box">
+          <div class="info-row"><span class="info-label">Sent To</span><span class="info-value">{to_email}</span></div>
+          <div class="info-row"><span class="info-label">SMTP Host</span><span class="info-value">{_email_svc.SMTP_HOST}:{_email_svc.SMTP_PORT}</span></div>
+          <div class="info-row"><span class="info-label">From Address</span><span class="info-value">{_email_svc.SMTP_EMAIL}</span></div>
+        </div>
+        <p>✅ If you can read this, email delivery is working correctly!</p>
+    """, "SMTP Test")
+
+    result = _email_svc.send_email(to_email, subject, html_body)
+    return jsonify(result)
+
+
+@app.route("/api/faculty/email_logs")
+def api_faculty_email_logs():
+    """Return recent email log records for the admin dashboard."""
+    redir = faculty_required()
+    if redir: return jsonify({"error": "Unauthorized"}), 401
+    ensure_connection()
+    try:
+        cursor.execute("""
+            SELECT id, recipient_email, student_name, event_type, subject,
+                   sent_at, status, error_message
+            FROM email_logs
+            ORDER BY sent_at DESC
+            LIMIT 50
+        """)
+        rows = cursor.fetchall()
+        # Convert datetime objects to strings
+        for r in rows:
+            if r.get("sent_at"):
+                r["sent_at"] = str(r["sent_at"])
+        return jsonify({"logs": rows})
+    except Exception as e:
+        return jsonify({"logs": [], "error": str(e)})
+
+
+@app.route("/api/faculty/jobs_list")
+def api_faculty_jobs_list():
+    """Return a lightweight list of active jobs for the selective email modal dropdown."""
+    redir = faculty_required()
+    if redir: return jsonify({"error": "Unauthorized"}), 401
+    ensure_connection()
+    try:
+        cursor.execute("SELECT job_id, company_name, role FROM jobs ORDER BY company_name, role")
+        rows = cursor.fetchall()
+        return jsonify({"jobs": rows})
+    except Exception as e:
+        return jsonify({"jobs": [], "error": str(e)})
+
+
+@app.route("/api/faculty/email_status")
+
+def api_faculty_email_status():
+    """Return current email notification toggle state + SMTP readiness."""
+    redir = faculty_required()
+    if redir: return jsonify({"error": "Unauthorized"}), 401
+    ensure_connection()
+    try:
+        cursor.execute("SELECT setting_value FROM global_settings WHERE setting_key='email_notifications_enabled'")
+        row = cursor.fetchone()
+        enabled   = row and row["setting_value"] == "true"
+        smtp_ok   = _EMAIL_SVC_LOADED and _email_svc.is_configured()
+
+        # Count eligible recipients (all students with email)
+        cursor.execute("SELECT COUNT(*) AS c FROM students WHERE email IS NOT NULL AND email != ''")
+        total_r = cursor.fetchone()
+        total_email_students = total_r["c"] if total_r else 0
+
+        # Stats from email_logs
+        cursor.execute("SELECT COUNT(*) AS c FROM email_logs WHERE status='sent'")
+        r2 = cursor.fetchone()
+        total_sent = r2["c"] if r2 else 0
+
+        cursor.execute("SELECT COUNT(*) AS c FROM email_logs WHERE status='failed'")
+        r3 = cursor.fetchone()
+        total_failed = r3["c"] if r3 else 0
+
+        return jsonify({
+            "enabled":             enabled,
+            "smtp_ready":          smtp_ok,
+            "smtp_email":          _email_svc.SMTP_EMAIL if _EMAIL_SVC_LOADED else "",
+            "total_email_students": total_email_students,
+            "total_sent":          total_sent,
+            "total_failed":        total_failed
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)})
+
+
+@app.route("/faculty/send_announcement_email", methods=["POST"])
+def faculty_send_announcement_email():
+    """Send an announcement email to all students with registered emails."""
+    ensure_connection()
+    redir = faculty_required()
+    if redir: return jsonify({"success": False, "error": "Unauthorized"}), 401
+
+    if not _is_email_notifications_enabled():
+        return jsonify({"success": False, "error": "Email notifications are disabled. Enable them first."})
+
+    if not _EMAIL_SVC_LOADED or not _email_svc.is_configured():
+        return jsonify({"success": False, "error": "SMTP is not configured. Please fill in .env credentials."})
+
+    data    = request.get_json() or {}
+    title   = data.get("title", "").strip()
+    message = data.get("message", "").strip()
+
+    if not title or not message:
+        return jsonify({"success": False, "error": "Title and message are required."})
+
+    try:
+        cursor.execute("SELECT student_id, name, email FROM students WHERE email IS NOT NULL AND email != ''")
+        recipients = cursor.fetchall()
+    except Exception as e:
+        return jsonify({"success": False, "error": f"Could not fetch students: {e}"})
+
+    if not recipients:
+        return jsonify({"success": False, "error": "No students with registered emails found."})
+
+    subject_ann = f"Placement Announcement: {title}"
+
+    def html_fn_ann(rec):
+        return _email_svc.build_announcement_email(rec, title, message)
+
+    def log_fn_ann(sid, email, status, err):
+        _log_email(email, None, "announcement", subject_ann, status, err)
+
+    _email_svc.send_bulk_emails_async(list(recipients), subject_ann, html_fn_ann, log_fn_ann, event_type="announcement")
+
+    return jsonify({
+        "success":    True,
+        "recipients": len(recipients),
+        "message":    f"Announcement is being sent to {len(recipients)} students asynchronously."
+    })
+
+
+@app.route("/api/faculty/students_with_email")
+def api_faculty_students_with_email():
+    """
+    Return students who have a registered email — used by the Selective Email modal.
+    Optional filters: ?job_id=X  or  ?status=Shortlisted
+    """
+    redir = faculty_required()
+    if redir: return jsonify({"error": "Unauthorized"}), 401
+    ensure_connection()
+
+    job_id     = request.args.get("job_id")
+    status_fil = request.args.get("status")   # e.g. 'Shortlisted', 'Selected', etc.
+
+    try:
+        if job_id:
+            # Return students who applied to a specific job (optionally filtered by status)
+            query = """
+                SELECT s.student_id, s.name, s.email, s.roll_number AS roll_no, s.branch,
+                       a.status AS application_status
+                FROM applications a
+                JOIN students s ON a.student_id = s.student_id
+                WHERE a.job_id = %s
+                  AND s.email IS NOT NULL AND s.email != ''
+            """
+            params = [job_id]
+            if status_fil:
+                query += " AND a.status = %s"
+                params.append(status_fil)
+            query += " ORDER BY s.name"
+            cursor.execute(query, params)
+        elif status_fil:
+            # Filter by status across ALL jobs
+            query = """
+                SELECT DISTINCT s.student_id, s.name, s.email, s.roll_number AS roll_no, s.branch,
+                       a.status AS application_status
+                FROM applications a
+                JOIN students s ON a.student_id = s.student_id
+                WHERE s.email IS NOT NULL AND s.email != ''
+                  AND a.status = %s
+                ORDER BY s.name
+            """
+            cursor.execute(query, [status_fil])
+        else:
+            # Return all students with emails
+            cursor.execute("""
+                SELECT student_id, name, email, roll_number AS roll_no, branch,
+                       '' AS application_status
+                FROM students
+                WHERE email IS NOT NULL AND email != ''
+                ORDER BY name
+                LIMIT 500
+            """)
+
+        rows = cursor.fetchall()
+        return jsonify({"students": rows, "total": len(rows)})
+    except Exception as e:
+        return jsonify({"error": str(e), "students": []})
+
+
+@app.route("/faculty/send_selective_email", methods=["POST"])
+def faculty_send_selective_email():
+    """
+    Send a custom email to a manually selected list of students.
+    Body: { student_ids: [1,2,3], subject: '...', title: '...', message: '...' }
+    """
+    ensure_connection()
+    redir = faculty_required()
+    if redir: return jsonify({"success": False, "error": "Unauthorized"}), 401
+
+    if not _is_email_notifications_enabled():
+        return jsonify({"success": False, "error": "Email notifications are disabled."})
+
+    if not _EMAIL_SVC_LOADED or not _email_svc.is_configured():
+        return jsonify({"success": False, "error": "SMTP not configured. Fill in .env credentials."})
+
+    data        = request.get_json() or {}
+    student_ids = data.get("student_ids", [])
+    subject     = data.get("subject", "").strip()
+    title       = data.get("title", "").strip()
+    message_txt = data.get("message", "").strip()
+
+    if not student_ids:
+        return jsonify({"success": False, "error": "No students selected."})
+    if not subject or not message_txt:
+        return jsonify({"success": False, "error": "Subject and message are required."})
+
+    try:
+        # Fetch details for only the selected student IDs
+        fmt = ','.join(['%s'] * len(student_ids))
+        cursor.execute(f"""
+            SELECT student_id, name, email FROM students
+            WHERE student_id IN ({fmt})
+              AND email IS NOT NULL AND email != ''
+        """, student_ids)
+        recipients = cursor.fetchall()
+    except Exception as e:
+        return jsonify({"success": False, "error": f"DB error: {e}"})
+
+    if not recipients:
+        return jsonify({"success": False, "error": "None of the selected students have registered emails."})
+
+    # Capture DB name now (in request context) for use inside the thread
+    db_name_cap = session.get('active_year_db', 'placement_portal_2025_2026')
+
+    def html_fn_sel(rec):
+        return _email_svc.build_announcement_email(rec, title or subject, message_txt)
+
+    def log_fn_sel(sid, email, status, err):
+        _log_email(email, None, "selective", subject, status, err, db_name=db_name_cap)
+
+    _email_svc.send_bulk_emails_async(
+        list(recipients), subject, html_fn_sel, log_fn_sel, event_type="selective"
+    )
+
+    return jsonify({
+        "success":    True,
+        "recipients": len(recipients),
+        "message":    f"Email is being sent to {len(recipients)} selected student(s)."
+    })
+
+
 def get_dashboard_stats():
     ensure_connection()
     try:
@@ -1766,7 +2708,7 @@ def get_dashboard_stats():
         denominator = total_interested + not_interested_applied
 
         if denominator > 0:
-            # Numerator: all students who are marked as selected in the master sheet
+            # Numerator: all students who are marked as selected in the Student Directory Data
             cursor.execute("""
                 SELECT COUNT(DISTINCT student_id) AS c 
                 FROM students 
@@ -1874,7 +2816,7 @@ def faculty_dashboard():
             count_lpa += 1
     avg_lpa = round(total_lpa / count_lpa, 1) if count_lpa > 0 else 0.0
 
-    # Calculate placement rate using the correct formula:
+    # Calculate Placement Conversion Rate using the correct formula:
     # (applied_interested + applied_not_interested) / (total_interested + applied_not_interested)
     try:
         cursor.execute("""
@@ -1895,7 +2837,14 @@ def faculty_dashboard():
 
         denominator = total_interested + not_interested_applied
 
-        if denominator > 0:
+        # Check if Student Directory Data file exists (pdf, xlsx, or csv)
+        active_year_id = session.get("active_year", "2025-2026")
+        upload_dir = os.path.join(app.static_folder, "uploads", active_year_id)
+        master_sheet_uploaded = os.path.exists(os.path.join(upload_dir, "master_sheet.pdf")) or \
+                                os.path.exists(os.path.join(upload_dir, "master_sheet.xlsx")) or \
+                                os.path.exists(os.path.join(upload_dir, "master_sheet.csv"))
+
+        if denominator > 0 and master_sheet_uploaded:
             cursor.execute("""
                 SELECT COUNT(DISTINCT student_id) AS c 
                 FROM students 
@@ -1911,7 +2860,6 @@ def faculty_dashboard():
     except Exception:
         placement_rate = 0.0
 
-    # Check if master sheet file exists (pdf, xlsx, or csv)
     # Get active batch name instead of just ID
     active_year_id = session.get("active_year", "2025-2026")
     active_year_name = active_year_id
@@ -1931,6 +2879,13 @@ def faculty_dashboard():
        os.path.exists(os.path.join(upload_dir, "master_sheet.csv")):
         master_sheet_status = "Uploaded"
 
+    # Fetch due reminders for the dashboard alert
+    try:
+        cursor.execute("SELECT id, job_id, company_name, role, reminder_date, reminder_note FROM jobs WHERE reminder_date <= NOW() AND (reminder_sent IS NULL OR reminder_sent = 0) ORDER BY reminder_date DESC")
+        due_reminders = cursor.fetchall()
+    except Exception:
+        due_reminders = []
+
     return render_template(
         "faculty/dashboard.html",
         name=session["faculty_name"],
@@ -1939,8 +2894,28 @@ def faculty_dashboard():
         placement_rate=placement_rate,
         avg_lpa=avg_lpa,
         master_sheet_status=master_sheet_status,
-        active_year=active_year_name
+        active_year=active_year_name,
+        due_reminders=due_reminders
     )
+
+@app.route("/faculty/jobs/dismiss_reminder", methods=["POST"])
+def faculty_dismiss_reminder():
+    """Mark a reminder as dismissed (sent) so it hides from dashboard."""
+    ensure_connection()
+    redir = faculty_required()
+    if redir: return jsonify({"error": "Unauthorized"}), 401
+    data = request.json
+    job_id = data.get("job_id")
+    if not job_id:
+        return jsonify({"success": False, "error": "Missing job ID"})
+    try:
+        cursor.execute("UPDATE jobs SET reminder_sent = 1 WHERE id = %s", (job_id,))
+        db.commit()
+        return jsonify({"success": True})
+    except Exception as e:
+        db.rollback()
+        return jsonify({"success": False, "error": str(e)})
+
 
 
 @app.route("/faculty_logout")
@@ -1965,7 +2940,7 @@ def api_faculty_stats():
         cursor.execute("SELECT COUNT(*) AS c FROM jobs")
         active_jobs = cursor.fetchone()["c"] or 0
 
-        # Placement rate formula
+        # Placement Conversion Rate formula
         cursor.execute("""
             SELECT COUNT(*) AS c FROM students
             WHERE LOWER(TRIM(COALESCE(career_option,''))) IN ('job', 'psu')
@@ -1983,10 +2958,25 @@ def api_faculty_stats():
         not_interested_applied = cursor.fetchone()["c"] or 0
 
         denominator = total_interested + not_interested_applied
-        if denominator > 0:
-            cursor.execute("SELECT COUNT(DISTINCT student_id) AS c FROM applications")
-            total_applied = cursor.fetchone()["c"] or 0
-            placement_rate = round((total_applied / denominator * 100), 1)
+        
+        # Check if Student Directory Data file exists
+        active_year_id = session.get("active_year", "2025-2026")
+        upload_dir = os.path.join(app.static_folder, "uploads", active_year_id)
+        master_sheet_uploaded = os.path.exists(os.path.join(upload_dir, "master_sheet.pdf")) or \
+                                os.path.exists(os.path.join(upload_dir, "master_sheet.xlsx")) or \
+                                os.path.exists(os.path.join(upload_dir, "master_sheet.csv"))
+                                
+        if denominator > 0 and master_sheet_uploaded:
+            cursor.execute("""
+                SELECT COUNT(DISTINCT student_id) AS c 
+                FROM students 
+                WHERE (selected_tier IS NOT NULL AND selected_tier > 0)
+                   OR (tier_1 IS NOT NULL AND TRIM(tier_1) != '' AND LOWER(TRIM(tier_1)) != 'nan')
+                   OR (tier_2 IS NOT NULL AND TRIM(tier_2) != '' AND LOWER(TRIM(tier_2)) != 'nan')
+                   OR (tier_3 IS NOT NULL AND TRIM(tier_3) != '' AND LOWER(TRIM(tier_3)) != 'nan')
+            """)
+            total_placed = cursor.fetchone()["c"] or 0
+            placement_rate = round((total_placed / denominator * 100), 1)
         else:
             placement_rate = 0.0
 
@@ -2125,6 +3115,55 @@ def faculty_manage_batches():
 
 
 @app.route("/faculty/reset_batch", methods=["POST"])
+
+@app.route("/faculty/edit_yearly_stats", methods=["GET", "POST"])
+def faculty_edit_yearly_stats():
+    ensure_connection()
+    redir = faculty_required()
+    if redir: return redir
+    
+    stats_file = os.path.join(app.root_path, "database", "yearly_statistics.json")
+    past_stats = []
+    
+    if os.path.exists(stats_file):
+        import json as _json
+        try:
+            with open(stats_file, "r") as f:
+                past_stats = _json.load(f)
+        except Exception as e:
+            print("Error loading stats:", e)
+            
+    if request.method == "POST":
+        try:
+            new_stats = []
+            for stat in past_stats:
+                year = stat.get("year")
+                
+                # Fetch new values from form
+                tot_stu = request.form.get(f"tot_stu_{year}")
+                pl_stu = request.form.get(f"pl_stu_{year}")
+                pr_rate = request.form.get(f"pr_rate_{year}")
+                avg_lpa = request.form.get(f"avg_lpa_{year}")
+                
+                if tot_stu is not None: stat["total_students"] = int(tot_stu)
+                if pl_stu is not None: stat["placed_students"] = int(pl_stu)
+                if pr_rate is not None: stat["placement_rate"] = float(pr_rate)
+                if avg_lpa is not None: stat["average_lpa"] = float(avg_lpa)
+                
+                new_stats.append(stat)
+                
+            import json as _json
+            with open(stats_file, "w") as f:
+                _json.dump(new_stats, f, indent=4)
+                
+            flash("Yearly statistics updated successfully.", "success")
+            return redirect("/faculty_dashboard")
+        except Exception as e:
+            flash(f"Error updating stats: {str(e)}", "error")
+            
+    return render_template("faculty/edit_yearly_stats.html", past_stats=past_stats, name=session.get("faculty_name"))
+
+
 def faculty_reset_batch():
     ensure_connection()
     redir = faculty_required()
@@ -2152,6 +3191,91 @@ def faculty_reset_batch():
     active_year = session.get("active_year", "2025-2026")
     active_year_name = get_active_batch_name()
     
+    # --- ARCHIVE YEARLY STATISTICS ---
+    try:
+        cursor.execute("SELECT COUNT(*) AS c FROM students")
+        total_students_val = cursor.fetchone()["c"] or 0
+
+        cursor.execute("""
+            SELECT COUNT(*) AS c FROM students
+            WHERE LOWER(TRIM(COALESCE(career_option,''))) IN ('job', 'psu')
+               OR career_option IS NULL
+        """)
+        tot_interested = cursor.fetchone()["c"] or 0
+
+        cursor.execute("""
+            SELECT COUNT(DISTINCT s.student_id) AS c
+            FROM students s
+            JOIN applications a ON a.student_id = s.student_id
+            WHERE LOWER(TRIM(COALESCE(s.career_option,''))) NOT IN ('job', 'psu')
+              AND s.career_option IS NOT NULL
+        """)
+        not_int_app = cursor.fetchone()["c"] or 0
+
+        denom = tot_interested + not_int_app
+        
+        cursor.execute("""
+            SELECT COUNT(DISTINCT student_id) AS c 
+            FROM students 
+            WHERE (selected_tier IS NOT NULL AND selected_tier > 0)
+               OR (tier_1 IS NOT NULL AND TRIM(tier_1) != '' AND LOWER(TRIM(tier_1)) != 'nan')
+               OR (tier_2 IS NOT NULL AND TRIM(tier_2) != '' AND LOWER(TRIM(tier_2)) != 'nan')
+               OR (tier_3 IS NOT NULL AND TRIM(tier_3) != '' AND LOWER(TRIM(tier_3)) != 'nan')
+        """)
+        tot_placed = cursor.fetchone()["c"] or 0
+        
+        pr_rate = round((tot_placed / denom * 100), 1) if denom > 0 else 0.0
+
+        cursor.execute("SELECT ctc FROM jobs WHERE ctc IS NOT NULL AND ctc != ''")
+        ctc_rows = cursor.fetchall()
+        tot_lpa, cnt_lpa = 0, 0
+        import re as _re
+        for r in ctc_rows:
+            m = _re.search(r'([\d.]+)', str(r['ctc']))
+            if m:
+                tot_lpa += float(m.group(1))
+                cnt_lpa += 1
+        avg_lpa_val = round(tot_lpa / cnt_lpa, 1) if cnt_lpa > 0 else 0.0
+
+        stats_file = os.path.join(app.root_path, "database", "yearly_statistics.json")
+        past_stats = []
+        if os.path.exists(stats_file):
+            with open(stats_file, "r") as sf:
+                try:
+                    import json as _json
+                    past_stats = _json.load(sf)
+                except:
+                    past_stats = []
+        
+        # update or append
+        found = False
+        for stat in past_stats:
+            if stat.get("year") == active_year_name:
+                stat["total_students"] = total_students_val
+                stat["placed_students"] = tot_placed
+                stat["placement_rate"] = pr_rate
+                stat["average_lpa"] = avg_lpa_val
+                found = True
+                break
+        
+        if not found:
+            past_stats.append({
+                "id": active_year,
+                "year": active_year_name,
+                "total_students": total_students_val,
+                "placed_students": tot_placed,
+                "placement_rate": pr_rate,
+                "average_lpa": avg_lpa_val
+            })
+            
+        import json as _json
+        with open(stats_file, "w") as sf:
+            _json.dump(past_stats, sf, indent=4)
+            
+    except Exception as e:
+        print("Error archiving stats:", e)
+    # ---------------------------------
+
     # 1. Delete all uploaded files for this year (profile photos, job PDFs, master sheets)
     import shutil
     upload_dir = os.path.join(app.static_folder, "uploads", active_year)
@@ -2276,8 +3400,18 @@ def faculty_job_add():
                cgpa, act_bl, bl_hist, branches, tier,
                desc, req_aadhar, req_pan, req_other, pwd_only, pdf_path, deadline] + custom_values)
         db.commit()
-        # Notify all students about the new job
+        # ── In-app notification for all students ────────────────────────────
         notify_students_new_job(company, role)
+
+        # ── Email notification (if enabled and checkbox checked) ─────────────
+        send_email_flag = request.form.get("send_email_notification") == "1"
+        if send_email_flag and _is_email_notifications_enabled():
+            _send_new_job_emails_async(
+                job_id=job_id, company=company, role=role, ctc=ctc,
+                tier=tier, deadline=deadline or 'As announced',
+                location=location, min_cgpa=cgpa, branches=branches
+            )
+
         from flask import flash
         flash(f"Job opening for {company} added successfully!", "success")
     except Exception as e:
@@ -2353,6 +3487,33 @@ def faculty_job_edit():
        
         db.commit()
 
+        # ── Email notification for job update ────────────────────────────────
+        send_email_flag = request.form.get("send_email_notification") == "1"
+        if send_email_flag and _is_email_notifications_enabled() and _EMAIL_SVC_LOADED and _email_svc.is_configured():
+            try:
+                # Notify students who applied OR are eligible
+                cursor.execute("""
+                    SELECT s.student_id, s.name, s.email
+                    FROM applications a
+                    JOIN students s ON a.student_id = s.student_id
+                    WHERE a.job_id = %s AND s.email IS NOT NULL AND s.email != ''
+                """, (db_job_id,))
+                applied_students = cursor.fetchall()
+
+                subject = f"Job Update: {company} – {role}"
+                deadline_val = deadline or 'As announced'
+
+                def html_fn_edit(rec):
+                    return _email_svc.build_job_update_email(rec, company, role, ctc, deadline_val)
+
+                def log_fn_edit(sid, email, status, err):
+                    _log_email(email, None, 'job_update', subject, status, err)
+
+                if applied_students:
+                    _email_svc.send_bulk_emails_async(list(applied_students), subject, html_fn_edit, log_fn_edit, event_type='job_update')
+            except Exception as email_ex:
+                print(f"[EmailService] Error in job update email: {email_ex}")
+
         from flask import flash
         flash(f"Job for {company} updated successfully!", "success")
     except Exception as e:
@@ -2361,6 +3522,36 @@ def faculty_job_edit():
         flash(f"Error updating job: {str(e)}", "error")
 
     return redirect("/faculty/jobs")
+
+
+@app.route("/faculty/jobs/set_reminder", methods=["POST"])
+def faculty_job_set_reminder():
+    ensure_connection()
+    redir = faculty_required()
+    if redir: return jsonify({"error": "Unauthorized"}), 401
+    
+    data = request.json
+    job_db_id = data.get("job_db_id")
+    r_date = data.get("reminder_date")
+    r_note = data.get("reminder_note")
+    
+    if not job_db_id:
+        return jsonify({"success": False, "error": "Missing job ID"})
+        
+    try:
+        if not r_date:
+            r_date = None
+            
+        cursor.execute("""
+            UPDATE jobs 
+            SET reminder_date = %s, reminder_note = %s, reminder_sent = 0 
+            WHERE id = %s
+        """, (r_date, r_note, job_db_id))
+        db.commit()
+        return jsonify({"success": True})
+    except Exception as e:
+        db.rollback()
+        return jsonify({"success": False, "error": str(e)})
 
 
 @app.route("/faculty/jobs/add_column", methods=["POST"])
@@ -2424,8 +3615,35 @@ def faculty_job_delete(job_db_id):
     redir = faculty_required()
     if redir: return jsonify({"success": False, "error": "Not logged in"})
     try:
+        # Fetch job info before deleting (for cancellation emails)
+        cursor.execute("SELECT company_name, role, cgpa_cutoff, branches, tier FROM jobs WHERE job_id=%s", (job_db_id,))
+        job_info = cursor.fetchone()
+
+        # Fetch students who had applied
+        cursor.execute("""
+            SELECT s.student_id, s.name, s.email
+            FROM applications a JOIN students s ON a.student_id=s.student_id
+            WHERE a.job_id=%s AND s.email IS NOT NULL AND s.email!=''
+        """, (job_db_id,))
+        applied_students = cursor.fetchall()
+
         cursor.execute("DELETE FROM jobs WHERE job_id=%s", (job_db_id,))
         db.commit()
+
+        # ── Send cancellation emails asynchronously ──────────────────────────
+        if job_info and applied_students and _is_email_notifications_enabled() and _EMAIL_SVC_LOADED and _email_svc.is_configured():
+            company_c = job_info['company_name']
+            role_c    = job_info['role']
+            subject_c = f"Drive Cancelled: {company_c} – {role_c}"
+
+            def html_fn_cancel(rec):
+                return _email_svc.build_job_cancelled_email(rec, company_c, role_c)
+
+            def log_fn_cancel(sid, email, status, err):
+                _log_email(email, None, 'job_cancelled', subject_c, status, err)
+
+            _email_svc.send_bulk_emails_async(list(applied_students), subject_c, html_fn_cancel, log_fn_cancel, event_type='job_cancelled')
+
         return jsonify({"success": True})
     except Exception as e:
         db.rollback()
@@ -2575,6 +3793,25 @@ def faculty_applications_update_status():
             
             cursor.execute("INSERT INTO notifications (student_id, message, link) VALUES (%s, %s, %s)",
                            (student_id, message, "/my_applications"))
+
+            # ── Send status-update email to this student ──────────────────────
+            if _is_email_notifications_enabled() and _EMAIL_SVC_LOADED and _email_svc.is_configured():
+                try:
+                    cursor.execute("SELECT name, email FROM students WHERE student_id=%s", (student_id,))
+                    stu = cursor.fetchone()
+                    if stu and stu.get('email'):
+                        subject_su = f"Application Update: {company_name} – {status}"
+                        rec_su = {'student_id': student_id, 'name': stu['name'], 'email': stu['email']}
+
+                        def html_fn_status(r):
+                            return _email_svc.build_status_update_email(r, company_name, role_name, status, drive_link)
+
+                        def log_fn_status(sid, email, st, err):
+                            _log_email(email, stu['name'], 'status_update', subject_su, st, err)
+
+                        _email_svc.send_bulk_emails_async([rec_su], subject_su, html_fn_status, log_fn_status, event_type='status_update')
+                except Exception as email_ex:
+                    print(f"[EmailService] Error sending status email: {email_ex}")
 
         # Re-evaluate the student selected_tier:
         # Find the highest tier level among all 'Selected' applications for this student
@@ -4244,7 +5481,7 @@ def faculty_upload_master_sheet():
                     return val
             return None
 
-        # Personal info fields — keys are the NORMALIZED column names from the master sheet
+        # Personal info fields — keys are the NORMALIZED column names from the Student Directory Data
         gender_ms = _get_str(["gender", "sex"])
         category_ms = _get_str(["category", "caste"])
 
@@ -4421,7 +5658,7 @@ def faculty_upload_master_sheet():
     print("UPDATED:", updated)
     print("INSERTED:", inserted)
     print("DELETED:", deleted)
-    flash(f"Master sheet uploaded successfully! {inserted} added, {updated} updated, and {deleted} removed.", "success")
+    flash(f"Master Sheet uploaded successfully! {inserted} added, {updated} updated, and {deleted} removed.", "success")
     return redirect("/faculty/master_sheet")
 
 
@@ -4446,7 +5683,7 @@ def faculty_download_master_sheet():
         return send_file(csv_path, as_attachment=True, download_name="master_sheet.csv")
     else:
         from flask import flash
-        flash("No master sheet file found.", "error")
+        flash("No Master Sheet file found.", "error")
         return redirect("/faculty/master_sheet")
 
 
@@ -4466,9 +5703,9 @@ def faculty_delete_master_sheet():
             os.remove(fpath)
             deleted = True
     if deleted:
-        flash("Master sheet deleted successfully. Student portals are now disabled.", "success")
+        flash("Master Sheet deleted successfully. Student portals are now disabled.", "success")
     else:
-        flash("No master sheet found to delete.", "error")
+        flash("No Master Sheet found to delete.", "error")
     return redirect("/faculty/master_sheet")
 
 
@@ -4702,6 +5939,91 @@ def reset_password():
             flash(f"An error occurred: {str(e)}", "error")
            
     return render_template("reset_password.html")
+
+import threading
+import time
+from datetime import datetime
+
+def start_reminder_scheduler():
+    def reminder_loop():
+        while True:
+            try:
+                import mysql.connector
+                from email_service import send_email, SMTP_EMAIL, is_configured
+                
+                # Use same credentials as the rest of the app
+                DB_HOST = "localhost"
+                DB_USER = "root"
+                DB_PASS = "Pallavi@2007"
+                
+                conn = mysql.connector.connect(host=DB_HOST, user=DB_USER, password=DB_PASS)
+                c = conn.cursor(dictionary=True)
+                c.execute("SHOW DATABASES LIKE 'placement_portal%'")
+                dbs = c.fetchall()
+                
+                # Fetch faculty emails from the global database
+                faculty_emails = ["tap@nitandhra.ac.in"]
+                try:
+                    c.execute("SELECT email FROM placement_portal.faculty WHERE email IS NOT NULL AND email != ''")
+                    emails_db = c.fetchall()
+                    if emails_db:
+                        faculty_emails = [e['email'] for e in emails_db]
+                except Exception:
+                    pass
+                conn.close()
+                
+                for d in dbs:
+                    db_name = list(d.values())[0]
+                    try:
+                        b_conn = mysql.connector.connect(
+                            host=DB_HOST, user=DB_USER, password=DB_PASS, database=db_name
+                        )
+                        b_cur = b_conn.cursor(dictionary=True)
+                        # Only check if the reminder columns exist
+                        try:
+                            b_cur.execute("SELECT id, company_name, role, reminder_note FROM jobs WHERE reminder_date <= NOW() AND (reminder_sent IS NULL OR reminder_sent = 0)")
+                            due_jobs = b_cur.fetchall()
+                        except Exception:
+                            b_conn.close()
+                            continue
+                        
+                        if due_jobs and is_configured():
+                            for job in due_jobs:
+                                subject = f"[Placement Portal] Follow-up Reminder: {job['company_name']} ({job['role']})"
+                                body = f"""
+<h3>&#128276; Follow-up Reminder</h3>
+<p>This is a scheduled reminder from the NIT AP Placement Portal.</p>
+<table style='border-collapse:collapse;width:100%;font-size:14px;'>
+  <tr><td style='padding:8px;background:#fff8e1;font-weight:700;color:#92400e;'>Company</td><td style='padding:8px;'>{job['company_name']}</td></tr>
+  <tr><td style='padding:8px;background:#fff8e1;font-weight:700;color:#92400e;'>Role</td><td style='padding:8px;'>{job['role']}</td></tr>
+  <tr><td style='padding:8px;background:#fff8e1;font-weight:700;color:#92400e;'>Note</td><td style='padding:8px;'>{job['reminder_note'] or 'No note provided.'}</td></tr>
+</table>
+<p>Please take the necessary action and contact the HR as needed.</p>
+"""
+                                success = False
+                                for email in faculty_emails:
+                                    res = send_email(email, subject, body)
+                                    if res['success']:
+                                        success = True
+                                        
+                                print(f"[Reminder] {job['company_name']}: {'Sent' if success else 'Failed'}")
+                                if success:
+                                    b_cur.execute("UPDATE jobs SET reminder_sent = 1 WHERE id = %s", (job['id'],))
+                                    b_conn.commit()
+                        b_conn.close()
+                    except Exception as e:
+                        print(f"[Reminder] Error for {db_name}: {e}")
+            except Exception as e:
+                print(f"[Reminder] Scheduler error: {e}")
+            
+            # Sleep for 1 minute
+            time.sleep(60)
+
+    thread = threading.Thread(target=reminder_loop, daemon=True)
+    thread.start()
+
+# Start the scheduler when the app starts
+start_reminder_scheduler()
 
 if __name__ == "__main__":
     app.run(debug=True)

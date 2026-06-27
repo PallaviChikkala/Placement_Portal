@@ -88,13 +88,16 @@ class PlacementTour {
           { icon: '📊', text: 'Dashboard statistics at a glance' },
           { icon: '💼', text: 'Post & manage placement drives' },
           { icon: '👥', text: 'View applicants & manage students' },
-          { icon: '📋', text: 'Upload master sheets & reports' },
+          { icon: '🎓', text: 'Track student internships & certifications' },
+          { icon: '🏠', text: 'Manage homepage updates & announcements' },
+          { icon: '📧', text: 'Send email notifications to students' },
           { icon: '📈', text: 'Track placement analytics' },
         ]
       : [
           { icon: '📊', text: 'See your eligibility & applied drives' },
           { icon: '🏢', text: 'Browse eligible companies' },
           { icon: '📄', text: 'Track application status live' },
+          { icon: '🎓', text: 'Submit & track your internships' },
           { icon: '🤖', text: 'Analyse your resume with AI' },
           { icon: '🏆', text: 'View your selections & offers' },
         ];
@@ -209,19 +212,33 @@ class PlacementTour {
       return;
     }
 
-    // Smooth scroll to element
-    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    // Check if element is inside a fixed-position ancestor (e.g. sticky header)
+    const isFixed = (function checkFixed(node) {
+      while (node && node !== document.body) {
+        if (window.getComputedStyle(node).position === 'fixed') return true;
+        node = node.parentElement;
+      }
+      return false;
+    })(el);
 
     // Highlight the element
     el.classList.add('tour-target-highlight');
     this._currentEl = el;
 
-    // Update spotlight after scroll settles
-    setTimeout(() => {
+    if (isFixed) {
+      // Element is fixed — no scroll needed, position immediately
       this._moveSpotlight(el);
       this._buildCard(step, el);
       this._positionCard(el, step.position || 'auto');
-    }, 350);
+    } else {
+      // Smooth scroll to element, then update spotlight after scroll settles
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      setTimeout(() => {
+        this._moveSpotlight(el);
+        this._buildCard(step, el);
+        this._positionCard(el, step.position || 'auto');
+      }, 400);
+    }
   }
 
   _clearHighlight() {
@@ -407,11 +424,11 @@ function initStudentTour() {
       description: 'Browse all placement drives you\'re eligible for. Filter by tier, package, and deadline. Click "Apply" on any drive to submit your application with your resume.',
     },
     {
-      element:  '[data-tour="sidebar-ongoing"]',
-      title:    'Ongoing Rounds',
-      icon:     '🔄',
+      element:  '[data-tour="sidebar-internships"]',
+      title:    'Internships',
+      icon:     '🎓',
       position: 'auto',
-      description: 'Once you apply, track the live recruitment rounds here. See which round you are currently in and view your results as they are published by the placement cell.',
+      description: 'Submit your internship details here. You can either fill in the official internship form provided by the placement cell or add an external internship you completed. Upload your completion certificate to get it verified.',
     },
     {
       element:  '[data-tour="sidebar-applications"]',
@@ -475,7 +492,7 @@ function initAdminTour() {
       title:    'Manage Jobs',
       icon:     '💼',
       position: 'auto',
-      description: 'Post and manage placement drives by defining eligibility criteria such as CGPA, branch, and backlog requirements, along with tier classification, CTC, and application deadlines. All students can view available opportunities, while the system automatically validates eligibility and allows applications only for drives they qualify for.',
+      description: 'Post and manage placement drives by defining eligibility criteria such as CGPA, branch, backlog requirements, tier classification, CTC, and application deadlines. All students can view available opportunities, while the system automatically validates eligibility and allows applications only for drives they qualify for. Administrators can also create reminders with custom messages and schedule a date and time. When the scheduled reminder time is reached, the system automatically sends the reminder message to the faculty registered email address, helping them keep track of important placement-related tasks and deadlines.',
     },
     {
       element:  '[data-tour="admin-applied"]',
@@ -513,10 +530,31 @@ function initAdminTour() {
       description: 'Compare every job drive side-by-side: how many students applied, got selected, not selected, or are pending — with a colour-coded selection rate bar. Export to XLSX for reports.',
     },
     {
-      element:  '[data-tour="admin-logout"]',
-      title:    'All Set!',
-      icon:     '✅',
+      element:  '[data-tour="admin-internships"]',
+      title:    'Internships',
+      icon:     '🎓',
       position: 'auto',
+      description: 'Post internship form links for students to fill out. View all submitted internship records, verify completion certificates, and export the internship data as an Excel report.',
+    },
+    {
+      element:  '[data-tour="admin-manage-homepage"]',
+      title:    'Manage Homepage',
+      icon:     '🏠',
+      position: 'auto',
+      description: 'Control what visitors see on the public-facing homepage. Post updates, achievements, placement statistics, and event announcements that appear on the college portal homepage.',
+    },
+    {
+      element:  '[data-tour="admin-email-manager"]',
+      title:    'Email Notifications',
+      icon:     '📧',
+      position: 'auto',
+      description: 'Send targeted emails to students — announce new drives, share round results, or broadcast important messages. Configure your SMTP credentials, view delivery logs, and manage email preferences all from here.',
+    },
+    {
+      element:  '[data-tour="admin-logout"]',
+      title:    'All Set! 🎉',
+      icon:     '✅',
+      position: 'bottom',
       description: 'You\'ve completed the Admin Tour! Remember to logout when done. You can restart this tour any time by clicking the ❓ help button at the bottom-right of the screen.',
     },
   ];

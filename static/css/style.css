@@ -320,7 +320,6 @@ body.dark-mode select optgroup,
     font-size: 0.75rem;
     letter-spacing: 0.5px;
     text-transform: uppercase;
-    white-space: nowrap;
 }
 
 .badge-eligible {
@@ -1075,5 +1074,139 @@ body.dark-mode .alert-danger strong {
     background: var(--accent-glow) !important;
     color: var(--accent) !important;
     border-color: var(--accent) !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   DARK MODE — Text Visibility Fixes
+   Bootstrap utility classes (.text-dark, .text-primary) hardcode colors
+   that become invisible on dark backgrounds. Override them globally here.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* Force text-dark to be readable in dark mode */
+body.dark-mode .text-dark,
+[data-theme="dark"] .text-dark {
+    color: #f1f5f9 !important;
+}
+
+/* text-primary becomes amber/yellow in dark mode */
+body.dark-mode .text-primary,
+[data-theme="dark"] .text-primary {
+    color: #fbbf24 !important;
+}
+
+/* strong / fw-bold inside cards */
+body.dark-mode .glass-card strong,
+body.dark-mode .glass-card .fw-bold,
+body.dark-mode .glass-card .fw-semibold,
+body.dark-mode .card strong,
+body.dark-mode .card .fw-bold,
+body.dark-mode .card .fw-semibold {
+    color: #f1f5f9 !important;
+}
+
+/* h5, h6 inside glass cards (company name, role) */
+body.dark-mode .glass-card h5,
+body.dark-mode .glass-card h6,
+body.dark-mode .card h5,
+body.dark-mode .card h6 {
+    color: #f1f5f9 !important;
+}
+
+/* Specific: company name and role in eligible companies cards */
+body.dark-mode .card-title.text-primary {
+    color: #fbbf24 !important;
+}
+
+body.dark-mode h6.text-dark {
+    color: #d1d5db !important;
+}
+
+/* Empty state text (no jobs found) */
+body.dark-mode .text-muted,
+body.dark-mode .text-secondary {
+    color: #9ca3af !important;
+}
+
+/* "Current Postings" section — empty state icon and text */
+body.dark-mode .bi-search,
+body.dark-mode .bi-clock-history,
+body.dark-mode .bi-inbox {
+    color: #4b5563 !important;
+}
+
+/* Countdown timer text-warning override for dark mode */
+body.dark-mode .countdown-timer.text-warning {
+    color: #fbbf24 !important;
+}
+
+/* Deadline text-danger in dark mode */
+body.dark-mode .text-danger {
+    color: #f87171 !important;
+}
+
+/* Filter toolbar inputs and selects in student dark mode */
+body.dark-mode .form-select,
+body.dark-mode .form-control,
+body.dark-mode .form-premium {
+    background-color: #1f2937 !important;
+    color: #f9fafb !important;
+    border-color: #374151 !important;
+}
+
+/* Company badge logo in dark mode */
+body.dark-mode .company-badge-logo {
+    background-color: #374151 !important;
+    color: #fbbf24 !important;
+}
+
+/* Placement policy / tier rule boxes in dark mode */
+body.dark-mode .p-3.border.rounded {
+    background-color: #1f2937 !important;
+    border-color: #374151 !important;
+    color: #f1f5f9 !important;
+}
+
+body.dark-mode .p-3.border.rounded p,
+body.dark-mode .p-3.border.rounded strong {
+    color: #d1d5db !important;
+}
+
+/* Past jobs table text */
+body.dark-mode .table-premium td.text-dark,
+body.dark-mode .table-premium td.fw-bold {
+    color: #f1f5f9 !important;
+}
+
+body.dark-mode .table-premium td.text-danger,
+body.dark-mode .table-premium td.fw-medium {
+    color: #f87171 !important;
+}
+
+/* Alert danger inside dark mode cards */
+body.dark-mode .alert-danger {
+    background-color: rgba(239,68,68,0.12) !important;
+    border-color: rgba(239,68,68,0.25) !important;
+    color: #fca5a5 !important;
+}
+
+body.dark-mode .alert-danger div,
+body.dark-mode .alert-danger i {
+    color: #fca5a5 !important;
+}
+
+/* Outline button in dark mode */
+body.dark-mode .btn-outline-secondary {
+    color: #d1d5db !important;
+    border-color: #4b5563 !important;
+}
+
+body.dark-mode .btn-outline-secondary:hover {
+    background-color: #374151 !important;
+    color: #f9fafb !important;
+}
+
+/* My applications page dark mode */
+body.dark-mode .table td.ps-4.fw-bold {
+    color: #f1f5f9 !important;
 }
 

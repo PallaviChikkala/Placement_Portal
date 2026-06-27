@@ -374,6 +374,7 @@ tr:hover td { background-color:rgba(253,230,138,0.12); }
               <td style="text-align:center;">
                 <div class="action-btns">
                   <button class="icon-btn" onclick="viewApplicants('{{ job.job_id }}')" title="View Applicants" style="color:#3b82f6;"><i class="ti ti-users"></i></button>
+                  <button class="icon-btn" onclick='openReminderModal("{{ job.id }}", "{{ job.job_id }}", "{{ job.reminder_date }}", {{ job.reminder_note|tojson|safe if job.reminder_note else "null" }})' title="Set Reminder" style="color:#8b5cf6;"><i class="ti ti-bell"></i></button>
                   <button class="icon-btn" onclick="openEditModal('{{ job.job_id }}')" title="Edit" style="color:#d97706;"><i class="ti ti-edit"></i></button>
                   <button class="icon-btn" onclick="deleteJob('{{ job.job_id }}', '{{ job.company_name }}')" title="Delete" style="color:#ef4444;"><i class="ti ti-trash"></i></button>
                 </div>
@@ -564,6 +565,32 @@ tr:hover td { background-color:rgba(253,230,138,0.12); }
   </div>
 </div>
 
+<!-- Set Reminder Modal -->
+<div class="modal-overlay" id="reminderModal">
+  <div class="modal-content" style="max-width:480px;">
+    <div class="modal-header">
+      <h2 id="reminderTitle"><i class="ti ti-bell"></i> Set Follow-up Reminder</h2>
+      <button class="modal-close-btn" onclick="closeModal('reminderModal')">&times;</button>
+    </div>
+    <form id="reminderForm" onsubmit="submitReminder(event)">
+      <input type="hidden" id="rJobDbId">
+      <div class="form-group" style="margin-bottom:20px;">
+        <label>Reminder Date & Time (Optional)</label>
+        <input type="datetime-local" id="rDate">
+        <small style="color:var(--text-muted);font-size:11px;">Leave blank to remove a reminder.</small>
+      </div>
+      <div class="form-group" style="margin-bottom:20px;">
+        <label>Reminder Note</label>
+        <textarea id="rNote" rows="3" placeholder="e.g. Contact HR for interview dates..."></textarea>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="back-home-btn" onclick="closeModal('reminderModal')">Cancel</button>
+        <button type="submit" class="edit-action-btn" style="margin-bottom:0;" id="saveReminderBtn">Save Reminder</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <!-- Add Criteria Modal -->
 <div class="modal-overlay" id="criteriaModal">
   <div class="modal-content" style="max-width:480px;">
@@ -728,6 +755,56 @@ function openAddModal() {
   document.getElementById("fJobId").style.cssText = "";
   document.getElementById("fDeadline").value = "";
   openModal("jobModal");
+}
+
+function openReminderModal(id, jobId, date, note) {
+  document.getElementById("rJobDbId").value = id;
+  if (date && date !== 'None' && date !== 'null') {
+    let d = date;
+    if (d.includes(' ')) d = d.replace(' ', 'T');
+    if ((d.match(/:/g) || []).length > 1) {
+      d = d.substring(0, d.lastIndexOf(':'));
+    }
+    document.getElementById("rDate").value = d;
+  } else {
+    document.getElementById("rDate").value = '';
+  }
+  document.getElementById("rNote").value = note !== 'None' && note !== 'null' ? note : '';
+  openModal("reminderModal");
+}
+
+function submitReminder(e) {
+  e.preventDefault();
+  const btn = document.getElementById("saveReminderBtn");
+  btn.disabled = true;
+  btn.innerText = "Saving...";
+  
+  fetch('/faculty/jobs/set_reminder', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      job_db_id: document.getElementById("rJobDbId").value,
+      reminder_date: document.getElementById("rDate").value,
+      reminder_note: document.getElementById("rNote").value
+    })
+  })
+  .then(r => r.json())
+  .then(data => {
+    if(data.success) {
+      if (typeof showToast === 'function') showToast("Reminder saved successfully!", "success");
+      setTimeout(() => location.reload(), 200);
+    } else {
+      if (typeof showToast === 'function') showToast(data.error || "Error saving reminder", "error");
+      btn.disabled = false;
+      btn.innerText = "Save Reminder";
+    }
+  })
+  .catch(err => {
+    console.error(err);
+    if (typeof showToast === 'function') showToast("Request failed", "error");
+    btn.disabled = false;
+    btn.innerText = "Save Reminder";
+  });
 }
 
 function openEditModal(jobDbIdStr) {
@@ -974,6 +1051,6 @@ function toggleCustomBranch() {
   }
 }
 </script>
-<script>document.addEventListener("DOMContentLoaded", function() { document.querySelectorAll(".modal").forEach(function(m) { document.body.appendChild(m); }); });</script>
+<div id="toastContainer"></div>
 </body>
 </html>
