@@ -44,8 +44,8 @@
 <script>
   /* Apply saved dark mode class immediately to avoid flash */
   (function() {
-    const dm = localStorage.getItem('darkMode');
-    if (dm === 'enabled') document.body.classList.add('dark-mode');
+    const theme = localStorage.getItem('theme');
+    if (theme === 'dark') document.body.classList.add('dark-mode');
   })();
 </script>
 
@@ -341,23 +341,23 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body pt-3">
-                    <h5 class="text-dark fw-semibold mb-4" id="modal-job-role">Role Description</h5>
+                    <h5 class="job-value fw-semibold mb-4" id="modal-job-role">Role Description</h5>
                     
                     <div class="row g-3 mb-4">
                         <div class="col-sm-4">
-                            <div class="p-3 bg-light rounded shadow-sm">
+                            <div class="p-3 rounded shadow-sm" style="background: var(--input-bg);">
                                 <span class="text-muted small d-block">Package LPA</span>
                                 <h6 class="mb-0 fw-bold text-success" id="modal-package">0.00 LPA</h6>
                             </div>
                         </div>
                         <div class="col-sm-4">
-                            <div class="p-3 bg-light rounded shadow-sm">
+                            <div class="p-3 rounded shadow-sm" style="background: var(--input-bg);">
                                 <span class="text-muted small d-block">Company</span>
                                 <h6 class="mb-0 fw-bold text-primary" id="modal-tier">Tier 2</h6>
                             </div>
                         </div>
                         <div class="col-sm-4">
-                            <div class="p-3 bg-light rounded shadow-sm">
+                            <div class="p-3 rounded shadow-sm" style="background: var(--input-bg);">
                                 <span class="text-muted small d-block">Deadline</span>
                                 <h6 class="mb-0 fw-bold text-danger" id="modal-deadline">01-01-2026</h6>
                             </div>
@@ -368,16 +368,16 @@
                         <div class="col-md-6">
                             <h6 class="text-primary fw-bold"><i class="bi bi-shield-check me-2"></i> Eligibility Criteria</h6>
                             <ul class="small text-muted ps-3 mt-2">
-                                <li>Eligible Branches: <strong class="text-dark" id="modal-branches">All</strong></li>
-                                <li>Minimum CGPA: <strong class="text-dark" id="modal-min-cgpa">6.0</strong></li>
-                                <li id="modal-rounds-li">Selection Rounds: <strong class="text-dark" id="modal-rounds">TBD</strong></li>
+                                <li>Eligible Branches: <strong class="job-value" id="modal-branches">All</strong></li>
+                                <li>Minimum CGPA: <strong class="job-value" id="modal-min-cgpa">6.0</strong></li>
+                                <li id="modal-rounds-li">Selection Rounds: <strong class="job-value" id="modal-rounds">TBD</strong></li>
                             </ul>
                         </div>
                         <div class="col-md-6">
                             <h6 class="text-primary fw-bold"><i class="bi bi-geo-alt me-2"></i> Location & Bond</h6>
                             <ul class="small text-muted ps-3 mt-2">
-                                <li>Location: <strong class="text-dark" id="modal-location">Not Specified</strong></li>
-                                <li>Bond Details: <strong class="text-dark" id="modal-bond">None</strong></li>
+                                <li>Location: <strong class="job-value" id="modal-location">Not Specified</strong></li>
+                                <li>Bond Details: <strong class="job-value" id="modal-bond">None</strong></li>
                             </ul>
                         </div>
                     </div>

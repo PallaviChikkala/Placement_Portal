@@ -7,5 +7,14 @@
         "link": null,
         "image_path": "/static/uploads/homepage/1782553005_fsdcertificate.png",
         "created_at": "2026-06-27 15:06:45"
+    },
+    {
+        "id": "1782712607631",
+        "title": "Workshop NextWave",
+        "type": "News / Events",
+        "description": "Interest students can attend.",
+        "link": "https://drive.google.com/file/d/1kChVucIoPUWM5I02XY7vr24zYct8XRlS/view",
+        "image_path": "/static/uploads/homepage/1782712607_Wallpaper.Shiva.jpg",
+        "created_at": "2026-06-29 11:26:47"
     }
 ]

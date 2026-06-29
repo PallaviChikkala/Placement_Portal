@@ -76,8 +76,6 @@ def send_email(to_email: str, subject: str, html_body: str) -> dict:
         msg['Reply-To']= SMTP_EMAIL
         msg['Date']    = email.utils.formatdate(localtime=True)
         msg['Message-ID'] = email.utils.make_msgid(domain=SMTP_EMAIL.split('@')[-1] if '@' in SMTP_EMAIL else 'placementportal.com')
-        msg['Auto-Submitted'] = 'auto-generated'
-        msg['X-Priority'] = '3' # Normal priority
 
         # Plain-text fallback
         plain = re.sub(r'<[^>]+>', '', html_body).strip()

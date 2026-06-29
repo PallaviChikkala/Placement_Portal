@@ -155,10 +155,10 @@ body { min-height:100vh; font-family:'DM Sans',sans-serif; background:var(--bg-g
         <div class="card-custom h-100 d-flex flex-column text-center align-items-center justify-content-center">
           <i class="ti ti-file-spreadsheet mb-3" style="font-size: 48px; color: #d97706;"></i>
           <h3 style="font-family:'Syne',sans-serif; font-size:20px; color:#f59e0b; font-weight:800; margin-bottom:12px;">Upload Master Sheet</h3>
-          <p style="font-size:13px; color:#e2e8f0; margin-bottom:24px; max-width: 700px;">
+          <p style="font-size:13px; color: var(--text-muted); margin-bottom:24px; max-width: 700px;">
            Upload a master student data file (.xlsx, .csv, or .pdf) to update and synchronize student records across the placement portal.</br> The Master Sheet serves as the central data repository for eligibility verification, tier-based placement restrictions, placement status tracking, and application validation.          </p>
           <form action="{{ url_for('faculty_upload_master_sheet') }}" method="POST" enctype="multipart/form-data" class="w-100 mb-4" style="max-width:320px;">
-            <input type="file" name="master_file" accept=".xlsx,.csv,.pdf" class="form-control mb-3" style="border-radius:10px; border-color:rgba(253,230,138,0.8);" required />
+            <input type="file" name="master_file" accept=".xlsx,.csv,.pdf" class="form-control mb-3" style="border-radius:10px; border-color:rgba(253,230,138,0.8); color: var(--text-main); background: var(--card-bg);" required />
             <button type="submit" class="edit-action-btn w-100 justify-content-center">
               <i class="ti ti-upload"></i>&nbsp; Upload and Synchronize Master Records
             </button>
@@ -167,7 +167,7 @@ body { min-height:100vh; font-family:'DM Sans',sans-serif; background:var(--bg-g
           {% if current_file %}
           <div class="w-100 pt-3" style="border-top: 1px dashed var(--card-border); max-width: 380px;">
             <h4 style="font-family:'Syne',sans-serif; font-size:15px; color:#f59e0b; font-weight:800; margin-bottom:8px;">Active Master Sheet</h4>
-            <p style="font-size:12px; color:#cbd5e1; margin-bottom:12px;"><strong>Type:</strong> {{ file_type }} | <strong>Size:</strong> {{ file_size }} KB</p>
+            <p style="font-size:12px; color: var(--text-muted); margin-bottom:12px;"><strong>Type:</strong> {{ file_type }} | <strong>Size:</strong> {{ file_size }} KB</p>
             <div class="d-flex justify-content-center gap-2">
               <a href="{{ url_for('faculty_download_master_sheet') }}" class="back-home-btn" style="border-color:#d97706; color:#d97706; padding: 6px 14px; font-size: 12px; height: 36px; display: inline-flex; align-items: center; justify-content: center;">
                 <i class="ti ti-download"></i> Download
@@ -199,13 +199,37 @@ body { min-height:100vh; font-family:'DM Sans',sans-serif; background:var(--bg-g
               </label>
             </div>
             <div class="mb-2">
-              <input type="email" name="confirm_email" id="confirmEmail" class="form-control form-premium" placeholder="Enter your admin email" required oninput="toggleResetButton()" style="border-radius:10px; font-size:13px; border: 1px solid rgba(239,68,68,0.3);">
+              <input type="email" name="confirm_email" id="confirmEmail" class="form-control form-premium" placeholder="Enter your admin email" required oninput="toggleResetButton()" style="border-radius:10px; font-size:13px; border: 1px solid rgba(239,68,68,0.3); color: var(--text-main); background: var(--card-bg);">
             </div>
             <div class="mb-3">
-              <input type="password" name="confirm_password" id="confirmPassword" class="form-control form-premium" placeholder="Enter your admin password" required oninput="toggleResetButton()" style="border-radius:10px; font-size:13px; border: 1px solid rgba(239,68,68,0.3);">
+              <input type="password" name="confirm_password" id="confirmPassword" class="form-control form-premium" placeholder="Enter your admin password" required oninput="toggleResetButton()" style="border-radius:10px; font-size:13px; border: 1px solid rgba(239,68,68,0.3); color: var(--text-main); background: var(--card-bg);">
             </div>
             <button type="submit" id="resetSubmitBtn" class="btn btn-danger w-100 justify-content-center" disabled style="border-radius:40px; padding: 10px 24px; font-weight:700; font-size:14px; display:inline-flex; align-items:center; gap:8px;">
               <i class="ti ti-refresh"></i> Reset All Batch Data
+            </button>
+          </form>
+        </div>
+      </div>
+      
+      <!-- Manual Stats Entry Card -->
+      <div class="col-lg-12">
+        <div class="card-custom d-flex flex-column text-center align-items-center justify-content-center">
+          <i class="ti ti-chart-bar mb-3" style="font-size: 48px; color: #10b981;"></i>
+          <h3 style="font-family:'Syne',sans-serif; font-size:20px; color:#10b981; font-weight:800; margin-bottom:12px;">Manual Statistics Override</h3>
+          <p style="font-size:13px; color: var(--text-muted); margin-bottom:24px; max-width: 600px;">
+            Set the global Placement Rate and Average Package manually for <strong>{{ active_year }}</strong>. These values will override the auto-calculated metrics on the Dashboard. Leave blank to revert to auto-calculation.
+          </p>
+          <form action="/faculty/update_manual_stats" method="POST" class="w-100 d-flex flex-column align-items-center" style="max-width:400px;">
+            <div class="mb-3 w-100 text-start">
+              <label class="form-label" style="font-size:13px; color:var(--text-main); font-weight:600;">Placement Rate (%)</label>
+              <input type="number" step="0.1" name="placement_rate" class="form-control form-premium" placeholder="e.g. 85.5" value="{{ manual_pr }}" style="border-radius:10px; font-size:14px; color: var(--text-main); background: var(--card-bg); border-color:rgba(16, 185, 129, 0.4);">
+            </div>
+            <div class="mb-4 w-100 text-start">
+              <label class="form-label" style="font-size:13px; color:var(--text-main); font-weight:600;">Average Package (LPA)</label>
+              <input type="number" step="0.1" name="avg_lpa" class="form-control form-premium" placeholder="e.g. 7.5" value="{{ manual_lpa }}" style="border-radius:10px; font-size:14px; color: var(--text-main); background: var(--card-bg); border-color:rgba(16, 185, 129, 0.4);">
+            </div>
+            <button type="submit" class="btn btn-success w-100 justify-content-center" style="border-radius:40px; padding: 10px 24px; font-weight:700; font-size:14px; display:inline-flex; align-items:center; gap:8px;">
+              <i class="ti ti-device-floppy"></i> Save Manual Stats
             </button>
           </form>
         </div>

@@ -102,7 +102,7 @@
                 <img src="/static/StudentLogin.png" width="45" height="45" alt="NIT AP Logo" class="premium-floating-element">
                 <div>
                     <h5 class="mb-0 fw-bold" style="font-family: var(--font-heading); color: var(--primary);">NIT AP</h5>
-                    <small class="text-muted" style="font-size: 0.75rem;">Placement Cell</small>
+                    <small class="text-muted" style="font-size: 0.75rem;"><small>Training And Placement Cell</small></small>
                 </div>
             </div>
             
@@ -208,7 +208,7 @@
                                 <li><a class="dropdown-item small py-2 text-wrap" href="{{ notif.link or '#' }}"><i class="bi bi-info-circle text-warning me-2"></i> {{ notif.message|safe }}</a></li>
                                 {% endfor %}
                                 <li><hr class="dropdown-divider"></li>
-                                <li><a class="dropdown-item text-center small text-muted py-1" href="#" onclick="clearNotifications(event)">Clear All</a></li>
+                                <li><a class="dropdown-item text-center small text-danger py-2 fw-bold" href="#" onclick="clearNotifications(event)"><i class="bi bi-trash"></i> Clear All Notifications</a></li>
                             {% else %}
                                 <li><div class="dropdown-item small py-3 text-wrap text-muted text-center">No new notifications</div></li>
                             {% endif %}

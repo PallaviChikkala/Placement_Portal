@@ -678,6 +678,8 @@ def _send_new_job_emails_async(job_id, company, role, ctc, tier, deadline, locat
         print("[EmailService] SMTP not configured, skipping email send.")
         return
 
+    # Read db_name from session HERE (in the request context) before the thread starts,
+    # because Flask session is not accessible inside a daemon thread.
     db_name = session.get('active_year_db', 'placement_portal_2025_2026')
     subject = subject_override or f"New Placement Drive: {company} – {role}"
 
@@ -1176,9 +1178,9 @@ def student_dashboard():
         return redirect("/student_login?error=Session+expired.+Please+log+in+again.")
 
     try:
-        cursor.execute("SELECT * FROM jobs ORDER BY id DESC")
+        cursor.execute("SELECT * FROM jobs WHERE deadline IS NULL OR deadline >= NOW() ORDER BY id DESC")
     except Exception:
-        cursor.execute("SELECT * FROM jobs ORDER BY job_id DESC")
+        cursor.execute("SELECT * FROM jobs WHERE deadline IS NULL OR deadline >= NOW() ORDER BY job_id DESC")
     all_jobs = cursor.fetchall()
 
     cursor.execute("SELECT job_id, status FROM applications WHERE student_id = %s", (session["student_id"],))
@@ -2154,6 +2156,37 @@ def faculty_internships_export():
         headers={"Content-disposition": f"attachment; filename={filename}"}
     )
 
+@app.route("/faculty/update_manual_stats", methods=["POST"])
+def faculty_update_manual_stats():
+    ensure_connection()
+    redir = faculty_required()
+    if redir: return redir
+    
+    placement_rate = request.form.get("placement_rate", "").strip()
+    avg_lpa = request.form.get("avg_lpa", "").strip()
+    active_year_id = session.get("active_year", "2025-2026")
+    
+    manual_stats_file = os.path.join(app.root_path, "database", "manual_stats.json")
+    stats = {}
+    if os.path.exists(manual_stats_file):
+        try:
+            with open(manual_stats_file, "r") as f:
+                stats = json.load(f)
+        except Exception:
+            pass
+            
+    stats[active_year_id] = {
+        "placement_rate": placement_rate,
+        "avg_lpa": avg_lpa
+    }
+    
+    os.makedirs(os.path.dirname(manual_stats_file), exist_ok=True)
+    with open(manual_stats_file, "w") as f:
+        json.dump(stats, f)
+        
+    flash("Manual stats updated successfully.", "success")
+    return redirect("/faculty/master_sheet")
+
 @app.route("/faculty/manage_homepage", methods=["GET", "POST"])
 def faculty_manage_homepage():
     ensure_connection()
@@ -2885,6 +2918,19 @@ def faculty_dashboard():
         due_reminders = cursor.fetchall()
     except Exception:
         due_reminders = []
+
+    manual_stats_file = os.path.join(app.root_path, "database", "manual_stats.json")
+    if os.path.exists(manual_stats_file):
+        try:
+            with open(manual_stats_file, "r") as f:
+                manual_stats = json.load(f)
+            if active_year_id in manual_stats:
+                if "placement_rate" in manual_stats[active_year_id] and manual_stats[active_year_id]["placement_rate"] != "":
+                    placement_rate = float(manual_stats[active_year_id]["placement_rate"])
+                if "avg_lpa" in manual_stats[active_year_id] and manual_stats[active_year_id]["avg_lpa"] != "":
+                    avg_lpa = float(manual_stats[active_year_id]["avg_lpa"])
+        except Exception as e:
+            print("Error loading manual stats:", e)
 
     return render_template(
         "faculty/dashboard.html",
@@ -5271,7 +5317,20 @@ def faculty_master_sheet():
 
     active_year_name = get_active_batch_name()
 
-    return render_template("faculty/master_sheet.html", current_file=current_file, file_type=file_type, file_size=file_size, active_year=active_year_name)
+    manual_stats_file = os.path.join(app.root_path, "database", "manual_stats.json")
+    manual_pr = ""
+    manual_lpa = ""
+    if os.path.exists(manual_stats_file):
+        try:
+            with open(manual_stats_file, "r") as f:
+                stats = json.load(f)
+                if active_year in stats:
+                    manual_pr = stats[active_year].get("placement_rate", "")
+                    manual_lpa = stats[active_year].get("avg_lpa", "")
+        except Exception:
+            pass
+
+    return render_template("faculty/master_sheet.html", current_file=current_file, file_type=file_type, file_size=file_size, active_year=active_year_name, manual_pr=manual_pr, manual_lpa=manual_lpa)
 
 @app.route("/faculty/upload_master_sheet", methods=["POST"])
 def faculty_upload_master_sheet():
@@ -5766,52 +5825,42 @@ def faculty_upload_students():
 # ─── FORGOT PASSWORD ─────────────────────────────────────────────────────────
 
 def send_reset_otp(to_email, otp):
-    import smtplib
-    from email.mime.text import MIMEText
-    from email.mime.multipart import MIMEMultipart
-    
-    # Dummy credentials provided by user for testing verification logic
-    # In production, replace with actual app password and sender email
-    sender_email = "hasini123@gmail.com"
-    sender_password = "dummy_app_password"
-    
-    msg = MIMEMultipart()
-    msg['From'] = sender_email
-    msg['To'] = to_email
-    msg['Subject'] = "Password Reset OTP - Placement Portal"
-    
+    """
+    Send a password-reset OTP email using the configured SMTP credentials from .env.
+    Falls back to logging the OTP to console if SMTP is not configured.
+    """
     html = f"""
     <html>
       <body>
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px;">
-          <h2 style="color: #d97706; text-align: center;">Placement Portal</h2>
+          <h2 style="color: #d97706; text-align: center;">Placement Portal — Password Reset</h2>
           <p>Hello,</p>
           <p>You have requested to reset your password. Please use the following One-Time Password (OTP) to proceed:</p>
           <div style="text-align: center; margin: 20px 0;">
             <span style="font-size: 24px; font-weight: bold; padding: 10px 20px; background-color: #fef3c7; border-radius: 5px; letter-spacing: 2px;">{otp}</span>
           </div>
+          <p>This OTP is valid for <strong>60 seconds</strong>. Do not share it with anyone.</p>
           <p>If you did not request a password reset, please ignore this email.</p>
           <br>
-          <p>Best regards,<br>Placement Portal Team</p>
+          <p>Best regards,<br>NIT AP Placement Portal Team</p>
         </div>
       </body>
     </html>
     """
-    msg.attach(MIMEText(html, 'html'))
-    
-    try:
-        # We will attempt to connect, but since we are using dummy credentials, 
-        # it will fail. We'll catch the exception and print the OTP to the console 
-        # so the user can still test the flow.
-        server = smtplib.SMTP('smtp.gmail.com', 587)
-        server.starttls()
-        server.login(sender_email, sender_password)
-        server.send_message(msg)
-        server.quit()
-        return True
-    except Exception as e:
-        print(f"Failed to send email due to dummy credentials. Your OTP is: {otp}")
-        print(f"SMTP Error: {e}")
+
+    # Use the shared email_service with credentials from .env
+    if _EMAIL_SVC_LOADED and _email_svc.is_configured():
+        subject = "Password Reset OTP — NIT AP Placement Portal"
+        result = _email_svc.send_email(to_email, subject, html)
+        if result['success']:
+            print(f"[OTP] Reset OTP sent successfully to {to_email}")
+            return True
+        else:
+            print(f"[OTP] Failed to send reset email to {to_email}: {result.get('error')}")
+            return False
+    else:
+        # SMTP not configured — log OTP to console only (never expose in UI)
+        print(f"[OTP] SMTP not configured. OTP for {to_email}: {otp}")
         return False
 
 @app.route("/forgot_password", methods=["GET", "POST"])
@@ -5860,12 +5909,20 @@ def forgot_password():
         session['reset_otp'] = otp
         session['reset_otp_expires'] = time.time() + 60  # Valid for 60 seconds
         
-        # Send Email using dummy credentials
-        send_reset_otp(email, otp)
-        
-        # Mocking email send by flashing it directly so user can still proceed through UI flow
+        # Send OTP via email using configured SMTP credentials
+        email_sent = send_reset_otp(email, otp)
+
         from flask import flash
-        flash(f"MOCK EMAIL SEND: Your OTP is {otp}", "info")
+        if email_sent:
+            flash("A password reset OTP has been sent to your email address. Please check your inbox.", "info")
+        else:
+            # SMTP not configured — surface OTP only on localhost for developer convenience
+            import socket
+            if request.host.startswith("127.") or request.host.startswith("localhost"):
+                flash(f"[Dev Mode] SMTP not configured. Your OTP is: {otp}", "info")
+            else:
+                flash("Failed to send OTP email. Please contact the Placement Cell.", "error")
+                return redirect("/forgot_password")
         return redirect("/verify_otp")
        
     return render_template("forgot_password.html")
