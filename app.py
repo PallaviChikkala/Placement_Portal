@@ -967,7 +967,8 @@ def student_login_page():
     session.pop("resume_score", None)
     # Always show the login form - never auto-redirect (user must explicitly log in)
     error = request.args.get('error')
-    return render_template("student/login.html", error=error)
+    success = request.args.get('success')
+    return render_template("student/login.html", error=error, success=success)
 
 @app.route("/student_login_check", methods = ["POST"])
 def student_login_check():
@@ -1007,6 +1008,161 @@ def student_login_check():
         session.pop("student_id", None)
         session.pop("student_name", None)
         return render_template("student/login.html", error="Wrong password or invalid credentials.")
+
+# ---- FORGOT PASSWORD FLOW ----
+import random
+import time
+
+@app.route("/student_forgot_password", methods=["GET", "POST"])
+def student_forgot_password():
+    if request.method == "GET":
+        error = request.args.get('error')
+        return render_template("student/forgot_password_email.html", error=error)
+    
+    email = request.form.get("email", "").strip()
+    
+    found_db = None
+    found_year_str = None
+    
+    dbs_to_check = [("placement_portal_2025_2026", "2025-2026"), ("placement_portal_2026_2027", "2026-2027")]
+    for db_name, year_str in dbs_to_check:
+        switch_active_db(db_name, year_str)
+        ensure_connection()
+        cursor.execute("SELECT * FROM students WHERE email = %s", (email,))
+        student = cursor.fetchone()
+        if student:
+            found_db = db_name
+            found_year_str = year_str
+            break
+            
+    if not found_db:
+        return render_template("student/forgot_password_email.html", error="Email not found in our records.")
+        
+    session["reset_email"] = email
+    session["reset_db_name"] = found_db
+    session["reset_year_str"] = found_year_str
+    
+    return redirect("/student_forgot_password/verify_identity")
+
+@app.route("/student_forgot_password/verify_identity", methods=["GET", "POST"])
+def student_forgot_identity():
+    if "reset_email" not in session:
+        return redirect("/student_forgot_password")
+        
+    if request.method == "GET":
+        error = request.args.get('error')
+        return render_template("student/forgot_password_identity.html", error=error)
+        
+    aadhar_input = request.form.get("aadhar", "").strip()
+    pan_input = request.form.get("pan", "").strip().upper()
+    
+    switch_active_db(session["reset_db_name"], session["reset_year_str"])
+    ensure_connection()
+    cursor.execute("SELECT aadhar, pan FROM students WHERE email = %s", (session["reset_email"],))
+    student = cursor.fetchone()
+    
+    if not student or not student.get("aadhar") or not student.get("pan"):
+        return render_template("student/forgot_password_identity.html", error="Aadhar or PAN not registered for this account.")
+        
+    db_aadhar = student["aadhar"].strip()
+    db_pan = student["pan"].strip().upper()
+    
+    if len(db_aadhar) >= 5 and db_aadhar[-5:] == aadhar_input and db_pan == pan_input:
+        otp = str(random.randint(100000, 999999))
+        session["reset_otp"] = otp
+        session["reset_otp_expiry"] = time.time() + 180
+        
+        html_body = f"""
+        <div style="font-family: Arial, sans-serif; padding: 20px;">
+            <h2>Password Reset OTP</h2>
+            <p>Your One-Time Password for resetting your placement portal password is:</p>
+            <h1 style="color: #d97706; font-size: 36px; letter-spacing: 5px;">{otp}</h1>
+            <p>This OTP is valid for exactly 3 minutes. Do not share it with anyone.</p>
+        </div>
+        """
+        from email_service import send_email
+        send_email(session["reset_email"], "Password Reset OTP", html_body)
+        
+        return redirect("/student_forgot_password/otp")
+    else:
+        return render_template("student/forgot_password_identity.html", error="Verification failed. Details do not match.")
+
+@app.route("/student_forgot_password/otp", methods=["GET", "POST"])
+def student_forgot_otp():
+    if "reset_email" not in session or "reset_otp" not in session:
+        return redirect("/student_forgot_password")
+        
+    if request.method == "GET":
+        error = request.args.get('error')
+        time_remaining = max(0, int(session.get("reset_otp_expiry", 0) - time.time()))
+        return render_template("student/forgot_password_otp.html", error=error, time_remaining=time_remaining)
+        
+    otp_input = request.form.get("otp", "").strip()
+    
+    if time.time() > session.get("reset_otp_expiry", 0):
+        return render_template("student/forgot_password_otp.html", error="OTP has expired. Please click Resend OTP.", time_remaining=0)
+        
+    if otp_input == session["reset_otp"]:
+        session["reset_otp_verified"] = True
+        return redirect("/student_forgot_password/reset")
+    else:
+        time_remaining = max(0, int(session.get("reset_otp_expiry", 0) - time.time()))
+        return render_template("student/forgot_password_otp.html", error="Invalid OTP. Try again.", time_remaining=time_remaining)
+
+@app.route("/student_forgot_password/resend_otp", methods=["POST"])
+def student_resend_otp():
+    if "reset_email" not in session:
+        return redirect("/student_forgot_password")
+        
+    otp = str(random.randint(100000, 999999))
+    session["reset_otp"] = otp
+    session["reset_otp_expiry"] = time.time() + 180
+    
+    html_body = f"""
+    <div style="font-family: Arial, sans-serif; padding: 20px;">
+        <h2>Password Reset OTP (Resent)</h2>
+        <p>Your new One-Time Password is:</p>
+        <h1 style="color: #d97706; font-size: 36px; letter-spacing: 5px;">{otp}</h1>
+        <p>This OTP is valid for exactly 3 minutes.</p>
+    </div>
+    """
+    from email_service import send_email
+    send_email(session["reset_email"], "Password Reset OTP", html_body)
+    
+    return redirect("/student_forgot_password/otp")
+
+@app.route("/student_forgot_password/reset", methods=["GET", "POST"])
+def student_forgot_reset():
+    if not session.get("reset_otp_verified"):
+        return redirect("/student_forgot_password")
+        
+    if request.method == "GET":
+        return render_template("student/forgot_password_reset.html")
+        
+    password = request.form.get("password")
+    confirm = request.form.get("confirm_password")
+    
+    if password != confirm:
+        return render_template("student/forgot_password_reset.html", error="Passwords do not match.")
+        
+    if len(password) < 6:
+        return render_template("student/forgot_password_reset.html", error="Password must be at least 6 characters.")
+        
+    switch_active_db(session["reset_db_name"], session["reset_year_str"])
+    ensure_connection()
+    cursor.execute("UPDATE students SET password = %s, must_change_password = 0 WHERE email = %s", 
+                   (password, session["reset_email"]))
+    db.commit()
+    
+    session.pop("reset_email", None)
+    session.pop("reset_db_name", None)
+    session.pop("reset_year_str", None)
+    session.pop("reset_otp", None)
+    session.pop("reset_otp_expiry", None)
+    session.pop("reset_otp_verified", None)
+    
+    return redirect("/student_login?success=Password+reset+successfully")
+# ---- END FORGOT PASSWORD FLOW ----
 
 @app.route("/google_login_check", methods=["POST"])
 def google_login_check():
