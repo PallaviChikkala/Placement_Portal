@@ -305,6 +305,33 @@ body { min-height: 100vh; font-family: 'DM Sans', sans-serif; background: var(--
       {% endfor %}
     </div>
   </div>
+  {% endif %}
+
+  {% if deadline_passed_jobs and deadline_passed_jobs|length > 0 %}
+  <div id="deadlineSection" style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.4); border-radius: 12px; padding: 16px 20px; margin-bottom: 24px;">
+    <h3 style="margin-bottom: 12px; font-size: 16px; display: flex; align-items: center; gap: 8px; color: #dc2626;">
+      <i class="ti ti-alert-triangle" style="font-size: 20px;"></i>
+      Deadlines Arrived (<span id="deadlineCount">{{ deadline_passed_jobs|length }}</span>)
+    </h3>
+    <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px;">The application period for these jobs has completed. The list is frozen. Please download or send the applicant list to HRs.</p>
+    <div id="deadlineList" style="display: flex; flex-direction: column; gap: 10px;">
+      {% for jb in deadline_passed_jobs %}
+      <div id="dl-{{ jb.id }}" style="background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 8px; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; transition: opacity 0.3s, transform 0.3s;">
+        <div>
+          <strong style="color: var(--text-main); font-size: 14px;">{{ jb.company_name }} ({{ jb.role }})</strong>
+          <p style="margin-top: 4px; font-size: 13px; color: var(--text-muted);">
+            <i class="ti ti-clock"></i> Deadline: {{ jb.deadline }}
+          </p>
+        </div>
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <a href="/faculty/download_applied_excel/{{ jb.job_id }}" style="background: #10b981; color: white; padding: 6px 14px; border-radius: 20px; text-decoration: none; font-size: 12px; font-weight: 700;"><i class="ti ti-download"></i> Download</a>
+          <button onclick="dismissDeadline({{ jb.id }}, this)" title="Dismiss" style="background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3); color: #ef4444; width: 28px; height: 28px; border-radius: 50%; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: background 0.2s;" onmouseover="this.style.background='rgba(239,68,68,0.2)'" onmouseout="this.style.background='rgba(239,68,68,0.1)'">&times;</button>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
   <script>
   function dismissReminder(jobId, btn) {
     const card = document.getElementById('rem-' + jobId);
@@ -335,8 +362,37 @@ body { min-height: 100vh; font-family: 'DM Sans', sans-serif; background: var(--
     })
     .catch(() => { btn.disabled = false; });
   }
+
+  function dismissDeadline(jobId, btn) {
+    const card = document.getElementById('dl-' + jobId);
+    btn.disabled = true;
+    fetch('/faculty/jobs/dismiss_deadline', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({job_id: jobId})
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (data.success) {
+        card.style.opacity = '0';
+        card.style.transform = 'translateX(30px)';
+        setTimeout(() => {
+          card.remove();
+          const remaining = document.querySelectorAll('#deadlineList > div').length;
+          if (remaining === 0) {
+            document.getElementById('deadlineSection').remove();
+          } else {
+            document.getElementById('deadlineCount').textContent = remaining;
+          }
+        }, 300);
+      } else {
+        btn.disabled = false;
+        alert('Could not dismiss: ' + (data.error || 'Unknown error'));
+      }
+    })
+    .catch(() => { btn.disabled = false; });
+  }
   </script>
-  {% endif %}
 
 
   <div class="stats-row" data-tour="admin-stats">

@@ -290,6 +290,14 @@
                             <input type="text" name="ext_duration" class="form-control" placeholder="e.g. 2 months (May-June 2024)">
                         </div>
                         <div class="col-md-6">
+                            <label class="form-label small fw-bold">HR Name (Optional)</label>
+                            <input type="text" name="ext_hr_name" class="form-control" placeholder="e.g. John Doe">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold">HR Contact Details (Optional)</label>
+                            <input type="text" name="ext_hr_contact" class="form-control" placeholder="e.g. Phone or Email">
+                        </div>
+                        <div class="col-md-6">
                             <label class="form-label small fw-bold">Certificate (Optional)</label>
                             <input class="form-control" type="file" name="ext_certificate" accept=".pdf,.png,.jpg,.jpeg,.docx">
                             <div class="form-text small">PDF, image, or Word document</div>
@@ -336,6 +344,16 @@
                         <div class="mb-3">
                             <label for="description" class="form-label small fw-bold">Project Details / Internship Summary <span class="text-danger">*</span></label>
                             <textarea class="form-control" id="description" name="description" rows="4" placeholder="Briefly describe what you did during this internship..." required></textarea>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold">HR Name <span class="text-muted fw-normal">(Optional)</span></label>
+                            <input type="text" class="form-control" id="hr_name" name="hr_name" placeholder="e.g. John Doe">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold">Contact Details <span class="text-muted fw-normal">(Optional)</span></label>
+                            <input type="text" class="form-control" id="hr_contact" name="hr_contact" placeholder="e.g. Phone or Email">
                         </div>
                         
                         <div class="mb-3">

@@ -56,7 +56,7 @@ def validate_email(email: str) -> bool:
 
 # ── Low-level sender ───────────────────────────────────────────────────────
 
-def send_email(to_email: str, subject: str, html_body: str) -> dict:
+def send_email(to_email: str, subject: str, html_body: str, attachments: list = None) -> dict:
     """
     Send a single HTML email.
     Returns {'success': True} or {'success': False, 'error': '...'}.
@@ -68,7 +68,7 @@ def send_email(to_email: str, subject: str, html_body: str) -> dict:
         return {'success': False, 'error': f'Invalid email address: {to_email}'}
 
     try:
-        msg = MIMEMultipart('alternative')
+        msg = MIMEMultipart('mixed') if attachments else MIMEMultipart('alternative')
         import email.utils
         msg['Subject'] = subject
         msg['From']    = f"{PORTAL_NAME} <{SMTP_EMAIL}>"
@@ -77,10 +77,22 @@ def send_email(to_email: str, subject: str, html_body: str) -> dict:
         msg['Date']    = email.utils.formatdate(localtime=True)
         msg['Message-ID'] = email.utils.make_msgid(domain=SMTP_EMAIL.split('@')[-1] if '@' in SMTP_EMAIL else 'placementportal.com')
 
-        # Plain-text fallback
         plain = re.sub(r'<[^>]+>', '', html_body).strip()
-        msg.attach(MIMEText(plain, 'plain'))
-        msg.attach(MIMEText(html_body, 'html'))
+
+        if attachments:
+            alt_part = MIMEMultipart('alternative')
+            alt_part.attach(MIMEText(plain, 'plain'))
+            alt_part.attach(MIMEText(html_body, 'html'))
+            msg.attach(alt_part)
+            
+            from email.mime.application import MIMEApplication
+            for filename, file_data in attachments:
+                part = MIMEApplication(file_data, Name=filename)
+                part['Content-Disposition'] = f'attachment; filename="{filename}"'
+                msg.attach(part)
+        else:
+            msg.attach(MIMEText(plain, 'plain'))
+            msg.attach(MIMEText(html_body, 'html'))
 
         with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=15) as server:
             server.ehlo()
@@ -102,7 +114,7 @@ def send_email(to_email: str, subject: str, html_body: str) -> dict:
 # ── Bulk sender (async via thread) ─────────────────────────────────────────
 
 def send_bulk_emails_async(recipients: list, subject: str, html_body_fn,
-                           log_callback=None, db_config=None, event_type="general"):
+                           log_callback=None, db_config=None, event_type="general", attachments=None):
     """
     Send emails to a list of recipient dicts asynchronously.
     
@@ -139,7 +151,7 @@ def send_bulk_emails_async(recipients: list, subject: str, html_body_fn,
 
             try:
                 body   = html_body_fn(rec)
-                result = send_email(email, subject, body)
+                result = send_email(email, subject, body, attachments=attachments)
 
                 status = 'sent' if result['success'] else 'failed'
                 err    = result.get('error', None) if not result['success'] else None

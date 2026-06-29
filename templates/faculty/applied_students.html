@@ -60,6 +60,7 @@
   --blob2-color: rgba(217, 119, 6, 0.1);
   --blob3-color: rgba(251, 191, 36, 0.08);
 }
+[data-theme="dark"] .status-badge.closed { background: rgba(239, 68, 68, 0.15) !important; color: #f87171 !important; border-color: rgba(239, 68, 68, 0.3) !important; }
 
 * { box-sizing:border-box; margin:0; padding:0; }
 body { min-height:100vh; font-family:'DM Sans',sans-serif; background:var(--bg-gradient); color:var(--text-main); transition: background 0.3s, color 0.3s; }
@@ -116,7 +117,8 @@ body { min-height:100vh; font-family:'DM Sans',sans-serif; background:var(--bg-g
 .countdown-timer { font-weight:700; color:var(--text-accent); font-size:12px; display:inline-flex; align-items:center; gap:4px; background:var(--badge-bg); padding:4px 10px; border-radius:12px; transition: all 0.3s; }
 
 .download-excel-btn { background:linear-gradient(135deg, #10b981, #059669); color:white; border:none; padding:8px 18px; border-radius:30px; cursor:pointer; font-weight:600; font-family:'DM Sans',sans-serif; font-size:12px; text-decoration:none; display:inline-flex; align-items:center; gap:6px; transition:opacity 0.2s; }
-.download-excel-btn:hover { opacity:0.9; }
+.download-excel-btn:hover:not(:disabled) { opacity:0.9; }
+.download-excel-btn:disabled { background: var(--input-bg); color: var(--text-muted); border: 1px solid var(--input-border); cursor: not-allowed; }
 
 .table-wrapper { overflow-x:auto; margin-top:16px; border-radius:16px; border:1px solid var(--table-border); transition: border-color 0.3s; }
 table { width:100%; border-collapse:collapse; background:transparent; }
@@ -227,7 +229,7 @@ td { padding:10px 10px; color:var(--text-main); border-bottom:1px solid var(--ta
                   <i class="ti ti-file-spreadsheet"></i> Download Applicant List
                 </a>
               {% else %}
-                <button class="download-excel-btn" style="background:#e5e7eb; color:#9ca3af; cursor:not-allowed;" disabled>
+                <button class="download-excel-btn" disabled>
                   <i class="ti ti-file-spreadsheet"></i> No Applicants
                 </button>
               {% endif %}
@@ -236,7 +238,7 @@ td { padding:10px 10px; color:var(--text-main); border-bottom:1px solid var(--ta
 
           <!-- Applicant List Section -->
           <div>
-            <h4 style="font-size:13px; color:#78350f; font-family:'Syne',sans-serif; margin-bottom:8px;">
+            <h4 style="font-size: 13px; font-weight: 700; color: var(--text-accent); margin-bottom: 12px; margin-top: 10px;">
               Applicants List ({{ j.applicants|length }})
             </h4>
 
@@ -298,8 +300,8 @@ td { padding:10px 10px; color:var(--text-main); border-bottom:1px solid var(--ta
               {% endif %}
             {% else %}
               <!-- Pre-deadline state: show students applied so far, but mark active -->
-              <div style="background: rgba(253,230,138,0.12); padding: 12px; border-radius: 12px; border: 1px dashed rgba(253,230,138,0.6); margin-bottom: 12px;">
-                <p style="font-size: 12px; color: #b45309; font-weight: 600;">
+              <div style="background: var(--badge-bg); padding: 12px; border-radius: 12px; border: 1px dashed var(--header-border); margin-bottom: 12px;">
+                <p style="font-size: 12px; color: var(--text-accent); font-weight: 600;">
                   <i class="ti ti-info-circle"></i> Application period is active. Final list will freeze once the deadline completes.
                 </p>
               </div>

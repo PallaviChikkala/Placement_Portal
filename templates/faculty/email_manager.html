@@ -163,6 +163,9 @@ input:checked + .email-toggle-slider:before { transform:translateX(24px); }
         <label class="form-label small fw-bold">Message</label>
         <textarea id="annMessage" class="form-control mb-3" rows="4" placeholder="Write your announcement here…"></textarea>
 
+        <label class="form-label small fw-bold">Attachments (Optional)</label>
+        <input type="file" id="annAttachments" class="form-control mb-3" multiple accept=".pdf,.docx,.jpg,.jpeg,.png">
+
         <button onclick="sendAnnouncementEmail()" id="annSendBtn" class="btn w-100 fw-bold" style="background:var(--button-gradient);color:white;border-radius:20px;">
           <i class="ti ti-send"></i> <span id="annSendBtnText">Send to All Students</span>
         </button>
@@ -186,7 +189,10 @@ input:checked + .email-toggle-slider:before { transform:translateX(24px); }
   <div class="glass-card">
     <div class="d-flex justify-content-between align-items-center mb-3">
       <h3 style="font-family:'Syne',sans-serif; font-size:18px;"><i class="ti ti-list-details"></i> Email Delivery Logs</h3>
-      <button onclick="loadEmailLogs()" class="btn btn-sm" style="background:var(--badge-bg);color:var(--text-accent);border-radius:12px;"><i class="ti ti-refresh"></i> Refresh</button>
+      <div>
+        <button onclick="clearEmailLogs()" class="btn btn-sm me-2" style="background:var(--card-bg);color:var(--text-accent);border:1px solid var(--card-border);border-radius:12px;"><i class="ti ti-trash"></i> Clear View</button>
+        <button onclick="loadEmailLogs()" class="btn btn-sm" style="background:var(--badge-bg);color:var(--text-accent);border-radius:12px;"><i class="ti ti-refresh"></i> Refresh</button>
+      </div>
     </div>
     <div class="table-responsive">
       <div id="emailLogsTable" style="font-size:13px;">Loading logs…</div>
@@ -232,6 +238,9 @@ input:checked + .email-toggle-slider:before { transform:translateX(24px); }
 
     <label style="font-size:13px;font-weight:700;color:var(--text-main);display:block;margin-bottom:6px;">Message</label>
     <textarea id="selMessage" rows="5" placeholder="Write your message to the selected students…" class="form-control mb-3" style="border-radius:12px;font-size:14px;"></textarea>
+
+    <label style="font-size:13px;font-weight:700;color:var(--text-main);display:block;margin-bottom:6px;">Attachments (Optional)</label>
+    <input type="file" id="selAttachments" class="form-control mb-3" multiple accept=".pdf,.docx,.jpg,.jpeg,.png" style="border-radius:12px;font-size:14px;">
 
     <div style="display:flex;gap:10px;margin-top:20px;justify-content:flex-end;">
       <button onclick="closeSelectiveEmailModal()" class="btn fw-bold" style="background:var(--badge-bg);color:var(--text-main);border-radius:20px;">Cancel</button>
@@ -317,8 +326,11 @@ function loadEmailLogs() {
     .then(r => r.json())
     .then(data => {
       const logs = data.logs || [];
-      if (logs.length === 0) {
-        document.getElementById('emailLogsTable').innerHTML = '<p style="color:var(--text-muted);">No email logs found.</p>';
+      const clearedAt = parseInt(localStorage.getItem('emailLogsClearedAt') || '0', 10);
+      const filteredLogs = logs.filter(log => new Date(log.sent_at.replace(' ', 'T')).getTime() > clearedAt);
+      
+      if (filteredLogs.length === 0) {
+        document.getElementById('emailLogsTable').innerHTML = '<p style="color:var(--text-muted);text-align:center;padding:20px;">No email logs found.</p>';
         return;
       }
       const eventLabels = { new_job: '🆕 New Job', job_update: '✏️ Job Update', job_cancelled: '❌ Cancelled', status_update: '📋 Status', announcement: '📣 Announcement', general: '📧 General' };
@@ -330,7 +342,7 @@ function loadEmailLogs() {
           <th style="color:var(--text-accent);">Status</th>
           <th style="color:var(--text-accent);">Sent At</th>
         </tr></thead><tbody>`;
-      logs.forEach(log => {
+      filteredLogs.forEach(log => {
         const statusBadge = log.status === 'sent'
           ? '<span style="background:#d1fae5;color:#065f46;padding:2px 8px;border-radius:10px;font-weight:700;">Sent</span>'
           : '<span style="background:#fee2e2;color:#991b1b;padding:2px 8px;border-radius:10px;font-weight:700;" title="' + (log.error_message || '') + '">Failed</span>';
@@ -355,13 +367,25 @@ window.sendAnnouncementEmail = function () {
   const btn = document.getElementById('annSendBtn');
   const btnText = document.getElementById('annSendBtnText');
   btn.disabled = true; btnText.textContent = 'Sending…';
+
+  const formData = new FormData();
+  formData.append('title', title);
+  formData.append('message', message);
+  const fileInput = document.getElementById('annAttachments');
+  if (fileInput && fileInput.files.length > 0) {
+    for (let i = 0; i < fileInput.files.length; i++) {
+      formData.append('attachments', fileInput.files[i]);
+    }
+  }
+
   fetch('/faculty/send_announcement_email', {
-    method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ title, message })
+    method: 'POST',
+    body: formData
   }).then(r => r.json()).then(data => {
     if (data.success) {
       showToast(`✅ Announcement sent to ${data.recipients} students!`, 'success');
       document.getElementById('annTitle').value = ''; document.getElementById('annMessage').value = '';
+      if (fileInput) fileInput.value = '';
       loadEmailStatus(); loadEmailLogs();
     } else { showToast('Error: ' + (data.error || 'Unknown error'), 'error'); }
     btn.disabled = false; btnText.textContent = 'Send to All Students';
@@ -440,14 +464,28 @@ window.sendSelectiveEmail = function () {
   if (!subject || !message) { showToast('Please enter subject and message.', 'warning'); return; }
   const btn = document.getElementById('selSendBtn'); const btnText = document.getElementById('selSendBtnText');
   btn.disabled = true; btnText.textContent = 'Sending…';
+
+  const formData = new FormData();
+  formData.append('student_ids', JSON.stringify(ids));
+  formData.append('subject', subject);
+  formData.append('title', subject);
+  formData.append('message', message);
+  const fileInput = document.getElementById('selAttachments');
+  if (fileInput && fileInput.files.length > 0) {
+    for (let i = 0; i < fileInput.files.length; i++) {
+      formData.append('attachments', fileInput.files[i]);
+    }
+  }
+
   fetch('/faculty/send_selective_email', {
-    method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ student_ids: ids, subject, title: subject, message })
+    method: 'POST',
+    body: formData
   }).then(r => r.json()).then(data => {
     if (data.success) {
       showToast(`✅ Email sent to ${data.recipients} student(s)!`, 'success');
       closeSelectiveEmailModal();
       document.getElementById('selSubject').value = ''; document.getElementById('selMessage').value = '';
+      if (fileInput) fileInput.value = '';
       loadEmailStatus(); loadEmailLogs();
     } else { showToast('Error: ' + (data.error || 'Unknown'), 'error'); }
     btn.disabled = false; btnText.textContent = 'Send Email';
@@ -463,6 +501,13 @@ window.sendTestEmail = function () {
     else showToast('❌ Email failed: ' + (data.error || 'Unknown error'), 'error');
     if (btn) { btn.disabled = false; btn.innerHTML = '<i class="ti ti-send"></i> Send Test Email'; }
   });
+};
+window.clearEmailLogs = function() {
+  localStorage.setItem('emailLogsClearedAt', Date.now());
+  const table = document.getElementById('emailLogsTable');
+  if (table) {
+    table.innerHTML = '<p style="color:var(--text-muted);text-align:center;padding:20px;">Logs cleared from view.</p>';
+  }
 };
 </script>
 </body>

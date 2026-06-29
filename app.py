@@ -362,7 +362,8 @@ def _init_database_single():
             "ALTER TABLE jobs ADD COLUMN deadline DATETIME DEFAULT NULL",
             "ALTER TABLE jobs ADD COLUMN reminder_date DATETIME DEFAULT NULL",
             "ALTER TABLE jobs ADD COLUMN reminder_note TEXT DEFAULT NULL",
-            "ALTER TABLE jobs ADD COLUMN reminder_sent TINYINT(1) DEFAULT 0"
+            "ALTER TABLE jobs ADD COLUMN reminder_sent TINYINT(1) DEFAULT 0",
+            "ALTER TABLE jobs ADD COLUMN deadline_dismissed TINYINT(1) DEFAULT 0"
         ]:
             try:
                 cursor.execute(col_sql)
@@ -509,6 +510,8 @@ VALUES
             "ALTER TABLE student_internships ADD COLUMN ext_role VARCHAR(200) DEFAULT NULL",
             "ALTER TABLE student_internships ADD COLUMN ext_duration VARCHAR(100) DEFAULT NULL",
             "ALTER TABLE student_internships ADD COLUMN is_external TINYINT(1) DEFAULT 0",
+            "ALTER TABLE student_internships ADD COLUMN hr_name VARCHAR(200) DEFAULT NULL",
+            "ALTER TABLE student_internships ADD COLUMN hr_contact VARCHAR(200) DEFAULT NULL",
         ]:
             try:
                 cursor.execute(_col_sql)
@@ -2022,6 +2025,8 @@ def student_internships_submit():
     student_id  = session["student_id"]
     posting_id  = request.form.get("posting_id", type=int)
     description = request.form.get("description", "").strip()
+    hr_name     = request.form.get("hr_name", "").strip()
+    hr_contact  = request.form.get("hr_contact", "").strip()
     
     if not posting_id or not description:
         flash("Invalid submission details.", "error")
@@ -2056,20 +2061,20 @@ def student_internships_submit():
         if db_path:
             cursor.execute("""
                 UPDATE student_internships 
-                SET status = 'Completed', completion_description = %s, certificate_path = %s, submitted_at = NOW()
+                SET status = 'Completed', completion_description = %s, certificate_path = %s, submitted_at = NOW(), hr_name = %s, hr_contact = %s
                 WHERE id = %s
-            """, (description, db_path, existing["id"]))
+            """, (description, db_path, hr_name, hr_contact, existing["id"]))
         else:
             cursor.execute("""
                 UPDATE student_internships 
-                SET status = 'Completed', completion_description = %s, submitted_at = NOW()
+                SET status = 'Completed', completion_description = %s, submitted_at = NOW(), hr_name = %s, hr_contact = %s
                 WHERE id = %s
-            """, (description, existing["id"]))
+            """, (description, hr_name, hr_contact, existing["id"]))
     else:
         cursor.execute("""
-            INSERT INTO student_internships (student_id, posting_id, status, completion_description, certificate_path, submitted_at)
-            VALUES (%s, %s, 'Completed', %s, %s, NOW())
-        """, (student_id, posting_id, description, db_path))
+            INSERT INTO student_internships (student_id, posting_id, status, completion_description, certificate_path, submitted_at, hr_name, hr_contact)
+            VALUES (%s, %s, 'Completed', %s, %s, NOW(), %s, %s)
+        """, (student_id, posting_id, description, db_path, hr_name, hr_contact))
         
     cursor.execute("SELECT COUNT(*) as count FROM student_internships WHERE student_id = %s AND status = 'Completed'", (student_id,))
     completed_count = cursor.fetchone()["count"]
@@ -2094,6 +2099,8 @@ def student_add_external_internship():
     role         = request.form.get("ext_role", "").strip()
     description  = request.form.get("ext_description", "").strip()
     duration     = request.form.get("ext_duration", "").strip()
+    hr_name      = request.form.get("ext_hr_name", "").strip()
+    hr_contact   = request.form.get("ext_hr_contact", "").strip()
 
     if not company_name or not role or not description:
         flash("Company name, role, and description are required.", "error")
@@ -2119,10 +2126,10 @@ def student_add_external_internship():
         INSERT INTO student_internships (
             student_id, posting_id, status, completion_description, 
             certificate_path, submitted_at, ext_company_name, ext_role, 
-            ext_duration, is_external
+            ext_duration, is_external, hr_name, hr_contact
         )
-        VALUES (%s, NULL, 'Completed', %s, %s, NOW(), %s, %s, %s, 1)
-    """, (student_id, description, db_path, company_name, role, duration))
+        VALUES (%s, NULL, 'Completed', %s, %s, NOW(), %s, %s, %s, 1, %s, %s)
+    """, (student_id, description, db_path, company_name, role, duration, hr_name, hr_contact))
 
     cursor.execute("SELECT COUNT(*) as count FROM student_internships WHERE student_id = %s AND status = 'Completed'", (student_id,))
     completed_count = cursor.fetchone()["count"]
@@ -2707,9 +2714,14 @@ def faculty_send_announcement_email():
     if not _EMAIL_SVC_LOADED or not _email_svc.is_configured():
         return jsonify({"success": False, "error": "SMTP is not configured. Please fill in .env credentials."})
 
-    data    = request.get_json() or {}
-    title   = data.get("title", "").strip()
-    message = data.get("message", "").strip()
+    data    = request.get_json(silent=True) or {}
+    title   = request.form.get("title", "").strip() or data.get("title", "").strip()
+    message = request.form.get("message", "").strip() or data.get("message", "").strip()
+
+    attachments = []
+    for file in request.files.getlist("attachments"):
+        if file and file.filename:
+            attachments.append((file.filename, file.read()))
 
     if not title or not message:
         return jsonify({"success": False, "error": "Title and message are required."})
@@ -2731,7 +2743,7 @@ def faculty_send_announcement_email():
     def log_fn_ann(sid, email, status, err):
         _log_email(email, None, "announcement", subject_ann, status, err)
 
-    _email_svc.send_bulk_emails_async(list(recipients), subject_ann, html_fn_ann, log_fn_ann, event_type="announcement")
+    _email_svc.send_bulk_emails_async(list(recipients), subject_ann, html_fn_ann, log_fn_ann, event_type="announcement", attachments=attachments)
 
     return jsonify({
         "success":    True,
@@ -2815,11 +2827,26 @@ def faculty_send_selective_email():
     if not _EMAIL_SVC_LOADED or not _email_svc.is_configured():
         return jsonify({"success": False, "error": "SMTP not configured. Fill in .env credentials."})
 
-    data        = request.get_json() or {}
-    student_ids = data.get("student_ids", [])
-    subject     = data.get("subject", "").strip()
-    title       = data.get("title", "").strip()
-    message_txt = data.get("message", "").strip()
+    data = request.get_json(silent=True) or {}
+    
+    student_ids_str = request.form.get("student_ids")
+    if student_ids_str:
+        import json
+        try:
+            student_ids = json.loads(student_ids_str)
+        except:
+            student_ids = []
+    else:
+        student_ids = data.get("student_ids", [])
+        
+    subject     = request.form.get("subject", "").strip() or data.get("subject", "").strip()
+    title       = request.form.get("title", "").strip() or data.get("title", "").strip()
+    message_txt = request.form.get("message", "").strip() or data.get("message", "").strip()
+
+    attachments = []
+    for file in request.files.getlist("attachments"):
+        if file and file.filename:
+            attachments.append((file.filename, file.read()))
 
     if not student_ids:
         return jsonify({"success": False, "error": "No students selected."})
@@ -2851,7 +2878,7 @@ def faculty_send_selective_email():
         _log_email(email, None, "selective", subject, status, err, db_name=db_name_cap)
 
     _email_svc.send_bulk_emails_async(
-        list(recipients), subject, html_fn_sel, log_fn_sel, event_type="selective"
+        list(recipients), subject, html_fn_sel, log_fn_sel, event_type="selective", attachments=attachments
     )
 
     return jsonify({
@@ -2861,7 +2888,7 @@ def faculty_send_selective_email():
     })
 
 
-def get_dashboard_stats():
+def get_dashboard_stats(active_year_id=None):
     ensure_connection()
     try:
         cursor.execute("SELECT COUNT(*) AS c FROM students")
@@ -2875,43 +2902,22 @@ def get_dashboard_stats():
         active_jobs = 0
     
     placement_rate = 0.0
-    try:
-        # Interested in job: career_option is 'Job' or 'PSU' (placement-seeking)
-        cursor.execute("""
-            SELECT COUNT(*) AS c FROM students
-            WHERE LOWER(TRIM(COALESCE(career_option,''))) IN ('job', 'psu')
-               OR career_option IS NULL
-        """)
-        total_interested = cursor.fetchone()["c"] or 0
+    avg_lpa = 0.0
+    
+    manual_stats_file = os.path.join(app.root_path, "database", "manual_stats.json")
+    if active_year_id and os.path.exists(manual_stats_file):
+        try:
+            with open(manual_stats_file, "r") as f:
+                manual_stats = json.load(f)
+            if active_year_id in manual_stats:
+                if "placement_rate" in manual_stats[active_year_id] and manual_stats[active_year_id]["placement_rate"] != "":
+                    placement_rate = float(manual_stats[active_year_id]["placement_rate"])
+                if "avg_lpa" in manual_stats[active_year_id] and manual_stats[active_year_id]["avg_lpa"] != "":
+                    avg_lpa = float(manual_stats[active_year_id]["avg_lpa"])
+        except Exception:
+            pass
 
-        # Not-interested students who still applied for any job
-        cursor.execute("""
-            SELECT COUNT(DISTINCT s.student_id) AS c
-            FROM students s
-            JOIN applications a ON a.student_id = s.student_id
-            WHERE LOWER(TRIM(COALESCE(s.career_option,''))) NOT IN ('job', 'psu')
-              AND s.career_option IS NOT NULL
-        """)
-        not_interested_applied = cursor.fetchone()["c"] or 0
-
-        denominator = total_interested + not_interested_applied
-
-        if denominator > 0:
-            # Numerator: all students who are marked as selected in the Student Directory Data
-            cursor.execute("""
-                SELECT COUNT(DISTINCT student_id) AS c 
-                FROM students 
-                WHERE (selected_tier IS NOT NULL AND selected_tier > 0)
-                   OR (tier_1 IS NOT NULL AND TRIM(tier_1) != '' AND LOWER(TRIM(tier_1)) != 'nan')
-                   OR (tier_2 IS NOT NULL AND TRIM(tier_2) != '' AND LOWER(TRIM(tier_2)) != 'nan')
-                   OR (tier_3 IS NOT NULL AND TRIM(tier_3) != '' AND LOWER(TRIM(tier_3)) != 'nan')
-            """)
-            total_selected = cursor.fetchone()["c"] or 0
-            placement_rate = round((total_selected / denominator * 100), 1)
-    except Exception:
-        pass
-
-    return total_students, active_jobs, placement_rate
+    return total_students, active_jobs, placement_rate, avg_lpa
 
 def get_login_batches_stats():
     batches_file = os.path.join(app.root_path, "database", "batches.json")
@@ -2924,15 +2930,16 @@ def get_login_batches_stats():
                 for batch in batches[:2]:
                     try:
                         switch_active_db(batch["db"], batch["id"])
-                        ts, aj, pr = get_dashboard_stats()
+                        ts, aj, pr, alpa = get_dashboard_stats(active_year_id=batch["id"])
                     except Exception:
-                        ts, aj, pr = 0, 0, 0
+                        ts, aj, pr, alpa = 0, 0, 0, 0.0
                         
                     batches_stats.append({
                         "name": batch["name"],
                         "total_students": ts,
                         "active_jobs": aj,
-                        "placement_rate": pr
+                        "placement_rate": pr,
+                        "avg_lpa": alpa
                     })
         except Exception:
             pass
@@ -2992,62 +2999,9 @@ def faculty_dashboard():
     cursor.execute("SELECT COUNT(*) AS count FROM jobs")
     active_jobs = cursor.fetchone()["count"]
 
-    # Calculate average LPA
-    cursor.execute("SELECT ctc FROM jobs WHERE ctc IS NOT NULL AND ctc != ''")
-    ctc_rows = cursor.fetchall()
-    total_lpa = 0
-    count_lpa = 0
-    for r in ctc_rows:
-        import re
-        m = re.search(r'([\d.]+)', str(r['ctc']))
-        if m:
-            total_lpa += float(m.group(1))
-            count_lpa += 1
-    avg_lpa = round(total_lpa / count_lpa, 1) if count_lpa > 0 else 0.0
-
-    # Calculate Placement Conversion Rate using the correct formula:
-    # (applied_interested + applied_not_interested) / (total_interested + applied_not_interested)
-    try:
-        cursor.execute("""
-            SELECT COUNT(*) AS c FROM students
-            WHERE LOWER(TRIM(COALESCE(career_option,''))) IN ('job', 'psu')
-               OR career_option IS NULL
-        """)
-        total_interested = cursor.fetchone()["c"] or 0
-
-        cursor.execute("""
-            SELECT COUNT(DISTINCT s.student_id) AS c
-            FROM students s
-            JOIN applications a ON a.student_id = s.student_id
-            WHERE LOWER(TRIM(COALESCE(s.career_option,''))) NOT IN ('job', 'psu')
-              AND s.career_option IS NOT NULL
-        """)
-        not_interested_applied = cursor.fetchone()["c"] or 0
-
-        denominator = total_interested + not_interested_applied
-
-        # Check if Student Directory Data file exists (pdf, xlsx, or csv)
-        active_year_id = session.get("active_year", "2025-2026")
-        upload_dir = os.path.join(app.static_folder, "uploads", active_year_id)
-        master_sheet_uploaded = os.path.exists(os.path.join(upload_dir, "master_sheet.pdf")) or \
-                                os.path.exists(os.path.join(upload_dir, "master_sheet.xlsx")) or \
-                                os.path.exists(os.path.join(upload_dir, "master_sheet.csv"))
-
-        if denominator > 0 and master_sheet_uploaded:
-            cursor.execute("""
-                SELECT COUNT(DISTINCT student_id) AS c 
-                FROM students 
-                WHERE (selected_tier IS NOT NULL AND selected_tier > 0)
-                   OR (tier_1 IS NOT NULL AND TRIM(tier_1) != '' AND LOWER(TRIM(tier_1)) != 'nan')
-                   OR (tier_2 IS NOT NULL AND TRIM(tier_2) != '' AND LOWER(TRIM(tier_2)) != 'nan')
-                   OR (tier_3 IS NOT NULL AND TRIM(tier_3) != '' AND LOWER(TRIM(tier_3)) != 'nan')
-            """)
-            total_placed = cursor.fetchone()["c"] or 0
-            placement_rate = round((total_placed / denominator * 100), 1)
-        else:
-            placement_rate = 0.0
-    except Exception:
-        placement_rate = 0.0
+    # Stats are now manually set via Master Sheet
+    avg_lpa = "0.0"
+    placement_rate = "0.0"
 
     # Get active batch name instead of just ID
     active_year_id = session.get("active_year", "2025-2026")
@@ -3074,6 +3028,25 @@ def faculty_dashboard():
         due_reminders = cursor.fetchall()
     except Exception:
         due_reminders = []
+        
+    try:
+        cursor.execute("SELECT id, job_id, company_name, role, deadline FROM jobs WHERE deadline IS NOT NULL AND (deadline_dismissed IS NULL OR deadline_dismissed = 0)")
+        all_jobs_for_deadline = cursor.fetchall()
+        deadline_passed_jobs = []
+        from datetime import datetime, timedelta
+        now = datetime.now()
+        for jb in all_jobs_for_deadline:
+            dl = jb['deadline']
+            if isinstance(dl, str):
+                try: dl = datetime.strptime(dl, "%Y-%m-%d %H:%M:%S")
+                except:
+                    try: dl = datetime.strptime(dl, "%Y-%m-%dT%H:%M")
+                    except: continue
+            if isinstance(dl, datetime):
+                if dl < now and dl >= now - timedelta(days=3):
+                    deadline_passed_jobs.append(jb)
+    except Exception:
+        deadline_passed_jobs = []
 
     manual_stats_file = os.path.join(app.root_path, "database", "manual_stats.json")
     if os.path.exists(manual_stats_file):
@@ -3097,8 +3070,26 @@ def faculty_dashboard():
         avg_lpa=avg_lpa,
         master_sheet_status=master_sheet_status,
         active_year=active_year_name,
-        due_reminders=due_reminders
+        due_reminders=due_reminders,
+        deadline_passed_jobs=deadline_passed_jobs
     )
+
+@app.route("/faculty/jobs/dismiss_deadline", methods=["POST"])
+def faculty_dismiss_deadline():
+    ensure_connection()
+    redir = faculty_required()
+    if redir: return jsonify({"error": "Unauthorized"}), 401
+    data = request.json
+    job_id = data.get("job_id")
+    if not job_id:
+        return jsonify({"success": False, "error": "Missing job ID"})
+    try:
+        cursor.execute("UPDATE jobs SET deadline_dismissed = 1 WHERE id = %s", (job_id,))
+        db.commit()
+        return jsonify({"success": True})
+    except Exception as e:
+        db.rollback()
+        return jsonify({"success": False, "error": str(e)})
 
 @app.route("/faculty/jobs/dismiss_reminder", methods=["POST"])
 def faculty_dismiss_reminder():
@@ -3137,68 +3128,14 @@ def api_faculty_stats():
     if redir:
         return jsonify({"error": "unauthorized"}), 403
     try:
-        cursor.execute("SELECT COUNT(*) AS c FROM students")
-        total_students = cursor.fetchone()["c"] or 0
-        cursor.execute("SELECT COUNT(*) AS c FROM jobs")
-        active_jobs = cursor.fetchone()["c"] or 0
-
-        # Placement Conversion Rate formula
-        cursor.execute("""
-            SELECT COUNT(*) AS c FROM students
-            WHERE LOWER(TRIM(COALESCE(career_option,''))) IN ('job', 'psu')
-               OR career_option IS NULL
-        """)
-        total_interested = cursor.fetchone()["c"] or 0
-
-        cursor.execute("""
-            SELECT COUNT(DISTINCT s.student_id) AS c
-            FROM students s
-            JOIN applications a ON a.student_id = s.student_id
-            WHERE LOWER(TRIM(COALESCE(s.career_option,''))) NOT IN ('job', 'psu')
-              AND s.career_option IS NOT NULL
-        """)
-        not_interested_applied = cursor.fetchone()["c"] or 0
-
-        denominator = total_interested + not_interested_applied
-        
-        # Check if Student Directory Data file exists
         active_year_id = session.get("active_year", "2025-2026")
-        upload_dir = os.path.join(app.static_folder, "uploads", active_year_id)
-        master_sheet_uploaded = os.path.exists(os.path.join(upload_dir, "master_sheet.pdf")) or \
-                                os.path.exists(os.path.join(upload_dir, "master_sheet.xlsx")) or \
-                                os.path.exists(os.path.join(upload_dir, "master_sheet.csv"))
-                                
-        if denominator > 0 and master_sheet_uploaded:
-            cursor.execute("""
-                SELECT COUNT(DISTINCT student_id) AS c 
-                FROM students 
-                WHERE (selected_tier IS NOT NULL AND selected_tier > 0)
-                   OR (tier_1 IS NOT NULL AND TRIM(tier_1) != '' AND LOWER(TRIM(tier_1)) != 'nan')
-                   OR (tier_2 IS NOT NULL AND TRIM(tier_2) != '' AND LOWER(TRIM(tier_2)) != 'nan')
-                   OR (tier_3 IS NOT NULL AND TRIM(tier_3) != '' AND LOWER(TRIM(tier_3)) != 'nan')
-            """)
-            total_placed = cursor.fetchone()["c"] or 0
-            placement_rate = round((total_placed / denominator * 100), 1)
-        else:
-            placement_rate = 0.0
-
-        # Avg LPA
-        import re as _re
-        cursor.execute("SELECT ctc FROM jobs WHERE ctc IS NOT NULL AND ctc != ''")
-        ctc_rows = cursor.fetchall()
-        total_lpa, count_lpa = 0, 0
-        for r in ctc_rows:
-            m = _re.search(r'([\d.]+)', str(r['ctc']))
-            if m:
-                total_lpa += float(m.group(1))
-                count_lpa += 1
-        avg_lpa = round(total_lpa / count_lpa, 1) if count_lpa > 0 else 0.0
-
+        ts, aj, pr, alpa = get_dashboard_stats(active_year_id=active_year_id)
+        
         return jsonify({
-            "total_students": total_students,
-            "active_jobs": active_jobs,
-            "placement_rate": placement_rate,
-            "avg_lpa": avg_lpa
+            "total_students": ts,
+            "active_jobs": aj,
+            "placement_rate": pr,
+            "avg_lpa": alpa
         })
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -4379,8 +4316,9 @@ def faculty_applied_students():
     for job in jobs:
         j = dict(job)
         # Check if deadline passed
-        from datetime import datetime
+        from datetime import datetime, timedelta
         is_passed = False
+        hide_job = False
         if j.get('deadline'):
             deadline = j['deadline']
             if isinstance(deadline, str):
@@ -4391,9 +4329,15 @@ def faculty_applied_students():
                         deadline = datetime.strptime(deadline, "%Y-%m-%dT%H:%M")
                     except Exception:
                         pass
-            if isinstance(deadline, datetime) and datetime.now() > deadline:
-                is_passed = True
+            if isinstance(deadline, datetime):
+                if datetime.now() > deadline:
+                    is_passed = True
+                if datetime.now() > deadline + timedelta(days=3):
+                    hide_job = True
        
+        if hide_job:
+            continue
+            
         j['is_deadline_passed'] = is_passed
         j['deadline_str'] = str(j.get('deadline')) if j.get('deadline') else 'Ongoing'
 
