@@ -7,7 +7,28 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script>
-  (function() {
+function archiveJob(jobId, action) {
+  if (action === 'archive' && !confirm('Are you sure you want to archive this recruitment process?')) return;
+  fetch('/faculty/jobs/archive_recruitment', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({job_id: jobId, action: action})
+  })
+  .then(r => r.json())
+  .then(data => {
+    if(data.success) {
+      window.location.reload();
+    } else {
+      showToast("Error: " + data.error, "error");
+    }
+  })
+  .catch(err => {
+    showToast("Network error", "error");
+  });
+}
+
+// Ensure theme loaded globally
+(function() {
     const savedTheme = localStorage.getItem('faculty-theme') || 'light';
     document.documentElement.setAttribute('data-theme', savedTheme);
   })();
@@ -234,6 +255,19 @@ tr:hover td { background:rgba(253,230,138,0.07); }
     <div class="job-card" data-job-index="{{ loop.index0 }}" data-job-id="{{ job.job_id }}"
          style="animation-delay: {{ (loop.index0 * 0.07) }}s;"
          onclick="selectJob(this, {{ loop.index0 }})">
+      
+      {% if job.prompt_archive %}
+      <div style="background: rgba(245, 158, 11, 0.1); border: 1px dashed rgba(245, 158, 11, 0.4); border-radius: 8px; padding: 12px; margin-bottom: 16px; position: relative; z-index: 2;" onclick="event.stopPropagation();">
+        <p style="font-size: 12px; color: var(--text-main); margin-bottom: 8px; font-weight: 600;">
+          <i class="ti ti-alert-triangle" style="color: #d97706;"></i> Recruitment completed. Hide from tracker?
+        </p>
+        <div style="display:flex; gap:8px;">
+          <button onclick="archiveJob({{ job.id }}, 'yes')" style="background: #10b981; color: white; border: none; padding: 4px 12px; border-radius: 6px; font-size: 11px; font-weight: 700; cursor: pointer; transition: opacity 0.2s;" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">Yes</button>
+          <button onclick="archiveJob({{ job.id }}, 'no')" style="background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); padding: 4px 12px; border-radius: 6px; font-size: 11px; font-weight: 700; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='rgba(239, 68, 68, 0.2)'" onmouseout="this.style.background='rgba(239, 68, 68, 0.1)'">No</button>
+        </div>
+      </div>
+      {% endif %}
+
       <div class="job-card-header">
         <div>
           <h3>{{ job.company_name }}</h3>

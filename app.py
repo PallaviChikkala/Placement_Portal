@@ -363,7 +363,9 @@ def _init_database_single():
             "ALTER TABLE jobs ADD COLUMN reminder_date DATETIME DEFAULT NULL",
             "ALTER TABLE jobs ADD COLUMN reminder_note TEXT DEFAULT NULL",
             "ALTER TABLE jobs ADD COLUMN reminder_sent TINYINT(1) DEFAULT 0",
-            "ALTER TABLE jobs ADD COLUMN deadline_dismissed TINYINT(1) DEFAULT 0"
+            "ALTER TABLE jobs ADD COLUMN deadline_dismissed TINYINT(1) DEFAULT 0",
+            "ALTER TABLE jobs ADD COLUMN recruitment_finished_at DATETIME DEFAULT NULL",
+            "ALTER TABLE jobs ADD COLUMN recruitment_archived TINYINT(1) DEFAULT 0"
         ]:
             try:
                 cursor.execute(col_sql)
@@ -4365,6 +4367,29 @@ def faculty_applied_students():
     return render_template("faculty/applied_students.html", jobs=jobs_list)
 
 
+@app.route("/faculty/jobs/archive_recruitment", methods=["POST"])
+def faculty_archive_recruitment():
+    ensure_connection()
+    redir = faculty_required()
+    if redir: return jsonify({"error": "Unauthorized"}), 401
+    
+    data = request.json
+    job_id = data.get("job_id")
+    action = data.get("action") # 'yes' or 'no'
+    
+    if not job_id:
+        return jsonify({"success": False, "error": "Missing job ID"})
+        
+    archived_val = 1 if action == 'yes' else -1
+    
+    try:
+        cursor.execute("UPDATE jobs SET recruitment_archived = %s WHERE id = %s", (archived_val, job_id))
+        db.commit()
+        return jsonify({"success": True})
+    except Exception as e:
+        db.rollback()
+        return jsonify({"success": False, "error": str(e)})
+
 @app.route("/faculty/job_results")
 def faculty_job_results():
     ensure_connection()
@@ -4502,6 +4527,10 @@ def faculty_recruitment_process():
             round_map.setdefault(sid, {})[rnd] = rrow["result"]
             link_map.setdefault(sid,  {})[rnd] = rrow["drive_link"] or ""
 
+        # Check if recruitment is completed
+        has_final_round = False
+        final_complete = True
+        
         # Filter out eliminated students to keep the tracker clean
         students_list = []
         for s in students:
@@ -4509,6 +4538,18 @@ def faculty_recruitment_process():
             s_dict = dict(s)
             s_dict["rounds"] = {}
             s_dict["links"]  = {}
+            
+            is_eliminated_before_final = False
+            for rnd in range(1, jdict["num_rounds"]):
+                if round_map.get(sid, {}).get(rnd) == "Not Selected":
+                    is_eliminated_before_final = True
+                    break
+                    
+            if not is_eliminated_before_final:
+                has_final_round = True
+                f_res = round_map.get(sid, {}).get(jdict["num_rounds"], "Pending")
+                if f_res == "Pending":
+                    final_complete = False
             
             is_eliminated = False
             for rnd in range(1, jdict["num_rounds"] + 1):
@@ -4519,6 +4560,36 @@ def faculty_recruitment_process():
                     
             if not is_eliminated:
                 students_list.append(s_dict)
+                
+        # If final round complete, update finished_at
+        if has_final_round and final_complete and not jdict.get("recruitment_finished_at"):
+            try:
+                cursor.execute("UPDATE jobs SET recruitment_finished_at = NOW() WHERE id = %s", (jdict["id"],))
+                db.commit()
+                from datetime import datetime
+                jdict["recruitment_finished_at"] = datetime.now()
+            except Exception:
+                pass
+                
+        # Check archive logic
+        prompt_archive = False
+        archived_val = jdict.get("recruitment_archived", 0)
+        
+        if archived_val == 1:
+            continue # hide from list
+            
+        if archived_val == 0 and jdict.get("recruitment_finished_at"):
+            from datetime import datetime, timedelta
+            f_time = jdict["recruitment_finished_at"]
+            if isinstance(f_time, str):
+                try: f_time = datetime.strptime(f_time, "%Y-%m-%d %H:%M:%S")
+                except:
+                    try: f_time = datetime.strptime(f_time, "%Y-%m-%dT%H:%M")
+                    except: pass
+            if isinstance(f_time, datetime) and datetime.now() > f_time + timedelta(days=3):
+                prompt_archive = True
+                
+        jdict["prompt_archive"] = prompt_archive
 
         jdict["students"] = students_list
         jdict["applicant_count"] = len(list(students))
