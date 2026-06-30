@@ -6,7 +6,7 @@
     <title>Edit Yearly Statistics - Placement Portal</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@2.44.0/tabler-icons.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Inter:wght@300;400;500;600&family=Syne:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/faculty/dashboard.css') }}">
     <style>
         body { background-color: var(--bg-color); font-family: 'Inter', sans-serif; }
@@ -32,7 +32,7 @@
         <form method="POST" action="{{ url_for('faculty_edit_yearly_stats') }}">
             {% for stat in past_stats %}
             <div class="stats-form-card">
-                <h4 style="color: #d97706; font-family: 'Syne'; font-weight: 700;">Year: {{ stat.year }}</h4>
+                <h4 style="color: #d97706; font-family: 'Outfit'; font-weight: 700;">Year: {{ stat.year }}</h4>
                 <div class="row">
                     <div class="col-md-3 mb-3">
                         <label class="form-label">Total Enrolled Candidates</label>

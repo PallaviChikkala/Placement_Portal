@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Recruitment Process Tracker — NIT AP Placement Portal</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script>
 function archiveJob(jobId, action) {
   if (action === 'archive' && !confirm('Are you sure you want to archive this recruitment process?')) return;
@@ -86,7 +86,7 @@ function archiveJob(jobId, action) {
   --upload-card-border: rgba(245, 158, 11, 0.25);
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { min-height: 100vh; font-family: 'DM Sans', sans-serif; background: var(--bg-gradient); color: var(--text-main); transition: background 0.3s, color 0.3s; }
+body { min-height: 100vh; font-family: 'Inter', sans-serif; background: var(--bg-gradient); color: var(--text-main); transition: background 0.3s, color 0.3s; }
 .blob { position: fixed; border-radius: 50%; pointer-events: none; filter: blur(55px); z-index: 0; }
 .blob-1 { width: 280px; height: 280px; background: rgba(230,180,40,0.22); top:-70px; left:-50px; animation: float-blob-1 12s infinite ease-in-out; }
 .blob-2 { width: 220px; height: 220px; background: rgba(255,220,80,0.18); bottom:-50px; right:-30px; animation: float-blob-2 15s infinite ease-in-out; }
@@ -105,19 +105,19 @@ body { min-height: 100vh; font-family: 'DM Sans', sans-serif; background: var(--
 }
 .logo-area { display: flex; align-items: center; gap: 14px; }
 .logo-icon { width:44px; height:44px; background: linear-gradient(135deg,#f59e0b,#d97706); border-radius:14px; display:flex; align-items:center; justify-content:center; color:white; font-size:24px; font-weight:800; }
-.logo-text h2 { font-family:'Syne',sans-serif; font-size:16px; font-weight:800; color:var(--text-main); line-height:1.2; }
+.logo-text h2 { font-family:'Outfit',sans-serif; font-size:16px; font-weight:800; color:var(--text-main); line-height:1.2; }
 .logo-text p { font-size:9px; letter-spacing:0.5px; color:var(--text-muted); text-transform:uppercase; }
 .header-right { display:flex; align-items:center; gap:12px; }
 .page-body { padding: 96px 32px 40px; max-width: 1500px; margin: 0 auto; position: relative; z-index:2; }
 
 .page-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:28px; flex-wrap:wrap; gap:14px; }
-.page-header h1 { font-family:'Syne',sans-serif; font-size:28px; font-weight:800; color:var(--text-main); display:flex; align-items:center; gap:10px; }
+.page-header h1 { font-family:'Outfit',sans-serif; font-size:28px; font-weight:800; color:var(--text-main); display:flex; align-items:center; gap:10px; }
 .back-btn { background:var(--logout-bg); border:1px solid var(--card-border); padding:6px 14px; border-radius:40px; color:var(--text-main); font-size:12px; display:flex; align-items:center; gap:6px; text-decoration:none; font-weight:600; transition:all 0.2s; }
 .back-btn:hover { background:var(--badge-bg); border-color:var(--text-accent); }
 .action-btn { background: var(--button-gradient); color:white; border:none; padding:9px 20px; border-radius:40px; cursor:pointer; font-weight:700; font-size:13px; display:inline-flex; align-items:center; gap:7px; transition:opacity 0.2s; text-decoration:none; }
 .action-btn:hover { opacity:0.88; }
 
-.section-title { font-family:'Syne',sans-serif; font-size:16px; font-weight:800; color:var(--text-muted); margin-bottom:16px; letter-spacing:0.5px; text-transform:uppercase; }
+.section-title { font-family:'Outfit',sans-serif; font-size:16px; font-weight:800; color:var(--text-muted); margin-bottom:16px; letter-spacing:0.5px; text-transform:uppercase; }
 .jobs-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(270px, 1fr)); gap:20px; margin-bottom:36px; }
 .job-card {
   background:var(--card-bg);
@@ -133,7 +133,7 @@ body { min-height: 100vh; font-family: 'DM Sans', sans-serif; background: var(--
 .job-card:hover { transform:translateY(-6px); box-shadow:0 14px 32px var(--shadow-hover); border-color:var(--text-accent); background:var(--card-hover-bg); }
 .job-card.active { border-color:var(--text-accent); box-shadow:0 0 0 3px rgba(180,83,9,0.2); }
 .job-card-header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px; }
-.job-card h3 { font-family:'Syne',sans-serif; font-size:17px; font-weight:800; color:var(--text-main); }
+.job-card h3 { font-family:'Outfit',sans-serif; font-size:17px; font-weight:800; color:var(--text-main); }
 .job-card .job-role { font-size:13px; color:var(--text-muted); font-weight:600; margin-bottom:6px; }
 .tag { background:var(--badge-bg); color:var(--text-accent); padding:3px 10px; border-radius:20px; font-size:11px; font-weight:700; }
 .applicant-count { background:var(--button-gradient); color:white; padding:3px 10px; border-radius:20px; font-size:11px; font-weight:700; }
@@ -145,7 +145,7 @@ body { min-height: 100vh; font-family: 'DM Sans', sans-serif; background: var(--
 @keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
 
 .panel-header { padding:20px 28px; background:transparent; border-bottom:1px solid var(--table-border); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:14px; }
-.panel-header h2 { font-family:'Syne',sans-serif; font-size:20px; font-weight:800; color:var(--text-main); display:flex; align-items:center; gap:8px; }
+.panel-header h2 { font-family:'Outfit',sans-serif; font-size:20px; font-weight:800; color:var(--text-main); display:flex; align-items:center; gap:8px; }
 .panel-controls { display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
 .rounds-control { display:flex; align-items:center; gap:8px; }
 .rounds-control label { font-size:13px; font-weight:700; color:var(--text-main); }
@@ -176,7 +176,7 @@ tr:hover td { background:rgba(253,230,138,0.07); }
 
 /* ── PER-ROUND UPLOAD CARDS ──────────────────────────────────────────────────── */
 .rounds-section { padding:24px 28px; border-top:1px solid var(--card-border); display:flex; flex-direction:column; gap:16px; }
-.rounds-section-title { font-family:'Syne',sans-serif; font-size:15px; font-weight:800; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px; display:flex; align-items:center; gap:8px; margin-bottom:4px; }
+.rounds-section-title { font-family:'Outfit',sans-serif; font-size:15px; font-weight:800; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px; display:flex; align-items:center; gap:8px; margin-bottom:4px; }
 
 .round-upload-card {
   background: var(--upload-card-bg);
@@ -187,7 +187,7 @@ tr:hover td { background:rgba(253,230,138,0.07); }
   transition: box-shadow 0.2s, border-color 0.2s;
 }
 .round-upload-card:hover { border-color:var(--text-accent); box-shadow:0 4px 16px var(--shadow-hover); }
-.round-upload-num { font-family:'Syne',sans-serif; font-size:24px; font-weight:800; color:var(--text-accent); min-width:48px; }
+.round-upload-num { font-family:'Outfit',sans-serif; font-size:24px; font-weight:800; color:var(--text-accent); min-width:48px; }
 .round-upload-label { flex:1; min-width:140px; }
 .round-upload-label .lbl-main { font-size:14px; font-weight:700; color:var(--text-main); }
 .round-upload-label .lbl-sub  { font-size:12px; color:var(--text-muted); margin-top:2px; }
@@ -590,7 +590,7 @@ function showToast(msg, type) {
     error:   'linear-gradient(135deg,#ef4444,#dc2626)',
     info:    'linear-gradient(135deg,#3b82f6,#2563eb)'
   };
-  toast.style.cssText = `background:${bg[type]||bg.success};color:white;padding:13px 22px;border-radius:14px;box-shadow:0 10px 28px rgba(0,0,0,0.15);display:flex;align-items:center;gap:10px;font-family:DM Sans,sans-serif;font-size:13px;font-weight:600;opacity:0;transform:translateY(20px);transition:all 0.3s;min-width:220px;`;
+  toast.style.cssText = `background:${bg[type]||bg.success};color:white;padding:13px 22px;border-radius:14px;box-shadow:0 10px 28px rgba(0,0,0,0.15);display:flex;align-items:center;gap:10px;font-family:Inter,sans-serif;font-size:13px;font-weight:600;opacity:0;transform:translateY(20px);transition:all 0.3s;min-width:220px;`;
   toast.innerHTML = `<i class="ti ti-circle-check" style="font-size:17px;"></i><span>${msg}</span>`;
   container.appendChild(toast);
   setTimeout(() => { toast.style.opacity = '1'; toast.style.transform = 'translateY(0)'; }, 10);

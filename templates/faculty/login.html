@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Admin Login — NIT AP Placement Portal</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script>
   (function() {
     const savedTheme = localStorage.getItem('faculty-theme') || 'light';
@@ -60,7 +60,7 @@
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body {
   min-height: 100vh; display: flex; align-items: center; justify-content: center;
-  padding: 32px 20px; font-family: 'DM Sans', sans-serif;
+  padding: 32px 20px; font-family: 'Inter', sans-serif;
   background: var(--bg-gradient); color: var(--text-main);
   position: relative; overflow-x: hidden; transition: background 0.3s, color 0.3s;
 }
@@ -97,9 +97,9 @@ body {
 .logo-icon {
   width: 44px; height: 44px; background: linear-gradient(135deg, #f59e0b, #d97706);
   border-radius: 14px; display: flex; align-items: center; justify-content: center;
-  color: white; font-size: 24px; font-weight: 800; font-family: 'Syne', sans-serif;
+  color: white; font-size: 24px; font-weight: 800; font-family: 'Outfit', sans-serif;
 }
-.logo-text h2 { font-family: 'Syne', sans-serif; font-size: 16px; font-weight: 800; color: var(--text-main); line-height: 1.2; transition: color 0.3s; }
+.logo-text h2 { font-family: 'Outfit', sans-serif; font-size: 16px; font-weight: 800; color: var(--text-main); line-height: 1.2; transition: color 0.3s; }
 .logo-text p { font-size: 9px; letter-spacing: 0.5px; color: var(--text-muted); text-transform: uppercase; transition: color 0.3s; }
 .header-right { font-size: 11px; background: var(--badge-bg); padding: 6px 14px; border-radius: 30px; color: var(--text-accent); transition: all 0.3s; }
 .main-wrapper { width: 100%; margin-top: 80px; display: flex; justify-content: center; }
@@ -115,27 +115,27 @@ body {
 .stat-card.c1 { background: linear-gradient(135deg, var(--card-bg), var(--badge-bg)); }
 .stat-card .icon-wrap { width: 34px; height: 34px; border-radius: 10px; background: rgba(255,255,255,0.7); display: flex; align-items: center; justify-content: center; margin-bottom: 10px; }
 [data-theme="dark"] .stat-card .icon-wrap { background: rgba(15, 23, 42, 0.6); }
-.stat-num { font-family: 'Syne', sans-serif; font-size: 26px; font-weight: 800; color: var(--text-main); transition: color 0.3s; }
+.stat-num { font-family: 'Outfit', sans-serif; font-size: 26px; font-weight: 800; color: var(--text-main); transition: color 0.3s; }
 .stat-label { font-size: 11px; color: var(--text-muted); font-weight: 500; margin-top: 2px; transition: color 0.3s; }
 .trend { position: absolute; top: 12px; right: 12px; font-size: 10px; background: var(--badge-bg); padding: 2px 8px; border-radius: 20px; color: var(--text-accent); font-weight: 600; transition: all 0.3s; }
 .info-card { background: var(--card-bg); border-radius: 14px; padding: 16px 14px; border: 1px solid var(--card-border); transition: all 0.3s; }
-.info-card-title { font-family: 'Syne', sans-serif; font-size: 12px; font-weight: 800; color: var(--text-main); margin-bottom: 6px; transition: color 0.3s; }
+.info-card-title { font-family: 'Outfit', sans-serif; font-size: 12px; font-weight: 800; color: var(--text-main); margin-bottom: 6px; transition: color 0.3s; }
 .info-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; }
 .info-icon { width: 30px; height: 30px; border-radius: 8px; background: var(--badge-bg); display: flex; align-items: center; justify-content: center; color: var(--text-accent); transition: all 0.3s; }
-.i-val { font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 800; color: var(--text-main); transition: color 0.3s; }
+.i-val { font-family: 'Outfit', sans-serif; font-size: 14px; font-weight: 800; color: var(--text-main); transition: color 0.3s; }
 .i-lbl { font-size: 10px; color: var(--text-muted); transition: color 0.3s; }
 .login-panel { flex: 1; background: var(--card-bg); border-radius: 16px; padding: 26px 22px; backdrop-filter: blur(16px); border: 1px solid var(--card-border); transition: all 0.3s; }
 .portal-tag { display: flex; align-items: center; gap: 8px; margin-bottom: 16px; font-size: 11px; font-weight: 700; color: var(--text-accent); text-transform: uppercase; letter-spacing: 1px; transition: color 0.3s; }
 .dot-live { width: 8px; height: 8px; border-radius: 50%; background: #16a34a; animation: pulse 2s infinite; }
 @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
-.panel-title { font-family: 'Syne', sans-serif; font-size: 24px; font-weight: 800; color: var(--text-main); margin-bottom: 4px; transition: color 0.3s; }
+.panel-title { font-family: 'Outfit', sans-serif; font-size: 24px; font-weight: 800; color: var(--text-main); margin-bottom: 4px; transition: color 0.3s; }
 .panel-sub { font-size: 13px; color: var(--text-muted); margin-bottom: 20px; font-weight: 500; transition: color 0.3s; }
 .field-label { font-size: 12px; font-weight: 700; color: var(--text-main); display: block; margin-bottom: 6px; margin-top: 12px; transition: color 0.3s; }
 .field-row { display: flex; align-items: center; gap: 8px; background: var(--input-bg); border: 1px solid var(--input-border); border-radius: 9px; padding: 9px 12px; margin-bottom: 12px; transition: all 0.2s; }
 .field-row:focus-within { border-color: var(--text-accent); box-shadow: 0 0 0 3px var(--badge-bg); }
 .field-row i { color: var(--text-accent); font-size: 16px; transition: color 0.3s; }
-.field-row input { background: transparent; border: none; outline: none; width: 100%; font-family: 'DM Sans', sans-serif; font-size: 14px; color: var(--text-main); }
-.signin-btn { width: 100%; padding: 11px; background: var(--button-gradient); color: white; border: none; border-radius: 9px; cursor: pointer; font-weight: 700; font-family: 'DM Sans', sans-serif; font-size: 14px; margin-top: 4px; transition: opacity 0.2s; }
+.field-row input { background: transparent; border: none; outline: none; width: 100%; font-family: 'Inter', sans-serif; font-size: 14px; color: var(--text-main); }
+.signin-btn { width: 100%; padding: 11px; background: var(--button-gradient); color: white; border: none; border-radius: 9px; cursor: pointer; font-weight: 700; font-family: 'Inter', sans-serif; font-size: 14px; margin-top: 4px; transition: opacity 0.2s; }
 .signin-btn:hover { opacity: 0.9; }
 .error-msg { font-size: 12px; text-align: center; margin-top: 10px; color: #dc2626; font-weight: 600; background: #fee2e2; border-radius: 8px; padding: 8px; }
 .divider { border: none; border-top: 1px solid var(--card-border); margin: 16px 0 10px; transition: border-color 0.3s; }

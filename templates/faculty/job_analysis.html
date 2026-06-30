@@ -6,7 +6,7 @@
 <title>Job Analysis — Placement Portal</title>
 <meta name="description" content="Per-job analysis showing applicant count, selections, and selection rate for each placement drive.">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
 <script>
   (function() {
@@ -66,7 +66,7 @@
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { min-height: 100vh; font-family: 'DM Sans', sans-serif; background: var(--bg-gradient); color: var(--text-main); transition: background 0.3s, color 0.3s; }
+body { min-height: 100vh; font-family: 'Inter', sans-serif; background: var(--bg-gradient); color: var(--text-main); transition: background 0.3s, color 0.3s; }
 
 .blob { position: fixed; border-radius: 50%; pointer-events: none; filter: blur(55px); z-index: 0; }
 .blob-1 { width: 280px; height: 280px; background: var(--blob1-color); top:-70px; left:-50px; animation: floatBlob1 12s infinite ease-in-out; }
@@ -83,16 +83,16 @@ body { min-height: 100vh; font-family: 'DM Sans', sans-serif; background: var(--
   transition: background 0.3s, border-color 0.3s;
 }
 .logo-area { display: flex; align-items: center; gap: 14px; }
-.logo-text h2 { font-family:'Syne',sans-serif; font-size:16px; font-weight:800; color:var(--text-main); line-height:1.2; }
+.logo-text h2 { font-family:'Outfit',sans-serif; font-size:16px; font-weight:800; color:var(--text-main); line-height:1.2; }
 .logo-text p { font-size:9px; letter-spacing:0.5px; color:var(--text-muted); text-transform:uppercase; }
-.logout-btn { background: var(--logout-bg); border:1px solid var(--card-border); padding:6px 14px; border-radius:40px; cursor:pointer; color:var(--text-main); font-family:'DM Sans',sans-serif; font-size:12px; display:flex; align-items:center; gap:6px; transition: all 0.2s; text-decoration:none; }
+.logout-btn { background: var(--logout-bg); border:1px solid var(--card-border); padding:6px 14px; border-radius:40px; cursor:pointer; color:var(--text-main); font-family:'Inter',sans-serif; font-size:12px; display:flex; align-items:center; gap:6px; transition: all 0.2s; text-decoration:none; }
 .logout-btn:hover { background: #fee2e2; border-color:#fca5a5; color:#dc2626; }
 
 .page-body { padding: 100px 32px 60px; max-width: 1280px; margin: 0 auto; position: relative; z-index:2; }
 
 /* — PAGE HEADER — */
 .page-header { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 20px; margin-bottom: 36px; }
-.page-header h1 { font-family:'Syne',sans-serif; font-size:30px; font-weight:800; color:var(--text-main); }
+.page-header h1 { font-family:'Outfit',sans-serif; font-size:30px; font-weight:800; color:var(--text-main); }
 .page-header p { color: var(--text-muted); font-size: 14px; margin-top: 4px; }
 .back-btn { display:inline-flex; align-items:center; gap:8px; background: var(--badge-bg); border: 1px solid var(--card-border); color: var(--text-accent); padding: 8px 18px; border-radius: 30px; font-size:13px; font-weight:600; text-decoration:none; transition: all 0.2s; }
 .back-btn:hover { background: var(--button-gradient); color:#fff; border-color:transparent; }
@@ -115,18 +115,18 @@ body { min-height: 100vh; font-family: 'DM Sans', sans-serif; background: var(--
 .s-icon.green { background: rgba(16,185,129,0.15); color:#10b981; }
 .s-icon.amber { background: rgba(245,158,11,0.15); color:#f59e0b; }
 .s-icon.purple { background: rgba(139,92,246,0.15); color:#8b5cf6; }
-.s-num { font-family:'Syne',sans-serif; font-size:26px; font-weight:800; color:var(--text-main); line-height:1; }
+.s-num { font-family:'Outfit',sans-serif; font-size:26px; font-weight:800; color:var(--text-main); line-height:1; }
 .s-lbl { font-size:11px; color:var(--text-muted); font-weight:600; text-transform:uppercase; letter-spacing:0.5px; margin-top:2px; }
 
 /* — SEARCH & FILTER BAR — */
 .filter-bar { display:flex; flex-wrap:wrap; gap:12px; margin-bottom:24px; align-items:center; }
 .search-wrap { position:relative; flex:1; min-width:220px; }
 .search-wrap i { position:absolute; left:14px; top:50%; transform:translateY(-50%); color:var(--text-muted); font-size:16px; pointer-events:none; }
-.search-input { width:100%; padding:10px 16px 10px 42px; border:1px solid var(--input-border); border-radius:30px; background:var(--input-bg); color:var(--text-main); font-family:'DM Sans',sans-serif; font-size:13px; outline:none; transition:0.2s; }
+.search-input { width:100%; padding:10px 16px 10px 42px; border:1px solid var(--input-border); border-radius:30px; background:var(--input-bg); color:var(--text-main); font-family:'Inter',sans-serif; font-size:13px; outline:none; transition:0.2s; }
 .search-input:focus { border-color:var(--text-accent); box-shadow: 0 0 0 3px rgba(180,83,9,0.08); }
-.filter-select { padding:10px 16px; border:1px solid var(--input-border); border-radius:30px; background:var(--input-bg); color:var(--text-main); font-family:'DM Sans',sans-serif; font-size:13px; outline:none; cursor:pointer; transition:0.2s; }
+.filter-select { padding:10px 16px; border:1px solid var(--input-border); border-radius:30px; background:var(--input-bg); color:var(--text-main); font-family:'Inter',sans-serif; font-size:13px; outline:none; cursor:pointer; transition:0.2s; }
 .filter-select:focus { border-color:var(--text-accent); }
-.export-btn { display:inline-flex; align-items:center; gap:8px; background: var(--button-gradient); color:#fff; border:none; padding:10px 22px; border-radius:30px; font-weight:700; font-size:13px; cursor:pointer; font-family:'DM Sans',sans-serif; transition:opacity 0.2s; text-decoration:none; }
+.export-btn { display:inline-flex; align-items:center; gap:8px; background: var(--button-gradient); color:#fff; border:none; padding:10px 22px; border-radius:30px; font-weight:700; font-size:13px; cursor:pointer; font-family:'Inter',sans-serif; transition:opacity 0.2s; text-decoration:none; }
 .export-btn:hover { opacity:0.88; }
 
 /* — TABLE — */
@@ -153,7 +153,7 @@ tbody td { padding: 14px 18px; font-size:13px; color:var(--text-main); vertical-
 .company-avatar {
   width:36px; height:36px; border-radius:10px; flex-shrink:0;
   display:flex; align-items:center; justify-content:center;
-  font-family:'Syne',sans-serif; font-size:14px; font-weight:800; color:#fff;
+  font-family:'Outfit',sans-serif; font-size:14px; font-weight:800; color:#fff;
 }
 .company-name-text { font-weight:700; color:var(--text-main); }
 .role-text { font-size:12px; color:var(--text-muted); margin-top:1px; }
@@ -167,7 +167,7 @@ tbody td { padding: 14px 18px; font-size:13px; color:var(--text-main); vertical-
 .tier-3 { background: rgba(239,68,68,0.15); color:#dc2626; }
 .tier-default { background: var(--badge-bg); color:var(--text-accent); }
 
-.num-cell { font-family:'Syne',sans-serif; font-weight:800; font-size:16px; }
+.num-cell { font-family:'Outfit',sans-serif; font-weight:800; font-size:16px; }
 .num-applied { color:#3b82f6; }
 .num-selected { color:#10b981; }
 .num-rejected { color:#ef4444; }
@@ -469,7 +469,7 @@ function exportXLSX() {
 function showToast(msg, type='info') {
   const colors = { success:'linear-gradient(135deg,#10b981,#059669)', error:'linear-gradient(135deg,#ef4444,#dc2626)', info:'linear-gradient(135deg,#3b82f6,#2563eb)' };
   const t = document.createElement('div');
-  t.style.cssText = `background:${colors[type]||colors.info};color:#fff;padding:12px 20px;border-radius:14px;font-size:13px;font-weight:600;box-shadow:0 4px 18px rgba(0,0,0,0.18);display:flex;align-items:center;gap:10px;animation:fadeUp .3s ease;font-family:'DM Sans',sans-serif;`;
+  t.style.cssText = `background:${colors[type]||colors.info};color:#fff;padding:12px 20px;border-radius:14px;font-size:13px;font-weight:600;box-shadow:0 4px 18px rgba(0,0,0,0.18);display:flex;align-items:center;gap:10px;animation:fadeUp .3s ease;font-family:'Inter',sans-serif;`;
   t.innerHTML = `<i class="ti ti-${type==='success'?'check':'info-circle'}"></i>${msg}`;
   document.getElementById('toastContainer').appendChild(t);
   setTimeout(() => t.remove(), 3000);

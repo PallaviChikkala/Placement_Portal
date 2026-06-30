@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Select Batch — NIT AP Placement Portal</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script>
   (function() {
     const savedTheme = localStorage.getItem('faculty-theme') || 'light';
@@ -54,7 +54,7 @@
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body {
   min-height: 100vh; display: flex; align-items: center; justify-content: center;
-  padding: 32px 20px; font-family: 'DM Sans', sans-serif;
+  padding: 32px 20px; font-family: 'Inter', sans-serif;
   background: var(--bg-gradient); color: var(--text-main);
   position: relative; overflow-x: hidden; transition: background 0.3s, color 0.3s;
 }
@@ -89,9 +89,9 @@ body {
 }
 .logo-area { display: flex; align-items: center; gap: 14px; }
 .logo-img { height: 40px; width: auto; }
-.logo-text h2 { font-family: 'Syne', sans-serif; font-size: 16px; font-weight: 800; color: var(--text-main); line-height: 1.2; transition: color 0.3s; }
+.logo-text h2 { font-family: 'Outfit', sans-serif; font-size: 16px; font-weight: 800; color: var(--text-main); line-height: 1.2; transition: color 0.3s; }
 .logo-text p { font-size: 9px; letter-spacing: 0.5px; color: var(--text-muted); text-transform: uppercase; transition: color 0.3s; }
-.logout-btn { background: var(--logout-bg); border: 1px solid var(--card-border); padding: 6px 14px; border-radius: 40px; cursor: pointer; color: var(--text-main); font-family: 'DM Sans', sans-serif; font-size: 12px; display: flex; align-items: center; gap: 6px; text-decoration: none; transition: all 0.2s; }
+.logout-btn { background: var(--logout-bg); border: 1px solid var(--card-border); padding: 6px 14px; border-radius: 40px; cursor: pointer; color: var(--text-main); font-family: 'Inter', sans-serif; font-size: 12px; display: flex; align-items: center; gap: 6px; text-decoration: none; transition: all 0.2s; }
 .logout-btn:hover { background: #fee2e2; border-color: #fca5a5; color: #dc2626; }
 
 .selector-container {
@@ -104,7 +104,7 @@ body {
 }
 
 .title-section { text-align: center; margin-bottom: 40px; }
-.title-section h1 { font-family: 'Syne', sans-serif; font-size: 32px; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 8px; }
+.title-section h1 { font-family: 'Outfit', sans-serif; font-size: 32px; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 8px; }
 .title-section p { font-size: 14px; color: var(--text-muted); font-weight: 500; }
 
 .cards-grid {
@@ -140,7 +140,7 @@ body {
 }
 
 .year-card h3 {
-  font-family: 'Syne', sans-serif; font-size: 24px; font-weight: 800;
+  font-family: 'Outfit', sans-serif; font-size: 24px; font-weight: 800;
   color: var(--text-main); margin-bottom: 12px;
 }
 .year-card p {
@@ -207,7 +207,7 @@ body {
 <!-- Simple Edit Name Popup -->
 <div id="editPopup" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.55); z-index:3000; align-items:center; justify-content:center;">
   <div style="background:var(--card-bg); padding:28px 28px 24px; border-radius:20px; width:100%; max-width:360px; border:1px solid var(--card-border); backdrop-filter:blur(16px); box-shadow:0 20px 50px rgba(0,0,0,0.3);">
-    <h4 style="margin-bottom:18px; font-family:'Syne',sans-serif; font-size:20px; color:var(--text-main);">Edit Batch Year Name</h4>
+    <h4 style="margin-bottom:18px; font-family:'Outfit',sans-serif; font-size:20px; color:var(--text-main);">Edit Batch Year Name</h4>
     <form action="/faculty/manage_batches" method="POST">
       <input type="hidden" name="action" value="edit">
       <input type="hidden" name="batch_id" id="editBatchId">
@@ -257,7 +257,7 @@ function showToast(msg, type="success") {
   const container = document.getElementById("toastContainer");
   const toast = document.createElement("div");
   const colors = { success:"linear-gradient(135deg,#10b981,#059669)", error:"linear-gradient(135deg,#ef4444,#dc2626)", warning:"linear-gradient(135deg,#f59e0b,#d97706)", info:"linear-gradient(135deg,#3b82f6,#2563eb)" };
-  toast.style.cssText = `background:${colors[type]||colors.success};color:white;padding:14px 24px;border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,0.15);display:flex;align-items:center;gap:12px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;opacity:0;transform:translateY(20px);transition:all 0.3s cubic-bezier(0.175,0.885,0.32,1.275);`;
+  toast.style.cssText = `background:${colors[type]||colors.success};color:white;padding:14px 24px;border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,0.15);display:flex;align-items:center;gap:12px;font-family:'Inter',sans-serif;font-size:14px;font-weight:600;opacity:0;transform:translateY(20px);transition:all 0.3s cubic-bezier(0.175,0.885,0.32,1.275);`;
   toast.innerHTML = `<i class="ti ti-circle-check" style="font-size:18px;"></i><span>${msg}</span>`;
   container.appendChild(toast);
   setTimeout(() => { toast.style.opacity="1"; toast.style.transform="translateY(0)"; }, 10);

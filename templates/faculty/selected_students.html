@@ -6,7 +6,7 @@
 <title>Selected Students — NIT AP Placement Portal</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script>
   (function() {
     const savedTheme = localStorage.getItem('faculty-theme') || 'light';
@@ -85,7 +85,7 @@ select optgroup {
 }
 
 * { box-sizing:border-box; margin:0; padding:0; }
-body { min-height:100vh; font-family:'DM Sans',sans-serif; background:var(--bg-gradient); color:var(--text-main); transition: background 0.3s, color 0.3s; }
+body { min-height:100vh; font-family:'Inter',sans-serif; background:var(--bg-gradient); color:var(--text-main); transition: background 0.3s, color 0.3s; }
 .blob { position:fixed; border-radius:50%; pointer-events:none; filter:blur(55px); z-index:0; }
 .blob-1 { width:280px; height:280px; background:var(--blob1-color); top:-70px; left:-50px; animation: float-blob-1 12s infinite ease-in-out; }
 .blob-2 { width:220px; height:220px; background:var(--blob2-color); bottom:-50px; right:-30px; animation: float-blob-2 15s infinite ease-in-out; }
@@ -109,8 +109,8 @@ body { min-height:100vh; font-family:'DM Sans',sans-serif; background:var(--bg-g
   box-shadow:0 2px 12px rgba(0,0,0,0.02); transition: background 0.3s, border-color 0.3s;
 }
 .logo-area { display:flex; align-items:center; gap:14px; }
-.logo-icon { width:44px; height:44px; background:linear-gradient(135deg,#f59e0b,#d97706); border-radius:14px; display:flex; align-items:center; justify-content:center; color:white; font-size:24px; font-weight:800; font-family:'Syne',sans-serif; }
-.logo-text h2 { font-family:'Syne',sans-serif; font-size:16px; font-weight:800; color:var(--text-main); line-height:1.2; transition: color 0.3s; }
+.logo-icon { width:44px; height:44px; background:linear-gradient(135deg,#f59e0b,#d97706); border-radius:14px; display:flex; align-items:center; justify-content:center; color:white; font-size:24px; font-weight:800; font-family:'Outfit',sans-serif; }
+.logo-text h2 { font-family:'Outfit',sans-serif; font-size:16px; font-weight:800; color:var(--text-main); line-height:1.2; transition: color 0.3s; }
 .logo-text p { font-size:9px; letter-spacing:0.5px; color:var(--text-muted); text-transform:uppercase; transition: color 0.3s; }
 .header-right { font-size: 11px; background: var(--badge-bg); padding: 6px 14px; border-radius: 30px; color: var(--text-accent); display: flex; align-items: center; gap: 6px; text-decoration: none; font-weight: 600; transition: all 0.3s; }
 
@@ -122,13 +122,13 @@ body { min-height:100vh; font-family:'DM Sans',sans-serif; background:var(--bg-g
 }
 
 .page-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:32px; flex-wrap:wrap; gap:16px; }
-.page-header h1 { font-family:'Syne',sans-serif; font-size:32px; font-weight:800; color:var(--text-main); display:flex; align-items:center; gap:12px; transition: color 0.3s; }
-.back-home-btn { background:var(--logout-bg); border:1px solid var(--card-border); padding:8px 20px; border-radius:40px; cursor:pointer; color:var(--text-main); font-family:'DM Sans',sans-serif; font-size:13px; font-weight:600; display:inline-flex; align-items:center; gap:6px; text-decoration:none; transition:all 0.2s; }
+.page-header h1 { font-family:'Outfit',sans-serif; font-size:32px; font-weight:800; color:var(--text-main); display:flex; align-items:center; gap:12px; transition: color 0.3s; }
+.back-home-btn { background:var(--logout-bg); border:1px solid var(--card-border); padding:8px 20px; border-radius:40px; cursor:pointer; color:var(--text-main); font-family:'Inter',sans-serif; font-size:13px; font-weight:600; display:inline-flex; align-items:center; gap:6px; text-decoration:none; transition:all 0.2s; }
 .back-home-btn:hover { background:var(--badge-bg); border-color:var(--text-accent); }
 
 .student-table-panel { background:var(--card-bg); border-radius:32px; overflow:hidden; box-shadow:0 10px 30px var(--shadow-color); border: 1px solid var(--card-border); transition: all 0.3s; }
 .table-header { display:flex; justify-content:space-between; align-items:center; padding:20px 28px; background:var(--table-hdr-bg); border-bottom:1px solid var(--table-border); flex-wrap:wrap; gap:12px; transition: all 0.3s; }
-.table-header h3 { font-family:'Syne',sans-serif; font-size:18px; color:var(--text-main); font-weight:800; transition: color 0.3s; }
+.table-header h3 { font-family:'Outfit',sans-serif; font-size:18px; color:var(--text-main); font-weight:800; transition: color 0.3s; }
 .table-wrapper { overflow-x:auto; padding:16px 20px; }
 
 table { width:100%; border-collapse:collapse; }

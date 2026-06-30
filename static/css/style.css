@@ -1210,3 +1210,9 @@ body.dark-mode .table td.ps-4.fw-bold {
     color: #f1f5f9 !important;
 }
 
+/* Global Footer Alignment with Sidebar */
+@media (min-width: 992px) {
+    .dashboard-layout ~ footer {
+        padding-left: 260px !important;
+    }
+}

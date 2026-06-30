@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Job Results Tracker — Placement Portal</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script>
   (function() {
     const savedTheme = localStorage.getItem('faculty-theme') || 'light';
@@ -64,7 +64,7 @@
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { min-height: 100vh; font-family: 'DM Sans', sans-serif; background: var(--bg-gradient); color: var(--text-main); transition: background 0.3s, color 0.3s; }
+body { min-height: 100vh; font-family: 'Inter', sans-serif; background: var(--bg-gradient); color: var(--text-main); transition: background 0.3s, color 0.3s; }
 .blob { position: fixed; border-radius: 50%; pointer-events: none; filter: blur(55px); z-index: 0; }
 .blob-1 { width: 280px; height: 280px; background: var(--blob1-color); top:-70px; left:-50px; animation: float-blob-1 12s infinite ease-in-out; }
 .blob-2 { width: 220px; height: 220px; background: var(--blob2-color); bottom:-50px; right:-30px; animation: float-blob-2 15s infinite ease-in-out; }
@@ -89,18 +89,18 @@ body { min-height: 100vh; font-family: 'DM Sans', sans-serif; background: var(--
   transition: background 0.3s, border-color 0.3s;
 }
 .logo-area { display: flex; align-items: center; gap: 14px; }
-.logo-icon { width:44px; height:44px; background: linear-gradient(135deg, #f59e0b, #d97706); border-radius:14px; display:flex; align-items:center; justify-content:center; color:white; font-size:24px; font-weight:800; font-family:'Syne',sans-serif; }
-.logo-text h2 { font-family:'Syne',sans-serif; font-size:16px; font-weight:800; color:var(--text-main); line-height:1.2; transition: color 0.3s; }
+.logo-icon { width:44px; height:44px; background: linear-gradient(135deg, #f59e0b, #d97706); border-radius:14px; display:flex; align-items:center; justify-content:center; color:white; font-size:24px; font-weight:800; font-family:'Outfit',sans-serif; }
+.logo-text h2 { font-family:'Outfit',sans-serif; font-size:16px; font-weight:800; color:var(--text-main); line-height:1.2; transition: color 0.3s; }
 .logo-text p { font-size:9px; letter-spacing:0.5px; color:var(--text-muted); text-transform:uppercase; transition: color 0.3s; }
 
 .page-body { padding: 100px 32px 40px; max-width: 1200px; margin: 0 auto; position: relative; z-index:2; }
 .page-header { display:flex; justify-content:space-between; flex-wrap:wrap; margin-bottom:32px; gap:16px; align-items: center; }
-.page-header h1 { font-family:'Syne',sans-serif; font-size:28px; font-weight:800; color:var(--text-main); transition: color 0.3s; display: flex; align-items: center; gap: 10px; }
-.back-home-btn { background: var(--logout-bg); border:1px solid var(--card-border); padding:6px 14px; border-radius:40px; cursor:pointer; color:var(--text-main); font-family:'DM Sans',sans-serif; font-size:12px; display:flex; align-items:center; gap:6px; transition: all 0.2s; text-decoration: none; font-weight: 500; }
+.page-header h1 { font-family:'Outfit',sans-serif; font-size:28px; font-weight:800; color:var(--text-main); transition: color 0.3s; display: flex; align-items: center; gap: 10px; }
+.back-home-btn { background: var(--logout-bg); border:1px solid var(--card-border); padding:6px 14px; border-radius:40px; cursor:pointer; color:var(--text-main); font-family:'Inter',sans-serif; font-size:12px; display:flex; align-items:center; gap:6px; transition: all 0.2s; text-decoration: none; font-weight: 500; }
 .back-home-btn:hover { background: var(--badge-bg); border-color: var(--text-accent); }
 
 /* Jobs selection grid */
-.jobs-title { font-family:'Syne',sans-serif; font-size:20px; font-weight:800; margin-bottom:16px; color:var(--text-main); }
+.jobs-title { font-family:'Outfit',sans-serif; font-size:20px; font-weight:800; margin-bottom:16px; color:var(--text-main); }
 .jobs-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 20px; margin-bottom: 40px; }
 .job-selector-card {
   background: var(--card-bg);
@@ -124,7 +124,7 @@ body { min-height: 100vh; font-family: 'DM Sans', sans-serif; background: var(--
   border-color: var(--text-accent);
   box-shadow: 0 0 0 3px var(--text-accent);
 }
-.job-selector-card h3 { font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 800; color: var(--text-main); margin-bottom: 6px; }
+.job-selector-card h3 { font-family: 'Outfit', sans-serif; font-size: 18px; font-weight: 800; color: var(--text-main); margin-bottom: 6px; }
 .job-selector-card p { font-size: 13px; color: var(--text-muted); line-height: 1.4; }
 .job-meta { display: flex; justify-content: space-between; font-size: 11px; margin-top: 14px; font-weight: 700; color: var(--text-accent); }
 
@@ -132,10 +132,10 @@ body { min-height: 100vh; font-family: 'DM Sans', sans-serif; background: var(--
 .results-section { display: none; margin-top: 20px; }
 .results-section.active { display: block; animation: fadeIn 0.5s ease; }
 .selected-job-info-card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 24px; padding: 24px; margin-bottom: 28px; backdrop-filter: blur(12px); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; }
-.selected-job-details h2 { font-family: 'Syne', sans-serif; font-size: 22px; color: var(--text-main); }
+.selected-job-details h2 { font-family: 'Outfit', sans-serif; font-size: 22px; color: var(--text-main); }
 .selected-job-details p { font-size: 14px; color: var(--text-muted); margin-top: 4px; }
 .search-box-container { position: relative; }
-.search-input { background: var(--input-bg); border: 1px solid var(--input-border); border-radius: 30px; padding: 10px 16px 10px 36px; font-family: 'DM Sans', sans-serif; color: var(--text-main); font-size: 14px; width: 250px; outline: none; transition: border-color 0.2s; }
+.search-input { background: var(--input-bg); border: 1px solid var(--input-border); border-radius: 30px; padding: 10px 16px 10px 36px; font-family: 'Inter', sans-serif; color: var(--text-main); font-size: 14px; width: 250px; outline: none; transition: border-color 0.2s; }
 .search-input:focus { border-color: var(--text-accent); }
 .search-icon { position: absolute; left: 12px; top: 12px; color: var(--text-muted); font-size: 16px; }
 
@@ -147,7 +147,7 @@ body { min-height: 100vh; font-family: 'DM Sans', sans-serif; background: var(--
 
 .table-wrapper { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 24px; overflow: hidden; box-shadow: 0 4px 16px var(--shadow-color); backdrop-filter: blur(12px); display: flex; flex-direction: column; }
 .table-header { padding: 20px 24px; border-bottom: 1px solid var(--card-border); display: flex; justify-content: space-between; align-items: center; }
-.table-header h3 { font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 800; display: flex; align-items: center; gap: 8px; }
+.table-header h3 { font-family: 'Outfit', sans-serif; font-size: 18px; font-weight: 800; display: flex; align-items: center; gap: 8px; }
 .table-header h3.selected-title { color: var(--success-color); }
 .table-header h3.rejected-title { color: var(--danger-color); }
 .count-badge { font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: 20px; color: white; }
