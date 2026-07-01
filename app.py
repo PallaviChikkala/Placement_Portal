@@ -19,9 +19,22 @@ except Exception as _e:
     _EMAIL_SVC_LOADED = False
     print(f"[EmailService] Could not load email_service module: {_e}")
 
+from flask_mail import Mail, Message
+import random
+from datetime import datetime
+
 app = Flask(__name__)
 app.secret_key = "placement_portal_secret"
 app.permanent_session_lifetime = timedelta(days=30)
+
+# Configure Flask-Mail for OTPs
+app.config['MAIL_SERVER'] = 'smtp.gmail.com'
+app.config['MAIL_PORT'] = 465
+app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME', 'tap@nitandhra.ac.in')
+app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD', 'your_app_password') # Replace with actual app password
+app.config['MAIL_USE_TLS'] = False
+app.config['MAIL_USE_SSL'] = True
+mail = Mail(app)
 
 @app.after_request
 def add_header(r):
@@ -170,7 +183,10 @@ def check_routes_and_master_sheet():
         request.path.startswith("/api/faculty")
     )
     if is_faculty_route:
-        exempt = ["/faculty_login", "/faculty_login_check", "/faculty_logout"]
+        exempt = [
+            "/faculty_login", "/faculty_login_check", "/faculty_logout",
+            "/faculty/forgot_password", "/faculty/verify_otp", "/faculty/reset_password"
+        ]
         if request.path not in exempt:
             if "faculty_email" not in session:
                 is_api = (request.path.startswith("/api/") or
@@ -2981,6 +2997,159 @@ def faculty_login_check():
                            batches_stats=get_login_batches_stats())
 
 
+@app.route("/faculty/forgot_password", methods=["GET", "POST"])
+def faculty_forgot_password():
+    if request.method == "POST":
+        email = request.form.get("email", "").strip().lower()
+        if not email:
+            return render_template("faculty/forgot_password.html", error="Email is required.", batches_stats=get_login_batches_stats())
+        
+        # Search all known batch databases for the faculty email
+        found = False
+        try:
+            import json as _json
+            batches_file = os.path.join(app.root_path, "database", "batches.json")
+            all_dbs = []
+            if os.path.exists(batches_file):
+                with open(batches_file) as f:
+                    batches = _json.load(f)
+                    all_dbs = [b["db"] for b in batches]
+            if not all_dbs:
+                all_dbs = ["placement_portal_2025_2026", "placement_portal_2026_2027"]
+            
+            for db_name in all_dbs:
+                try:
+                    chk = get_connection(db_name)
+                    chk_cur = chk.cursor(dictionary=True)
+                    chk_cur.execute("SELECT email FROM faculty WHERE LOWER(email) = %s", (email,))
+                    row = chk_cur.fetchone()
+                    chk_cur.close()
+                    chk.close()
+                    if row:
+                        found = True
+                        break
+                except Exception:
+                    continue
+        except Exception as e:
+            app.logger.error(f"DB search error in forgot_password: {e}")
+
+        if not found:
+            return render_template("faculty/forgot_password.html",
+                                   error="No faculty account found with that email.",
+                                   batches_stats=get_login_batches_stats())
+
+        # Generate OTP
+        otp = str(random.randint(100000, 999999))
+        session['faculty_reset_otp'] = otp
+        session['faculty_reset_email'] = email
+        session['faculty_reset_expiry'] = datetime.now().timestamp() + 180  # 3 mins
+
+        # Send OTP using email_service (uses SMTP_EMAIL/SMTP_PASSWORD from .env)
+        html_body = f"""
+        <div style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto; padding: 30px; border: 1px solid #eee; border-radius: 10px;">
+            <h2 style="color: #d97706; text-align: center;">NIT AP Placement Portal</h2>
+            <h3 style="text-align:center;">Admin Password Reset</h3>
+            <p>Your OTP for password reset is:</p>
+            <div style="text-align: center; margin: 20px 0;">
+                <span style="font-size: 28px; font-weight: bold; padding: 14px 28px; background-color: #fef3c7; border-radius: 8px; letter-spacing: 6px; color: #92400e;">{otp}</span>
+            </div>
+            <p>This OTP is valid for <strong>3 minutes</strong>. Do not share it with anyone.</p>
+            <p style="color: #666; font-size: 13px;">If you did not request this, please ignore this email.</p>
+        </div>
+        """
+        result = _email_svc.send_email(email, "Admin Password Reset OTP — NIT AP Placement Portal", html_body)
+        if result.get('success'):
+            flash("OTP sent to your email. Please check your inbox.", "success")
+            return redirect("/faculty/verify_otp")
+        else:
+            app.logger.error(f"Failed to send OTP: {result.get('error')}")
+            # Dev mode: show OTP on screen if on localhost
+            if request.host.startswith("127.") or "localhost" in request.host:
+                flash(f"[Dev Mode] SMTP error — your OTP is: {otp}", "info")
+                return redirect("/faculty/verify_otp")
+            return render_template("faculty/forgot_password.html",
+                                   error="Failed to send email. Check SMTP settings in Settings → Email.",
+                                   batches_stats=get_login_batches_stats())
+    
+    return render_template("faculty/forgot_password.html", batches_stats=get_login_batches_stats())
+
+
+
+@app.route("/faculty/verify_otp", methods=["GET", "POST"])
+def faculty_verify_otp():
+    if 'faculty_reset_email' not in session or 'faculty_reset_otp' not in session:
+        return redirect("/faculty/forgot_password")
+        
+    if request.method == "POST":
+        entered_otp = request.form.get("otp", "").strip()
+        
+        # Check expiry
+        if datetime.now().timestamp() > session.get('faculty_reset_expiry', 0):
+            session.pop('faculty_reset_otp', None)
+            session.pop('faculty_reset_expiry', None)
+            return render_template("faculty/verify_otp.html", error="OTP has expired. Please request a new one.", batches_stats=get_login_batches_stats())
+            
+        if entered_otp == session.get('faculty_reset_otp'):
+            session['faculty_otp_verified'] = True
+            session.pop('faculty_reset_otp', None)
+            return redirect("/faculty/reset_password")
+        else:
+            return render_template("faculty/verify_otp.html", error="Invalid OTP. Please try again.", batches_stats=get_login_batches_stats())
+            
+    return render_template("faculty/verify_otp.html", batches_stats=get_login_batches_stats())
+
+
+@app.route("/faculty/reset_password", methods=["GET", "POST"])
+def faculty_reset_password_flow():
+    if not session.get('faculty_otp_verified') or 'faculty_reset_email' not in session:
+        return redirect("/faculty/forgot_password")
+        
+    if request.method == "POST":
+        new_password = request.form.get("new_password", "").strip()
+        confirm_password = request.form.get("confirm_password", "").strip()
+        
+        if not new_password:
+            return render_template("faculty/reset_password.html", error="Password cannot be empty.", batches_stats=get_login_batches_stats())
+        if new_password != confirm_password:
+            return render_template("faculty/reset_password.html", error="Passwords do not match.", batches_stats=get_login_batches_stats())
+        if len(new_password) < 6:
+            return render_template("faculty/reset_password.html", error="Password must be at least 6 characters.", batches_stats=get_login_batches_stats())
+            
+        email = session.get('faculty_reset_email')
+        
+        # Update password in ALL batch databases
+        import json as _json
+        batches_file = os.path.join(app.root_path, "database", "batches.json")
+        all_dbs = []
+        if os.path.exists(batches_file):
+            with open(batches_file) as f:
+                batches_list = _json.load(f)
+                all_dbs = [b["db"] for b in batches_list]
+        if not all_dbs:
+            all_dbs = ["placement_portal_2025_2026", "placement_portal_2026_2027"]
+        
+        for db_name in all_dbs:
+            try:
+                upd = get_connection(db_name)
+                upd_cur = upd.cursor()
+                upd_cur.execute("UPDATE faculty SET password = %s WHERE LOWER(email) = %s", (new_password, email))
+                upd.commit()
+                upd_cur.close()
+                upd.close()
+            except Exception as e:
+                app.logger.error(f"Failed to update password in {db_name}: {e}")
+        
+        session.pop('faculty_otp_verified', None)
+        session.pop('faculty_reset_email', None)
+        session.pop('faculty_reset_expiry', None)
+        
+        flash("Password successfully reset! Please login with your new password.", "success")
+        return redirect("/faculty_login")
+        
+    return render_template("faculty/reset_password.html", batches_stats=get_login_batches_stats())
+
+
+
 def faculty_required():
     """Returns None if faculty is logged in, else a redirect response."""
     if "faculty_email" not in session:
@@ -3255,8 +3424,6 @@ def faculty_manage_batches():
     return redirect("/faculty/select_year")
 
 
-@app.route("/faculty/reset_batch", methods=["POST"])
-
 @app.route("/faculty/edit_yearly_stats", methods=["GET", "POST"])
 def faculty_edit_yearly_stats():
     ensure_connection()
@@ -3305,154 +3472,165 @@ def faculty_edit_yearly_stats():
     return render_template("faculty/edit_yearly_stats.html", past_stats=past_stats, name=session.get("faculty_name"))
 
 
+@app.route("/faculty/reset_batch", methods=["POST"])
 def faculty_reset_batch():
-    ensure_connection()
     redir = faculty_required()
     if redir: return redir
-    
-    confirm_checkbox = request.form.get("confirm_save")
-    if not confirm_checkbox:
-        flash("You must confirm that you have saved student data before resetting.", "error")
+
+    # ── Validate form inputs ──────────────────────────────────────────────────
+    if not request.form.get("confirm_save"):
+        flash("You must check the confirmation checkbox.", "error")
         return redirect("/faculty/master_sheet")
-    
-    # Verify faculty email and password
-    confirm_email = request.form.get("confirm_email", "").strip().lower()
+
+    confirm_email    = request.form.get("confirm_email", "").strip().lower()
     confirm_password = request.form.get("confirm_password", "").strip()
-    
+
     if not confirm_email or not confirm_password:
-        flash("You must enter your faculty email and password to reset.", "error")
+        flash("Enter your admin email and password to reset.", "error")
         return redirect("/faculty/master_sheet")
-    
-    cursor.execute("SELECT * FROM faculty WHERE LOWER(email) = %s AND password = %s", (confirm_email, confirm_password))
-    faculty = cursor.fetchone()
-    if not faculty:
+
+    active_db_name   = session.get('active_year_db', 'placement_portal_2025_2026')
+    active_year      = session.get("active_year", "2025-2026")
+    active_year_name = get_active_batch_name()
+
+    app.logger.info(f"[Reset] Request for batch '{active_year_name}' (DB={active_db_name}) by {confirm_email}")
+
+    # ── Verify credentials via direct connection ──────────────────────────────
+    import mysql.connector as _mc
+    try:
+        vc = _mc.connect(host="localhost", user="root", password="Pallavi@2007",
+                         database=active_db_name, autocommit=True)
+        vcu = vc.cursor(dictionary=True)
+        vcu.execute("SELECT faculty_id FROM faculty WHERE LOWER(email)=%s AND password=%s",
+                    (confirm_email, confirm_password))
+        match = vcu.fetchone()
+        vcu.close(); vc.close()
+    except Exception as ve:
+        app.logger.error(f"[Reset] Credential check failed: {ve}")
+        flash(f"Credential check error: {ve}", "error")
+        return redirect("/faculty/master_sheet")
+
+    if not match:
+        app.logger.warning(f"[Reset] DENIED – wrong credentials for {confirm_email}")
         flash("Incorrect email or password. Reset denied.", "error")
         return redirect("/faculty/master_sheet")
-        
-    active_year = session.get("active_year", "2025-2026")
-    active_year_name = get_active_batch_name()
-    
-    # --- ARCHIVE YEARLY STATISTICS ---
+
+    app.logger.info(f"[Reset] Credentials OK – proceeding to wipe everything in {active_db_name}")
+
+    import mysql.connector as _mc2
+    import shutil, json as _j
+
+    # ── Step 1: Wipe ALL data tables in the batch database ────────────────────
     try:
-        cursor.execute("SELECT COUNT(*) AS c FROM students")
-        total_students_val = cursor.fetchone()["c"] or 0
+        dc = _mc2.connect(host="localhost", user="root", password="Pallavi@2007",
+                          database=active_db_name, autocommit=True)
+        dcu = dc.cursor()
+        dcu.execute("SET FOREIGN_KEY_CHECKS = 0")
 
-        cursor.execute("""
-            SELECT COUNT(*) AS c FROM students
-            WHERE LOWER(TRIM(COALESCE(career_option,''))) IN ('job', 'psu')
-               OR career_option IS NULL
-        """)
-        tot_interested = cursor.fetchone()["c"] or 0
+        # Every table that holds batch data — wipe them all
+        tables_to_clear = [
+            "round_results",
+            "recruitment_rounds",
+            "student_internships",
+            "applications",
+            "notifications",
+            "email_logs",
+            "students",
+            "internship_postings",
+            "jobs",
+            "global_settings",
+        ]
+        for tbl in tables_to_clear:
+            try:
+                dcu.execute(f"TRUNCATE TABLE `{tbl}`")
+                app.logger.info(f"[Reset] ✓ Truncated {tbl}")
+            except Exception as te:
+                # TRUNCATE fails if table doesn't exist — silently skip
+                app.logger.warning(f"[Reset] Skipped {tbl}: {te}")
 
-        cursor.execute("""
-            SELECT COUNT(DISTINCT s.student_id) AS c
-            FROM students s
-            JOIN applications a ON a.student_id = s.student_id
-            WHERE LOWER(TRIM(COALESCE(s.career_option,''))) NOT IN ('job', 'psu')
-              AND s.career_option IS NOT NULL
-        """)
-        not_int_app = cursor.fetchone()["c"] or 0
+        dcu.execute("SET FOREIGN_KEY_CHECKS = 1")
 
-        denom = tot_interested + not_int_app
-        
-        cursor.execute("""
-            SELECT COUNT(DISTINCT student_id) AS c 
-            FROM students 
-            WHERE (selected_tier IS NOT NULL AND selected_tier > 0)
-               OR (tier_1 IS NOT NULL AND TRIM(tier_1) != '' AND LOWER(TRIM(tier_1)) != 'nan')
-               OR (tier_2 IS NOT NULL AND TRIM(tier_2) != '' AND LOWER(TRIM(tier_2)) != 'nan')
-               OR (tier_3 IS NOT NULL AND TRIM(tier_3) != '' AND LOWER(TRIM(tier_3)) != 'nan')
-        """)
-        tot_placed = cursor.fetchone()["c"] or 0
-        
-        pr_rate = round((tot_placed / denom * 100), 1) if denom > 0 else 0.0
-
-        cursor.execute("SELECT ctc FROM jobs WHERE ctc IS NOT NULL AND ctc != ''")
-        ctc_rows = cursor.fetchall()
-        tot_lpa, cnt_lpa = 0, 0
-        import re as _re
-        for r in ctc_rows:
-            m = _re.search(r'([\d.]+)', str(r['ctc']))
-            if m:
-                tot_lpa += float(m.group(1))
-                cnt_lpa += 1
-        avg_lpa_val = round(tot_lpa / cnt_lpa, 1) if cnt_lpa > 0 else 0.0
-
-        stats_file = os.path.join(app.root_path, "database", "yearly_statistics.json")
-        past_stats = []
-        if os.path.exists(stats_file):
-            with open(stats_file, "r") as sf:
-                try:
-                    import json as _json
-                    past_stats = _json.load(sf)
-                except:
-                    past_stats = []
-        
-        # update or append
-        found = False
-        for stat in past_stats:
-            if stat.get("year") == active_year_name:
-                stat["total_students"] = total_students_val
-                stat["placed_students"] = tot_placed
-                stat["placement_rate"] = pr_rate
-                stat["average_lpa"] = avg_lpa_val
-                found = True
-                break
-        
-        if not found:
-            past_stats.append({
-                "id": active_year,
-                "year": active_year_name,
-                "total_students": total_students_val,
-                "placed_students": tot_placed,
-                "placement_rate": pr_rate,
-                "average_lpa": avg_lpa_val
-            })
-            
-        import json as _json
-        with open(stats_file, "w") as sf:
-            _json.dump(past_stats, sf, indent=4)
-            
-    except Exception as e:
-        print("Error archiving stats:", e)
-    # ---------------------------------
-
-    # 1. Delete all uploaded files for this year (profile photos, job PDFs, master sheets)
-    import shutil
-    upload_dir = os.path.join(app.static_folder, "uploads", active_year)
-    if os.path.exists(upload_dir):
+        # Re-insert the default global settings row so dashboard doesn't break
         try:
-            shutil.rmtree(upload_dir)
-        except Exception as e:
-            print(f"Error removing upload dir {upload_dir}: {e}")
-            
-    # 2. Clear all tables in the active year database (except faculty)
-    try:
-        cursor.execute("SELECT setting_value FROM global_settings WHERE setting_key = 'recruitment_title'")
-        res = cursor.fetchone()
-        current_title = res["setting_value"] if res else "Recruitment Season Live"
+            dcu.execute(
+                "INSERT INTO global_settings (setting_key, setting_value) "
+                "VALUES ('recruitment_title', 'Recruitment Season Live')"
+            )
+        except Exception:
+            pass
 
-        cursor.execute("SET FOREIGN_KEY_CHECKS = 0")
-        cursor.execute("DELETE FROM round_results")
-        cursor.execute("DELETE FROM recruitment_rounds")
-        cursor.execute("DELETE FROM applications")
-        cursor.execute("DELETE FROM notifications")
-        cursor.execute("DELETE FROM students")
-        cursor.execute("DELETE FROM jobs")
-        cursor.execute("DELETE FROM global_settings")
-        cursor.execute("INSERT INTO global_settings (setting_key, setting_value) VALUES ('recruitment_title', %s)", (current_title,))
-        cursor.execute("SET FOREIGN_KEY_CHECKS = 1")
-        db.commit()
-        
-        flash(f"Database for batch '{active_year_name}' has been reset. All student data and files were removed.", "success")
-    except Exception as e:
-        db.rollback()
-        flash(f"Error resetting database: {str(e)}", "error")
-        
-    return redirect("/faculty/master_sheet")
+        dcu.close()
+        dc.close()
+        app.logger.info("[Reset] ✅ All DB tables wiped.")
+    except Exception as de:
+        app.logger.error(f"[Reset] DB wipe error: {de}")
+        flash(f"Database reset error: {de}", "error")
+        return redirect("/faculty/master_sheet")
+
+    # ── Step 2: Delete all uploaded files for this batch year ─────────────────
+    year_uploads = os.path.join(app.static_folder, "uploads", active_year)
+    homepage_uploads = os.path.join(app.static_folder, "uploads", "homepage")
+    job_pdfs = os.path.join(app.static_folder, "uploads", "job_pdfs")
+
+    for folder in [year_uploads, homepage_uploads, job_pdfs]:
+        if os.path.exists(folder):
+            try:
+                shutil.rmtree(folder)
+                os.makedirs(folder, exist_ok=True)  # recreate empty folder
+                app.logger.info(f"[Reset] Cleared folder: {folder}")
+            except Exception as fe:
+                app.logger.warning(f"[Reset] Could not clear {folder}: {fe}")
+
+    # ── Step 3: Reset manual_stats.json (placement rate & avg package) ────────
+    manual_file = os.path.join(app.root_path, "database", "manual_stats.json")
+    try:
+        ms = {}
+        if os.path.exists(manual_file):
+            with open(manual_file, "r") as f:
+                ms = _j.load(f)
+        # Remove entry for this batch year entirely → dashboard shows 0.0
+        ms.pop(active_year, None)
+        with open(manual_file, "w") as f:
+            _j.dump(ms, f, indent=4)
+        app.logger.info(f"[Reset] Cleared manual_stats for {active_year}")
+    except Exception as msfe:
+        app.logger.warning(f"[Reset] manual_stats.json error: {msfe}")
+
+    # ── Step 4: Reset homepage_updates.json ───────────────────────────────────
+    homepage_file = os.path.join(app.root_path, "database", "homepage_updates.json")
+    try:
+        with open(homepage_file, "w") as f:
+            _j.dump([], f)
+        app.logger.info("[Reset] Cleared homepage_updates.json")
+    except Exception as hfe:
+        app.logger.warning(f"[Reset] homepage_updates.json error: {hfe}")
+
+    # ── Step 5: Remove this batch's entry from yearly_statistics.json ─────────
+    yearly_file = os.path.join(app.root_path, "database", "yearly_statistics.json")
+    try:
+        ys = []
+        if os.path.exists(yearly_file):
+            with open(yearly_file, "r") as f:
+                ys = _j.load(f)
+        # Remove the entry matching this year
+        ys = [entry for entry in ys if entry.get("year") != active_year]
+        with open(yearly_file, "w") as f:
+            _j.dump(ys, f, indent=4)
+        app.logger.info(f"[Reset] Cleared yearly_statistics for {active_year}")
+    except Exception as yfe:
+        app.logger.warning(f"[Reset] yearly_statistics.json error: {yfe}")
+
+    app.logger.info(f"[Reset] ✅ COMPLETE for batch '{active_year_name}'")
+    flash(
+        f"✅ Batch '{active_year_name}' has been fully reset. "
+        "All students, jobs, internships, homepage content, placement stats and uploaded files have been cleared.",
+        "success"
+    )
+    return redirect("/faculty_dashboard")
 
 
 # ─── FACULTY: JOBS ───────────────────────────────────────────────────────────
+
 
 @app.route("/faculty/jobs")
 def faculty_jobs():
@@ -6078,7 +6256,7 @@ def forgot_password():
         session['reset_email'] = email
         session['reset_role'] = role
         session['reset_otp'] = otp
-        session['reset_otp_expires'] = time.time() + 60  # Valid for 60 seconds
+        session['reset_otp_expires'] = time.time() + 180  # Valid for 3 minutes
         
         # Send OTP via email using configured SMTP credentials
         email_sent = send_reset_otp(email, otp)
@@ -6110,7 +6288,7 @@ def verify_otp():
         import time
         if time.time() > session.get('reset_otp_expires', 0):
             from flask import flash
-            flash("OTP has expired (Valid for 1 min). Please request a new one.", "error")
+            flash("OTP has expired (Valid for 3 mins). Please request a new one.", "error")
             return redirect("/forgot_password")
 
         if entered_otp == session.get('reset_otp'):

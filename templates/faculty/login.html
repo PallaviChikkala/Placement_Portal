@@ -217,7 +217,10 @@ input[type="password"]::-webkit-textfield-decoration-container {
           <i class="ti ti-mail"></i>
           <input type="email" name="email" placeholder="admin@nitandhra.ac.in" required>
         </div>
-        <label class="field-label">Password</label>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; margin-top: 12px;">
+          <label class="field-label" style="margin: 0;">Password</label>
+          <a href="/faculty/forgot_password" style="font-size: 12px; font-weight: 600; color: var(--text-accent); text-decoration: none; transition: opacity 0.2s;" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">Forgot password?</a>
+        </div>
         <div class="field-row">
           <i class="ti ti-lock"></i>
           <input type="password" name="password" id="password" placeholder="••••••••" required>
