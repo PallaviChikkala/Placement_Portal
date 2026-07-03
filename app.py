@@ -65,7 +65,7 @@ def init_global_db():
         password="Pallavi@2007",
     )
     c = conn.cursor()
-    
+   
     batches_file = os.path.join(app.root_path, "database", "batches.json")
     if os.path.exists(batches_file):
         with open(batches_file, "r") as f:
@@ -75,11 +75,11 @@ def init_global_db():
     else:
         c.execute("CREATE DATABASE IF NOT EXISTS placement_portal_2025_2026")
         c.execute("CREATE DATABASE IF NOT EXISTS placement_portal_2026_2027")
-        
+       
     c.execute("CREATE DATABASE IF NOT EXISTS placement_portal2")
     conn.commit()
     conn.close()
-    
+   
     global global_db, global_cursor
     global_db = get_connection("placement_portal_2025_2026")
     global_cursor = global_db.cursor(dictionary=True)
@@ -115,7 +115,7 @@ def switch_active_db(db_name, year_str, year_name=None):
     if has_request_context():
         session["active_year_db"] = db_name
         session["active_year"] = year_str
-        
+       
         actual_name = year_name
         if not actual_name:
             try:
@@ -130,9 +130,9 @@ def switch_active_db(db_name, year_str, year_name=None):
                                 break
             except Exception:
                 pass
-                
+               
         session["active_year_name"] = actual_name or year_str
-        
+       
         if 'db' in g:
             try:
                 g.cursor.close()
@@ -175,7 +175,7 @@ def check_routes_and_master_sheet():
                 session.pop("student_id", None)
                 session.pop("student_name", None)
                 return redirect("/student_login?error=Your+portal+is+currently+disabled.+Please+contact+faculty.")
-            
+           
 
     # 2. Enforce faculty login and active year database check
     is_faculty_route = (
@@ -221,7 +221,7 @@ def ensure_connection():
 # Database Tables & Mock Data Initialization
 def init_database():
     global global_db, global_cursor
-    
+   
     db_names = ["placement_portal_2025_2026", "placement_portal_2026_2027"]
     batches_file = os.path.join(app.root_path, "database", "batches.json")
     if os.path.exists(batches_file):
@@ -236,7 +236,7 @@ def init_database():
             _init_database_single()
         except Exception as e:
             print(f"Failed to init {db_name}: {e}")
-            
+           
     # Restore default global connection to the first batch or fallback
     try:
         global_db = get_connection(db_names[0] if db_names else "placement_portal_2025_2026")
@@ -547,47 +547,47 @@ init_database()
 def normalize_branch(branch_name):
     if not branch_name: return ""
     b = branch_name.lower().strip()
-    
+   
     # 1. Computer Science / CSE / CS / Computer Engineering
     if "computer science" in b or "cse" in b or b == "cs" or "computer engineering" in b or "comp sci" in b:
         return "CSE"
-        
+       
     # 2. Information Technology / IT
     if "information technology" in b or b == "it" or "infotech" in b:
         return "IT"
-        
+       
     # 3. AI / ML / Data Science / CSDA
     if "artificial intelligence" in b or "machine learning" in b or "aiml" in b or "ai & ds" in b or "ai&ds" in b or "aids" in b or "data science" in b or "data analytics" in b or "csda" in b:
         return "AI"
-        
+       
     # 4. Electrical / EEE (Checked before ECE so "electrical and electronics" is mapped to EEE)
     if "electrical" in b or "eee" in b or b == "ee" or "power electronics" in b:
         return "EEE"
-        
+       
     # 5. Electronics & Communication / ECE / ACS
     if "electronics" in b or "ece" in b or b == "ec" or "communication" in b or "acs" in b:
         return "ECE"
-        
+       
     # 6. Mechanical / MECH / Thermal / Manufacturing
     if "mechanical" in b or "mech" in b or b == "me" or "manufacturing" in b or "thermal" in b:
         return "MECH"
-        
+       
     # 7. Civil / CIVIL / Geotechnical
     if "civil" in b or b == "ce" or "geotechnical" in b or "geo" in b:
         return "CIVIL"
-        
+       
     # 8. Chemical / CHEMICAL / Chem
     if "chemical" in b or "chem" in b:
         return "CHEMICAL"
-        
+       
     # 9. Biotech / BIOTECH / Bioprocess
     if "biotech" in b or "bio-technology" in b or "bioprocess" in b or b == "bt":
         return "BIOTECH"
-        
+       
     # 10. Metallurgy / METALLURGY / Materials
     if "metallurg" in b or "material" in b or "mme" in b:
         return "METALLURGY"
-        
+       
     return b.upper()
 
 def notify_students_new_job(company_name, role):
@@ -738,7 +738,7 @@ def home():
                 past_stats.sort(key=lambda x: x.get('year', ''), reverse=True)
         except Exception as e:
             print("Error loading past stats:", e)
-            
+           
     # Load homepage updates
     updates_file = os.path.join(app.root_path, "database", "homepage_updates.json")
     updates = []
@@ -751,7 +751,7 @@ def home():
                 updates.sort(key=lambda x: x.get('id', ''), reverse=True)
         except Exception as e:
             print("Error loading homepage updates:", e)
-            
+           
     return render_template("index.html", past_stats=past_stats, updates=updates)
 
 @app.route("/resume_analyzer")
@@ -912,7 +912,7 @@ def upload():
     # --- AI Semantic Scoring using TF-IDF (40 pts max) ---
     def clean_text(t):
         return re.sub(r'[^a-zA-Z0-9\s]', '', t).lower()
-        
+       
     cleaned_resume = clean_text(text)
     if role == "Custom":
         target_doc = clean_text(custom_jd)
@@ -976,10 +976,10 @@ def upload():
     found_skills_list = found_required + found_optional
     missing_skills_list = missing_required + missing_optional
 
-    return render_template("resume_analysis_result.html", 
-                           score=final_score, 
-                           matched_skills=found_skills_list, 
-                           missing_skills=missing_skills_list, 
+    return render_template("resume_analysis_result.html",
+                           score=final_score,
+                           matched_skills=found_skills_list,
+                           missing_skills=missing_skills_list,
                            suggestion=suggestion)
 
 @app.route("/student_login")
@@ -995,7 +995,7 @@ def student_login_page():
 def student_login_check():
     email = request.form["email"]
     password = request.form["password"]
-    
+   
     # 1. Try 2025-2026
     switch_active_db("placement_portal_2025_2026", "2025-2026")
     ensure_connection()
@@ -1039,12 +1039,12 @@ def student_forgot_password():
     if request.method == "GET":
         error = request.args.get('error')
         return render_template("student/forgot_password_email.html", error=error)
-    
+   
     email = request.form.get("email", "").strip()
-    
+   
     found_db = None
     found_year_str = None
-    
+   
     dbs_to_check = [("placement_portal_2025_2026", "2025-2026"), ("placement_portal_2026_2027", "2026-2027")]
     for db_name, year_str in dbs_to_check:
         switch_active_db(db_name, year_str)
@@ -1055,44 +1055,44 @@ def student_forgot_password():
             found_db = db_name
             found_year_str = year_str
             break
-            
+           
     if not found_db:
         return render_template("student/forgot_password_email.html", error="Email not found in our records.")
-        
+       
     session["reset_email"] = email
     session["reset_db_name"] = found_db
     session["reset_year_str"] = found_year_str
-    
+   
     return redirect("/student_forgot_password/verify_identity")
 
 @app.route("/student_forgot_password/verify_identity", methods=["GET", "POST"])
 def student_forgot_identity():
     if "reset_email" not in session:
         return redirect("/student_forgot_password")
-        
+       
     if request.method == "GET":
         error = request.args.get('error')
         return render_template("student/forgot_password_identity.html", error=error)
-        
+       
     aadhar_input = request.form.get("aadhar", "").strip()
     pan_input = request.form.get("pan", "").strip().upper()
-    
+   
     switch_active_db(session["reset_db_name"], session["reset_year_str"])
     ensure_connection()
     cursor.execute("SELECT aadhar, pan FROM students WHERE email = %s", (session["reset_email"],))
     student = cursor.fetchone()
-    
+   
     if not student or not student.get("aadhar") or not student.get("pan"):
         return render_template("student/forgot_password_identity.html", error="Aadhar or PAN not registered for this account.")
-        
+       
     db_aadhar = student["aadhar"].strip()
     db_pan = student["pan"].strip().upper()
-    
+   
     if len(db_aadhar) >= 5 and db_aadhar[-5:] == aadhar_input and db_pan == pan_input:
         otp = str(random.randint(100000, 999999))
         session["reset_otp"] = otp
         session["reset_otp_expiry"] = time.time() + 180
-        
+       
         html_body = f"""
         <div style="font-family: Arial, sans-serif; padding: 20px;">
             <h2>Password Reset OTP</h2>
@@ -1103,7 +1103,7 @@ def student_forgot_identity():
         """
         from email_service import send_email
         send_email(session["reset_email"], "Password Reset OTP", html_body)
-        
+       
         return redirect("/student_forgot_password/otp")
     else:
         return render_template("student/forgot_password_identity.html", error="Verification failed. Details do not match.")
@@ -1112,17 +1112,17 @@ def student_forgot_identity():
 def student_forgot_otp():
     if "reset_email" not in session or "reset_otp" not in session:
         return redirect("/student_forgot_password")
-        
+       
     if request.method == "GET":
         error = request.args.get('error')
         time_remaining = max(0, int(session.get("reset_otp_expiry", 0) - time.time()))
         return render_template("student/forgot_password_otp.html", error=error, time_remaining=time_remaining)
-        
+       
     otp_input = request.form.get("otp", "").strip()
-    
+   
     if time.time() > session.get("reset_otp_expiry", 0):
         return render_template("student/forgot_password_otp.html", error="OTP has expired. Please click Resend OTP.", time_remaining=0)
-        
+       
     if otp_input == session["reset_otp"]:
         session["reset_otp_verified"] = True
         return redirect("/student_forgot_password/reset")
@@ -1134,11 +1134,11 @@ def student_forgot_otp():
 def student_resend_otp():
     if "reset_email" not in session:
         return redirect("/student_forgot_password")
-        
+       
     otp = str(random.randint(100000, 999999))
     session["reset_otp"] = otp
     session["reset_otp_expiry"] = time.time() + 180
-    
+   
     html_body = f"""
     <div style="font-family: Arial, sans-serif; padding: 20px;">
         <h2>Password Reset OTP (Resent)</h2>
@@ -1149,39 +1149,39 @@ def student_resend_otp():
     """
     from email_service import send_email
     send_email(session["reset_email"], "Password Reset OTP", html_body)
-    
+   
     return redirect("/student_forgot_password/otp")
 
 @app.route("/student_forgot_password/reset", methods=["GET", "POST"])
 def student_forgot_reset():
     if not session.get("reset_otp_verified"):
         return redirect("/student_forgot_password")
-        
+       
     if request.method == "GET":
         return render_template("student/forgot_password_reset.html")
-        
+       
     password = request.form.get("password")
     confirm = request.form.get("confirm_password")
-    
+   
     if password != confirm:
         return render_template("student/forgot_password_reset.html", error="Passwords do not match.")
-        
+       
     if len(password) < 6:
         return render_template("student/forgot_password_reset.html", error="Password must be at least 6 characters.")
-        
+       
     switch_active_db(session["reset_db_name"], session["reset_year_str"])
     ensure_connection()
-    cursor.execute("UPDATE students SET password = %s, must_change_password = 0 WHERE email = %s", 
+    cursor.execute("UPDATE students SET password = %s, must_change_password = 0 WHERE email = %s",
                    (password, session["reset_email"]))
     db.commit()
-    
+   
     session.pop("reset_email", None)
     session.pop("reset_db_name", None)
     session.pop("reset_year_str", None)
     session.pop("reset_otp", None)
     session.pop("reset_otp_expiry", None)
     session.pop("reset_otp_verified", None)
-    
+   
     return redirect("/student_login?success=Password+reset+successfully")
 # ---- END FORGOT PASSWORD FLOW ----
 
@@ -1374,26 +1374,26 @@ def student_dashboard():
         student_branch = normalize_branch(student["branch"]) if student["branch"] else ""
 
         cgpa_ok = float(student.get("cgpa") or 0) >= float(job.get("cgpa_cutoff") or 0)
-        
+       
         s_backlogs = int(student.get("backlogs") or 0)
         s_history = int(student.get("backlog_history") or 0)
         j_backlogs = int(job.get("active_backlogs") or 0)
         j_history = int(job.get("backlog_history") or 0)
-        
+       
         backlogs_ok = s_backlogs <= j_backlogs
         backlog_history_ok = s_history <= j_history
-        
+       
         branch_ok = student_branch in eligible_branches or not eligible_branches
 
         student_selected_tier = student.get("selected_tier")
-        
+       
         tier_1_val = student.get("tier_1")
         tier_2_val = student.get("tier_2")
         tier_3_val = student.get("tier_3")
         offers_count = sum(1 for t in [tier_1_val, tier_2_val, tier_3_val] if t and str(t).strip())
-        
+       
         tier_ok = True
-        
+       
         if offers_count >= 2:
             tier_ok = False
         elif student_selected_tier is not None and student_selected_tier > 0:
@@ -1561,7 +1561,7 @@ def update_skills():
         print("Error updating skills:", e)
         from flask import flash
         flash("Error updating skills.", "danger")
-        
+       
     return redirect("/student_profile")
 
 @app.route("/remove_skill", methods=["POST"])
@@ -1569,10 +1569,10 @@ def remove_skill():
     ensure_connection()
     if "student_id" not in session:
         return redirect("/student_login")
-        
+       
     student_id = session["student_id"]
     skill_to_remove = request.form.get("skill", "").strip()
-    
+   
     if skill_to_remove:
         try:
             cursor.execute("SELECT skills FROM students WHERE student_id = %s", (student_id,))
@@ -1590,7 +1590,7 @@ def remove_skill():
             print("Error removing skill:", e)
             from flask import flash
             flash("Error removing skill.", "danger")
-            
+           
     return redirect("/student_profile")
 
 
@@ -1603,7 +1603,7 @@ def eligible_companies():
     student_id = session["student_id"]
     cursor.execute("SELECT * FROM students WHERE student_id = %s", (student_id,))
     student = cursor.fetchone()
-    
+   
     if not student:
         session.pop("student_id", None)
         session.pop("student_name", None)
@@ -1632,15 +1632,15 @@ def eligible_companies():
         student_branch = normalize_branch(student['branch']) if student['branch'] else ""
        
         cgpa_ok = float(student.get('cgpa') or 0) >= float(job.get('cgpa_cutoff') or 0)
-        
+       
         s_backlogs = int(student.get("backlogs") or 0)
         s_history = int(student.get("backlog_history") or 0)
         j_backlogs = int(job.get("active_backlogs") or 0)
         j_history = int(job.get("backlog_history") or 0)
-        
+       
         backlogs_ok = s_backlogs <= j_backlogs
         backlog_history_ok = s_history <= j_history
-        
+       
         branch_ok = (student_branch in eligible_branches) or (not eligible_branches)
        
         # Tier check
@@ -1652,7 +1652,7 @@ def eligible_companies():
 
         tier_ok = True
         tier_reason = None
-        
+       
         if offers_count >= 2:
             tier_ok = False
             tier_reason = "Tier Policy restriction: Selected in 2 companies, cannot apply for more."
@@ -1721,13 +1721,13 @@ def eligible_companies():
                     deadline_date = datetime.strptime(str(job['deadline']), "%Y-%m-%dT%H:%M")
                 except ValueError:
                     pass
-        
+       
         # Rule 1: If job deadline has passed → move immediately
         deadline_expired = deadline_date and datetime.now() > deadline_date
         job_item['is_expired'] = deadline_expired
         if deadline_expired:
             is_past = True
-            
+           
         # Rule 2: If student is Selected or Not Selected → wait 3 days after status was set
         if status in ['Selected', 'Not Selected', 'Rejected'] and not is_past:
             if status_updated_at:
@@ -1741,7 +1741,7 @@ def eligible_companies():
             past_jobs_list.append(job_item)
         else:
             active_jobs_list.append(job_item)
-        
+       
     return render_template("student/eligible_companies.html", active_jobs=active_jobs_list, past_jobs=past_jobs_list, student=student)
 
 @app.route("/apply_job", methods=["POST"])
@@ -1800,7 +1800,7 @@ def apply_job():
     student_selected_tier = student.get('selected_tier')
     tier_ok = True
     tier_reason = ""
-    
+   
     if offers_count >= 2:
         tier_ok = False
         tier_reason = "You are already selected in 2 companies. You cannot apply for more."
@@ -1882,16 +1882,16 @@ def my_applications():
     ensure_connection()
     if "student_id" not in session:
         return redirect("/student_login")
-        
+       
     student_id = session["student_id"]
     cursor.execute("SELECT * FROM students WHERE student_id = %s", (student_id,))
     student = cursor.fetchone()
-    
+   
     if not student:
         session.pop("student_id", None)
         session.pop("student_name", None)
         return redirect("/student_login?error=Session+expired.+Please+log+in+again.")
-    
+   
     query = """
         SELECT a.applied_date, a.status, a.resume_path, a.job_id, a.drive_link,
                j.company_name, j.role, j.ctc as package_lpa, j.tier, j.deadline,
@@ -1911,7 +1911,7 @@ def my_applications():
     for app in apps:
         if app.get('status') == 'Rejected':
             app['status'] = 'Not Selected'
-            
+           
         app['pipeline_status'] = 'Applied'
         if app.get('status') == 'Selected':
             app['pipeline_status'] = 'Selected'
@@ -1931,18 +1931,18 @@ def my_applications():
             app['pipeline_status'] = 'Applied'
 
     cursor.execute("""
-        SELECT job_id, round_number, drive_link 
-        FROM round_results 
+        SELECT job_id, round_number, drive_link
+        FROM round_results
         WHERE student_id = %s AND drive_link IS NOT NULL
         ORDER BY round_number ASC
     """, (student_id,))
     links_data = cursor.fetchall()
-    
+   
     round_links_map = {}
     import re
     def is_valid_url(url):
         regex = re.compile(
-            r'^(?:http|ftp)s?://' 
+            r'^(?:http|ftp)s?://'
             r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+(?:[A-Z]{2,6}\.?|[A-Z0-9-]{2,}\.?)|'
             r'localhost|'
             r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}|'
@@ -1969,16 +1969,16 @@ def student_selected_companies():
     ensure_connection()
     if "student_id" not in session:
         return redirect("/student_login")
-        
+       
     student_id = session["student_id"]
     cursor.execute("SELECT * FROM students WHERE student_id = %s", (student_id,))
     student = cursor.fetchone()
-    
+   
     if not student:
         session.pop("student_id", None)
         session.pop("student_name", None)
         return redirect("/student_login?error=Session+expired.+Please+log+in+again.")
-    
+   
     # Fetch jobs where they are formally 'Selected'
     query = """
         SELECT a.applied_date, j.job_id, j.company_name, j.role, j.tier, j.ctc
@@ -2001,7 +2001,7 @@ def student_internships():
     ensure_connection()
     if "student_id" not in session:
         return redirect("/student_login")
-        
+       
     student_id = session["student_id"]
     cursor.execute("SELECT * FROM students WHERE student_id = %s", (student_id,))
     student = cursor.fetchone()
@@ -2009,16 +2009,16 @@ def student_internships():
         session.pop("student_id", None)
         session.pop("student_name", None)
         return redirect("/student_login?error=Session+expired.+Please+log+in+again.")
-        
+       
     cursor.execute("""
-        SELECT * FROM internship_postings 
-        WHERE details IS NULL OR details NOT LIKE '[EXTERNAL]%' 
+        SELECT * FROM internship_postings
+        WHERE details IS NULL OR details NOT LIKE '[EXTERNAL]%'
         ORDER BY posting_id DESC
     """)
     postings = cursor.fetchall()
-    
+   
     cursor.execute("""
-        SELECT si.*, 
+        SELECT si.*,
                IFNULL(ip.company_name, si.ext_company_name) AS company_name,
                IFNULL(ip.role, si.ext_role) AS role,
                IFNULL(ip.details, IF(si.is_external=1, '[EXTERNAL] External (self-arranged)', NULL)) AS details
@@ -2028,10 +2028,10 @@ def student_internships():
     """, (student_id,))
     completions = cursor.fetchall()
     completed_posting_ids = {c["posting_id"] for c in completions}
-    
+   
     for post in postings:
         post["completed"] = post["posting_id"] in completed_posting_ids
-        
+       
     return render_template("student/internships.html", postings=postings, completions=completions, student=student)
 
 @app.route("/student/internships/submit", methods=["POST"])
@@ -2039,13 +2039,13 @@ def student_internships_submit():
     ensure_connection()
     if "student_id" not in session:
         return redirect("/student_login")
-        
+       
     student_id  = session["student_id"]
     posting_id  = request.form.get("posting_id", type=int)
     description = request.form.get("description", "").strip()
     hr_name     = request.form.get("hr_name", "").strip()
     hr_contact  = request.form.get("hr_contact", "").strip()
-    
+   
     if not posting_id or not description:
         flash("Invalid submission details.", "error")
         return redirect("/student/internships")
@@ -2074,17 +2074,17 @@ def student_internships_submit():
 
     cursor.execute("SELECT id FROM student_internships WHERE student_id = %s AND posting_id = %s", (student_id, posting_id))
     existing = cursor.fetchone()
-    
+   
     if existing:
         if db_path:
             cursor.execute("""
-                UPDATE student_internships 
+                UPDATE student_internships
                 SET status = 'Completed', completion_description = %s, certificate_path = %s, submitted_at = NOW(), hr_name = %s, hr_contact = %s
                 WHERE id = %s
             """, (description, db_path, hr_name, hr_contact, existing["id"]))
         else:
             cursor.execute("""
-                UPDATE student_internships 
+                UPDATE student_internships
                 SET status = 'Completed', completion_description = %s, submitted_at = NOW(), hr_name = %s, hr_contact = %s
                 WHERE id = %s
             """, (description, hr_name, hr_contact, existing["id"]))
@@ -2093,7 +2093,7 @@ def student_internships_submit():
             INSERT INTO student_internships (student_id, posting_id, status, completion_description, certificate_path, submitted_at, hr_name, hr_contact)
             VALUES (%s, %s, 'Completed', %s, %s, NOW(), %s, %s)
         """, (student_id, posting_id, description, db_path, hr_name, hr_contact))
-        
+       
     cursor.execute("SELECT COUNT(*) as count FROM student_internships WHERE student_id = %s AND status = 'Completed'", (student_id,))
     completed_count = cursor.fetchone()["count"]
     cursor.execute("UPDATE students SET internships_count = %s WHERE student_id = %s", (completed_count, student_id))
@@ -2142,8 +2142,8 @@ def student_add_external_internship():
 
     cursor.execute("""
         INSERT INTO student_internships (
-            student_id, posting_id, status, completion_description, 
-            certificate_path, submitted_at, ext_company_name, ext_role, 
+            student_id, posting_id, status, completion_description,
+            certificate_path, submitted_at, ext_company_name, ext_role,
             ext_duration, is_external, hr_name, hr_contact
         )
         VALUES (%s, NULL, 'Completed', %s, %s, NOW(), %s, %s, %s, 1, %s, %s)
@@ -2163,7 +2163,7 @@ def faculty_internships():
     ensure_connection()
     redir = faculty_required()
     if redir: return redir
-    
+   
     if request.method == "POST":
         action = request.form.get("action")
         if action == "post_internship":
@@ -2171,16 +2171,16 @@ def faculty_internships():
             role = request.form.get("role", "").strip()
             details = request.form.get("details", "").strip()
             link = request.form.get("link", "").strip()
-            
+           
             if not company_name or not role or not details or not link:
                 flash("All fields are required to post an internship.", "error")
                 return redirect("/faculty/internships")
-                
+               
             cursor.execute("""
                 INSERT INTO internship_postings (company_name, role, details, link)
                 VALUES (%s, %s, %s, %s)
             """, (company_name, role, details, link))
-            
+           
             cursor.execute("SELECT student_id FROM students")
             students = cursor.fetchall()
             for s in students:
@@ -2188,19 +2188,19 @@ def faculty_internships():
                     INSERT INTO notifications (student_id, message, link, is_read)
                     VALUES (%s, %s, %s, 0)
                 """, (s["student_id"], f"New Internship Opportunity: {company_name} - {role}", "/student/internships"))
-                
+               
             db.commit()
             flash("Internship opportunity posted and students notified successfully!", "success")
-            
+           
         elif action == "delete_posting":
             posting_id = request.form.get("posting_id", type=int)
             if posting_id:
                 cursor.execute("DELETE FROM internship_postings WHERE posting_id = %s", (posting_id,))
                 db.commit()
                 flash("Internship posting deleted successfully.", "success")
-                
+               
         return redirect("/faculty/internships")
-        
+       
     cursor.execute("""
         SELECT * FROM internship_postings
         WHERE details IS NULL OR details NOT LIKE '[EXTERNAL]%'
@@ -2208,7 +2208,7 @@ def faculty_internships():
     """)
     postings = cursor.fetchall()
 
-    
+   
     cursor.execute("""
         SELECT si.*, s.name as student_name, s.roll_number, s.branch, s.cgpa,
                IFNULL(ip.company_name, si.ext_company_name) AS company_name,
@@ -2221,7 +2221,7 @@ def faculty_internships():
         ORDER BY si.submitted_at DESC
     """)
     completions = cursor.fetchall()
-    
+   
     active_year_name = get_active_batch_name()
     return render_template("faculty/internships.html", postings=postings, completions=completions, active_year=active_year_name)
 
@@ -2230,11 +2230,11 @@ def faculty_internships_export():
     ensure_connection()
     redir = faculty_required()
     if redir: return redir
-    
+   
     cursor.execute("""
-        SELECT s.roll_number, s.name as student_name, s.branch, s.cgpa, 
-               IFNULL(ip.company_name, si.ext_company_name) AS company_name, 
-               IFNULL(ip.role, si.ext_role) AS role, 
+        SELECT s.roll_number, s.name as student_name, s.branch, s.cgpa,
+               IFNULL(ip.company_name, si.ext_company_name) AS company_name,
+               IFNULL(ip.role, si.ext_role) AS role,
                si.completion_description, si.certificate_path, si.submitted_at
         FROM student_internships si
         JOIN students s ON si.student_id = s.student_id
@@ -2243,54 +2243,54 @@ def faculty_internships_export():
         ORDER BY s.roll_number ASC
     """)
     completions = cursor.fetchall()
-    
+   
     import openpyxl
     from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
     from openpyxl.utils import get_column_letter
     import io
     from flask import Response
-    
+   
     wb = openpyxl.Workbook()
     ws = wb.active
     ws.title = "Internship Certificates"
-    
+   
     title_font = Font(name="Calibri", size=14, bold=True, color="78350F")
     header_font = Font(name="Calibri", size=11, bold=True, color="FFFFFF")
     regular_font = Font(name="Calibri", size=11)
     amber_fill = PatternFill(start_color="F59E0B", end_color="F59E0B", fill_type="solid")
     center_align = Alignment(horizontal="center", vertical="center")
     left_align = Alignment(horizontal="left", vertical="center")
-    
+   
     thin_border = Border(
         left=Side(style='thin', color='E5E7EB'), right=Side(style='thin', color='E5E7EB'),
         top=Side(style='thin', color='E5E7EB'), bottom=Side(style='thin', color='E5E7EB')
     )
-    
+   
     ws.merge_cells("A1:I1")
     ws["A1"] = f"Internship Completion Report — Batch: {get_active_batch_name()}"
     ws["A1"].font = title_font
     ws["A1"].alignment = Alignment(horizontal="center", vertical="center")
     ws.row_dimensions[1].height = 40
-    
+   
     headers = ["Roll Number", "Student Name", "Branch", "CGPA", "Company", "Role", "Completion Details", "Certificate Link", "Submitted Date"]
     ws.append([])
     ws.row_dimensions[2].height = 10
-    
+   
     ws.append(headers)
     ws.row_dimensions[3].height = 25
-    
+   
     for col_idx, header in enumerate(headers, 1):
         cell = ws.cell(row=3, column=col_idx)
         cell.font = header_font
         cell.fill = amber_fill
         cell.alignment = center_align
         cell.border = thin_border
-        
+       
     row_num = 4
     for comp in completions:
         sub_date = comp["submitted_at"].strftime('%Y-%m-%d %H:%M') if comp["submitted_at"] else "N/A"
         cert_url = f"{request.host_url.rstrip('/')}{comp['certificate_path']}" if comp["certificate_path"] else "N/A"
-        
+       
         row_data = [
             comp["roll_number"] or "N/A",
             comp["student_name"],
@@ -2304,7 +2304,7 @@ def faculty_internships_export():
         ]
         ws.append(row_data)
         ws.row_dimensions[row_num].height = 20
-        
+       
         for col_idx in range(1, 10):
             cell = ws.cell(row=row_num, column=col_idx)
             cell.font = regular_font
@@ -2317,7 +2317,7 @@ def faculty_internships_export():
                 cell.hyperlink = cert_url
                 cell.font = Font(name="Calibri", size=11, color="0563C1", underline="single")
         row_num += 1
-        
+       
     for col in ws.columns:
         max_len = 0
         col_letter = get_column_letter(col[0].column)
@@ -2325,11 +2325,11 @@ def faculty_internships_export():
             if cell.row > 1 and cell.value:
                 max_len = max(max_len, len(str(cell.value)))
         ws.column_dimensions[col_letter].width = max(max_len + 3, 12)
-        
+       
     output = io.BytesIO()
     wb.save(output)
     output.seek(0)
-    
+   
     filename = f"internships_{session.get('active_year', 'batch').replace('-', '_')}.xlsx"
     return Response(
         output.read(),
@@ -2342,11 +2342,11 @@ def faculty_update_manual_stats():
     ensure_connection()
     redir = faculty_required()
     if redir: return redir
-    
+   
     placement_rate = request.form.get("placement_rate", "").strip()
     avg_lpa = request.form.get("avg_lpa", "").strip()
     active_year_id = session.get("active_year", "2025-2026")
-    
+   
     manual_stats_file = os.path.join(app.root_path, "database", "manual_stats.json")
     stats = {}
     if os.path.exists(manual_stats_file):
@@ -2355,16 +2355,16 @@ def faculty_update_manual_stats():
                 stats = json.load(f)
         except Exception:
             pass
-            
+           
     stats[active_year_id] = {
         "placement_rate": placement_rate,
         "avg_lpa": avg_lpa
     }
-    
+   
     os.makedirs(os.path.dirname(manual_stats_file), exist_ok=True)
     with open(manual_stats_file, "w") as f:
         json.dump(stats, f)
-        
+       
     flash("Manual stats updated successfully.", "success")
     return redirect("/faculty/master_sheet")
 
@@ -2373,7 +2373,7 @@ def faculty_manage_homepage():
     ensure_connection()
     redir = faculty_required()
     if redir: return redir
-    
+   
     updates_file = os.path.join(app.root_path, "database", "homepage_updates.json")
     updates = []
     if os.path.exists(updates_file):
@@ -2383,7 +2383,7 @@ def faculty_manage_homepage():
                 updates = _json.load(f)
         except Exception as e:
             print("Error loading homepage updates:", e)
-            
+           
     if request.method == "POST":
         action = request.form.get("action")
         if action == "add_update":
@@ -2391,11 +2391,11 @@ def faculty_manage_homepage():
             type_val = request.form.get("type", "").strip()
             description = request.form.get("description", "").strip()
             link = request.form.get("link", "").strip()
-            
+           
             if not title or not type_val or not description:
                 flash("Title, type, and description are required.", "error")
                 return redirect("/faculty/manage_homepage")
-                
+               
             image_path = None
             if "photo" in request.files:
                 photo = request.files["photo"]
@@ -2404,14 +2404,14 @@ def faculty_manage_homepage():
                     filename = secure_filename(photo.filename)
                     upload_folder = os.path.join(app.root_path, "static", "uploads", "homepage")
                     os.makedirs(upload_folder, exist_ok=True)
-                    
+                   
                     import time
                     timestamp = int(time.time())
                     dest_filename = f"{timestamp}_{filename}"
                     filepath = os.path.join(upload_folder, dest_filename)
                     photo.save(filepath)
                     image_path = f"/static/uploads/homepage/{dest_filename}"
-                    
+                   
             import time
             from datetime import datetime
             new_item = {
@@ -2423,9 +2423,9 @@ def faculty_manage_homepage():
                 "image_path": image_path,
                 "created_at": datetime.now().strftime('%Y-%m-%d %H:%M:%S')
             }
-            
+           
             updates.append(new_item)
-            
+           
             try:
                 import json as _json
                 with open(updates_file, "w") as f:
@@ -2433,7 +2433,7 @@ def faculty_manage_homepage():
                 flash("Homepage item added successfully!", "success")
             except Exception as e:
                 flash(f"Error saving update: {str(e)}", "error")
-                
+               
         elif action == "delete_update":
             update_id = request.form.get("update_id")
             if update_id:
@@ -2442,7 +2442,7 @@ def faculty_manage_homepage():
                     if item.get("id") == update_id:
                         item_to_remove = item
                         break
-                        
+                       
                 if item_to_remove:
                     updates.remove(item_to_remove)
                     if item_to_remove.get("image_path"):
@@ -2452,7 +2452,7 @@ def faculty_manage_homepage():
                                 os.remove(photo_path)
                         except Exception as e:
                             print("Error deleting image file:", e)
-                            
+                           
                     try:
                         import json as _json
                         with open(updates_file, "w") as f:
@@ -2460,9 +2460,9 @@ def faculty_manage_homepage():
                         flash("Homepage item deleted successfully.", "success")
                     except Exception as e:
                         flash(f"Error deleting update: {str(e)}", "error")
-                        
+                       
         return redirect("/faculty/manage_homepage")
-        
+       
     updates.sort(key=lambda x: x.get("id", ""), reverse=True)
     return render_template("faculty/manage_homepage.html", updates=updates)
 
@@ -2478,16 +2478,16 @@ def homepage_update_detail(update_id):
                 updates = _json.load(f)
         except Exception as e:
             print("Error loading homepage updates:", e)
-            
+           
     selected_update = None
     for u in updates:
         if u.get("id") == update_id:
             selected_update = u
             break
-            
+           
     if not selected_update:
         return "Update not found", 404
-        
+       
     return render_template("homepage_update_detail.html", item=selected_update)
 
 @app.route("/student_logout")
@@ -2535,15 +2535,42 @@ def faculty_update_settings():
     ensure_connection()
     redir = faculty_required()
     if redir: return redir
-    
+   
     title = request.form.get("recruitment_title", "").strip()
     if title:
         cursor.execute("""
-            INSERT INTO global_settings (setting_key, setting_value) 
-            VALUES ('recruitment_title', %s) 
+            INSERT INTO global_settings (setting_key, setting_value)
+            VALUES ('recruitment_title', %s)
             ON DUPLICATE KEY UPDATE setting_value = %s
         """, (title, title))
         db.commit()
+       
+        # Sync across all batch databases so the homepage always shows the latest title
+        try:
+            db_names = ["placement_portal_2025_2026", "placement_portal_2026_2027"]
+            batches_file = os.path.join(app.root_path, "database", "batches.json")
+            if os.path.exists(batches_file):
+                with open(batches_file, "r") as f:
+                    batches = json.load(f)
+                    db_names = [b["db"] for b in batches]
+           
+            for db_name in db_names:
+                try:
+                    temp_conn = get_connection(db_name)
+                    temp_cursor = temp_conn.cursor()
+                    temp_cursor.execute("""
+                        INSERT INTO global_settings (setting_key, setting_value)
+                        VALUES ('recruitment_title', %s)
+                        ON DUPLICATE KEY UPDATE setting_value = %s
+                    """, (title, title))
+                    temp_conn.commit()
+                    temp_cursor.close()
+                    temp_conn.close()
+                except Exception as e:
+                    print(f"Failed to sync setting to {db_name}: {e}")
+        except Exception as e:
+            print(f"Error syncing recruitment_title: {e}")
+
         flash("Settings updated successfully!", "success")
     return redirect("/faculty_dashboard")
 
@@ -2846,7 +2873,7 @@ def faculty_send_selective_email():
         return jsonify({"success": False, "error": "SMTP not configured. Fill in .env credentials."})
 
     data = request.get_json(silent=True) or {}
-    
+   
     student_ids_str = request.form.get("student_ids")
     if student_ids_str:
         import json
@@ -2856,7 +2883,7 @@ def faculty_send_selective_email():
             student_ids = []
     else:
         student_ids = data.get("student_ids", [])
-        
+       
     subject     = request.form.get("subject", "").strip() or data.get("subject", "").strip()
     title       = request.form.get("title", "").strip() or data.get("title", "").strip()
     message_txt = request.form.get("message", "").strip() or data.get("message", "").strip()
@@ -2918,10 +2945,10 @@ def get_dashboard_stats(active_year_id=None):
         active_jobs = cursor.fetchone()["c"]
     except Exception:
         active_jobs = 0
-    
+   
     placement_rate = 0.0
     avg_lpa = 0.0
-    
+   
     manual_stats_file = os.path.join(app.root_path, "database", "manual_stats.json")
     if active_year_id and os.path.exists(manual_stats_file):
         try:
@@ -2940,7 +2967,7 @@ def get_dashboard_stats(active_year_id=None):
 def get_login_batches_stats():
     batches_file = os.path.join(app.root_path, "database", "batches.json")
     batches_stats = []
-    
+   
     if os.path.exists(batches_file):
         try:
             with open(batches_file, "r") as f:
@@ -2951,7 +2978,7 @@ def get_login_batches_stats():
                         ts, aj, pr, alpa = get_dashboard_stats(active_year_id=batch["id"])
                     except Exception:
                         ts, aj, pr, alpa = 0, 0, 0, 0.0
-                        
+                       
                     batches_stats.append({
                         "name": batch["name"],
                         "total_students": ts,
@@ -3003,7 +3030,7 @@ def faculty_forgot_password():
         email = request.form.get("email", "").strip().lower()
         if not email:
             return render_template("faculty/forgot_password.html", error="Email is required.", batches_stats=get_login_batches_stats())
-        
+       
         # Search all known batch databases for the faculty email
         found = False
         try:
@@ -3016,7 +3043,7 @@ def faculty_forgot_password():
                     all_dbs = [b["db"] for b in batches]
             if not all_dbs:
                 all_dbs = ["placement_portal_2025_2026", "placement_portal_2026_2027"]
-            
+           
             for db_name in all_dbs:
                 try:
                     chk = get_connection(db_name)
@@ -3070,7 +3097,7 @@ def faculty_forgot_password():
             return render_template("faculty/forgot_password.html",
                                    error="Failed to send email. Check SMTP settings in Settings → Email.",
                                    batches_stats=get_login_batches_stats())
-    
+   
     return render_template("faculty/forgot_password.html", batches_stats=get_login_batches_stats())
 
 
@@ -3079,23 +3106,23 @@ def faculty_forgot_password():
 def faculty_verify_otp():
     if 'faculty_reset_email' not in session or 'faculty_reset_otp' not in session:
         return redirect("/faculty/forgot_password")
-        
+       
     if request.method == "POST":
         entered_otp = request.form.get("otp", "").strip()
-        
+       
         # Check expiry
         if datetime.now().timestamp() > session.get('faculty_reset_expiry', 0):
             session.pop('faculty_reset_otp', None)
             session.pop('faculty_reset_expiry', None)
             return render_template("faculty/verify_otp.html", error="OTP has expired. Please request a new one.", batches_stats=get_login_batches_stats())
-            
+           
         if entered_otp == session.get('faculty_reset_otp'):
             session['faculty_otp_verified'] = True
             session.pop('faculty_reset_otp', None)
             return redirect("/faculty/reset_password")
         else:
             return render_template("faculty/verify_otp.html", error="Invalid OTP. Please try again.", batches_stats=get_login_batches_stats())
-            
+           
     return render_template("faculty/verify_otp.html", batches_stats=get_login_batches_stats())
 
 
@@ -3103,20 +3130,20 @@ def faculty_verify_otp():
 def faculty_reset_password_flow():
     if not session.get('faculty_otp_verified') or 'faculty_reset_email' not in session:
         return redirect("/faculty/forgot_password")
-        
+       
     if request.method == "POST":
         new_password = request.form.get("new_password", "").strip()
         confirm_password = request.form.get("confirm_password", "").strip()
-        
+       
         if not new_password:
             return render_template("faculty/reset_password.html", error="Password cannot be empty.", batches_stats=get_login_batches_stats())
         if new_password != confirm_password:
             return render_template("faculty/reset_password.html", error="Passwords do not match.", batches_stats=get_login_batches_stats())
         if len(new_password) < 6:
             return render_template("faculty/reset_password.html", error="Password must be at least 6 characters.", batches_stats=get_login_batches_stats())
-            
+           
         email = session.get('faculty_reset_email')
-        
+       
         # Update password in ALL batch databases
         import json as _json
         batches_file = os.path.join(app.root_path, "database", "batches.json")
@@ -3127,7 +3154,7 @@ def faculty_reset_password_flow():
                 all_dbs = [b["db"] for b in batches_list]
         if not all_dbs:
             all_dbs = ["placement_portal_2025_2026", "placement_portal_2026_2027"]
-        
+       
         for db_name in all_dbs:
             try:
                 upd = get_connection(db_name)
@@ -3138,14 +3165,14 @@ def faculty_reset_password_flow():
                 upd.close()
             except Exception as e:
                 app.logger.error(f"Failed to update password in {db_name}: {e}")
-        
+       
         session.pop('faculty_otp_verified', None)
         session.pop('faculty_reset_email', None)
         session.pop('faculty_reset_expiry', None)
-        
+       
         flash("Password successfully reset! Please login with your new password.", "success")
         return redirect("/faculty_login")
-        
+       
     return render_template("faculty/reset_password.html", batches_stats=get_login_batches_stats())
 
 
@@ -3199,7 +3226,7 @@ def faculty_dashboard():
         due_reminders = cursor.fetchall()
     except Exception:
         due_reminders = []
-        
+       
     try:
         cursor.execute("SELECT id, job_id, company_name, role, deadline FROM jobs WHERE deadline IS NOT NULL AND (deadline_dismissed IS NULL OR deadline_dismissed = 0)")
         all_jobs_for_deadline = cursor.fetchall()
@@ -3301,7 +3328,7 @@ def api_faculty_stats():
     try:
         active_year_id = session.get("active_year", "2025-2026")
         ts, aj, pr, alpa = get_dashboard_stats(active_year_id=active_year_id)
-        
+       
         return jsonify({
             "total_students": ts,
             "active_jobs": aj,
@@ -3347,14 +3374,14 @@ def faculty_select_year():
     ensure_connection()
     if "faculty_email" not in session:
         return redirect("/faculty_login")
-        
+       
     import json, os
     batches_file = os.path.join(app.root_path, "database", "batches.json")
     batches = []
     if os.path.exists(batches_file):
         with open(batches_file, "r") as f:
             batches = json.load(f)
-            
+           
     return render_template("faculty/select_year.html", batches=batches)
 
 
@@ -3363,24 +3390,24 @@ def faculty_set_year(year):
     ensure_connection()
     if "faculty_email" not in session:
         return redirect("/faculty_login")
-    
+   
     import json, os
     batches_file = os.path.join(app.root_path, "database", "batches.json")
     batches = []
     if os.path.exists(batches_file):
         with open(batches_file, "r") as f:
             batches = json.load(f)
-            
+           
     valid_years = [b["id"] for b in batches]
-    
+   
     if year not in valid_years:
         flash("Invalid year batch selection.", "error")
         return redirect("/faculty/select_year")
-        
+       
     db_name = next(b["db"] for b in batches if b["id"] == year)
     batch_name = next((b["name"] for b in batches if b["id"] == year), year)
     switch_active_db(db_name, year, batch_name)
-    
+   
     flash(f"Switched to {batch_name} Batch successfully.", "success")
     return redirect("/faculty_dashboard")
 
@@ -3389,7 +3416,7 @@ def faculty_manage_batches():
     ensure_connection()
     redir = faculty_required()
     if redir: return redir
-    
+   
     action = request.form.get("action")
     import json, os
     batches_file = os.path.join(app.root_path, "database", "batches.json")
@@ -3397,12 +3424,12 @@ def faculty_manage_batches():
     if os.path.exists(batches_file):
         with open(batches_file, "r") as f:
             batches = json.load(f)
-            
+           
     if action == "edit":
         edit_id = request.form.get("batch_id")
         edit_name = request.form.get("batch_name")
         edit_desc = request.form.get("batch_desc")
-        
+       
         for b in batches:
             if b["id"] == edit_id:
                 b["name"] = edit_name
@@ -3411,16 +3438,16 @@ def faculty_manage_batches():
                 else:
                     b["desc"] = f"Manage recruitment drives, student details, eligibility criteria, and outcomes for {edit_name}."
                 break
-                
+               
         with open(batches_file, "w") as f:
             json.dump(batches, f, indent=2)
 
         # Update session if renaming the currently active batch
         if session.get("active_year") == edit_id:
             session["active_year_name"] = edit_name
-            
+           
         flash(f"Batch '{edit_name}' updated successfully.", "success")
-        
+       
     return redirect("/faculty/select_year")
 
 
@@ -3429,10 +3456,10 @@ def faculty_edit_yearly_stats():
     ensure_connection()
     redir = faculty_required()
     if redir: return redir
-    
+   
     stats_file = os.path.join(app.root_path, "database", "yearly_statistics.json")
     past_stats = []
-    
+   
     if os.path.exists(stats_file):
         import json as _json
         try:
@@ -3440,35 +3467,35 @@ def faculty_edit_yearly_stats():
                 past_stats = _json.load(f)
         except Exception as e:
             print("Error loading stats:", e)
-            
+           
     if request.method == "POST":
         try:
             new_stats = []
             for stat in past_stats:
                 year = stat.get("year")
-                
+               
                 # Fetch new values from form
                 tot_stu = request.form.get(f"tot_stu_{year}")
                 pl_stu = request.form.get(f"pl_stu_{year}")
                 pr_rate = request.form.get(f"pr_rate_{year}")
                 avg_lpa = request.form.get(f"avg_lpa_{year}")
-                
+               
                 if tot_stu is not None: stat["total_students"] = int(tot_stu)
                 if pl_stu is not None: stat["placed_students"] = int(pl_stu)
                 if pr_rate is not None: stat["placement_rate"] = float(pr_rate)
                 if avg_lpa is not None: stat["average_lpa"] = float(avg_lpa)
-                
+               
                 new_stats.append(stat)
-                
+               
             import json as _json
             with open(stats_file, "w") as f:
                 _json.dump(new_stats, f, indent=4)
-                
+               
             flash("Yearly statistics updated successfully.", "success")
             return redirect("/faculty_dashboard")
         except Exception as e:
             flash(f"Error updating stats: {str(e)}", "error")
-            
+           
     return render_template("faculty/edit_yearly_stats.html", past_stats=past_stats, name=session.get("faculty_name"))
 
 
@@ -3848,22 +3875,22 @@ def faculty_job_set_reminder():
     ensure_connection()
     redir = faculty_required()
     if redir: return jsonify({"error": "Unauthorized"}), 401
-    
+   
     data = request.json
     job_db_id = data.get("job_db_id")
     r_date = data.get("reminder_date")
     r_note = data.get("reminder_note")
-    
+   
     if not job_db_id:
         return jsonify({"success": False, "error": "Missing job ID"})
-        
+       
     try:
         if not r_date:
             r_date = None
-            
+           
         cursor.execute("""
-            UPDATE jobs 
-            SET reminder_date = %s, reminder_note = %s, reminder_sent = 0 
+            UPDATE jobs
+            SET reminder_date = %s, reminder_note = %s, reminder_sent = 0
             WHERE id = %s
         """, (r_date, r_note, job_db_id))
         db.commit()
@@ -3992,17 +4019,17 @@ def faculty_job_delete_column_by_name():
     redir = faculty_required()
     if redir:
         return redir
-        
+       
     name = request.form.get("name")
     if not name:
         from flask import flash
         flash("Column name is required.", "error")
         return redirect("/faculty/jobs")
-        
+       
     import re
     sanitized = re.sub(r'[^a-zA-Z0-9_]', '_', name.lower())
     db_col_name = f"custom_{sanitized}"
-    
+   
     try:
         cursor.execute("SHOW COLUMNS FROM jobs LIKE %s", (db_col_name,))
         col = cursor.fetchone()
@@ -4010,7 +4037,7 @@ def faculty_job_delete_column_by_name():
             from flask import flash
             flash(f"Criteria column '{name}' does not exist.", "error")
             return redirect("/faculty/jobs")
-            
+           
         cursor.execute(f"ALTER TABLE jobs DROP COLUMN {db_col_name}")
         db.commit()
         from flask import flash
@@ -4019,7 +4046,7 @@ def faculty_job_delete_column_by_name():
         db.rollback()
         from flask import flash
         flash(f"Error removing column: {str(e)}", "error")
-        
+       
     return redirect("/faculty/jobs")
 
 
@@ -4088,7 +4115,7 @@ def faculty_applications_update_status():
         old_status = app_record["status"]
 
         drive_link = data.get("drive_link")
-        
+       
         # Update applications table
         if drive_link:
             cursor.execute("UPDATE applications SET status = %s, drive_link = %s, status_updated_at = NOW() WHERE application_id = %s", (status, drive_link, app_id))
@@ -4103,13 +4130,13 @@ def faculty_applications_update_status():
         job_tier_str = job_details["tier"] if job_details else "Tier 3"
         job_tier_num = 1 if '1' in job_tier_str else (2 if '2' in job_tier_str else 3)
 
-        
+       
         # Notify student if status changed or drive link provided
         if old_status != status or drive_link:
             message = f"Your application status for {company_name} - {role_name} has been updated to {status}."
             if status == "Selected":
                 message = f"Congratulations! You have been Selected by {company_name} for the {role_name} role (Tier {job_tier_str})!"
-            
+           
             cursor.execute("INSERT INTO notifications (student_id, message, link) VALUES (%s, %s, %s)",
                            (student_id, message, "/my_applications"))
 
@@ -4151,7 +4178,7 @@ def faculty_applications_update_status():
                 t_num = 1 if '1' in t_str else (2 if '2' in t_str else 3)
                 if t_num < highest_tier_num:
                     highest_tier_num = t_num
-                    
+                   
                 if t_num == 1:
                     tier_1_val = c_name
                 elif t_num == 2:
@@ -4178,31 +4205,31 @@ def faculty_upload_selected_students_excel():
 
     if 'file' not in request.files:
         return jsonify({"success": False, "error": "No file uploaded"})
-    
+   
     file = request.files['file']
     if file.filename == '':
         return jsonify({"success": False, "error": "No file selected"})
-        
+       
     try:
         if file.filename.endswith('.csv'):
             df = pd.read_csv(file)
         else:
             df = pd.read_excel(file)
-            
+           
         required_cols = ['Roll Number', 'Job ID', 'Company Name', 'CTC']
         for col in required_cols:
             if col not in df.columns:
                 return jsonify({"success": False, "error": f"Missing required column: {col}"})
-                
+               
         updated_count = 0
         for index, row in df.iterrows():
             roll_number = str(row['Roll Number']).strip()
             job_ids_raw = str(row['Job ID']).strip()
-            
+           
             if not roll_number or roll_number.lower() in ('nan', 'none', '') or \
                not job_ids_raw or job_ids_raw.lower() in ('nan', 'none', ''):
                 continue
-                
+               
             cursor.execute("SELECT student_id FROM students WHERE roll_number = %s", (roll_number,))
             student = cursor.fetchone()
             if not student:
@@ -4212,21 +4239,21 @@ def faculty_upload_selected_students_excel():
             job_ids = [x.strip() for x in job_ids_raw.split(',')]
             companies = [x.strip() for x in str(row['Company Name']).split(',')] if pd.notna(row['Company Name']) else []
             ctcs = [x.strip() for x in str(row['CTC']).split(',')] if pd.notna(row['CTC']) else []
-            
+           
             # pad companies and ctcs to match job_ids length
             while len(companies) < len(job_ids): companies.append("Unknown")
             while len(ctcs) < len(job_ids): ctcs.append("0")
-            
+           
             has_tier_cols = 'Tier 1' in df.columns or 'Tier 2' in df.columns or 'Tier 3' in df.columns
             t1_str = str(row.get('Tier 1', '')).strip().lower() if 'Tier 1' in df.columns else ''
             t2_str = str(row.get('Tier 2', '')).strip().lower() if 'Tier 2' in df.columns else ''
             t3_str = str(row.get('Tier 3', '')).strip().lower() if 'Tier 3' in df.columns else ''
-            
+           
             for job_id, company_name, ctc_val in zip(job_ids, companies, ctcs):
                 is_selected_in_excel = False
                 tier = None
                 c_lower = company_name.lower()
-                
+               
                 if has_tier_cols:
                     if (c_lower and c_lower in t1_str) or t1_str in ('yes', '1', 'true', '✓', 'tick', 'y'):
                         tier = 'Tier 1'
@@ -4241,7 +4268,7 @@ def faculty_upload_selected_students_excel():
                 if has_tier_cols and not is_selected_in_excel:
                     cursor.execute("UPDATE applications SET status = 'Not Selected' WHERE student_id = %s AND job_id = %s", (student_id, job_id))
                     db.commit()
-                    
+                   
                     cursor.execute("""
                         SELECT j.tier
                         FROM applications a
@@ -4249,7 +4276,7 @@ def faculty_upload_selected_students_excel():
                         WHERE a.student_id = %s AND a.status = 'Selected'
                     """, (student_id,))
                     selected_apps = cursor.fetchall()
-                    
+                   
                     highest_tier_num = 3
                     if selected_apps:
                         for sa in selected_apps:
@@ -4261,7 +4288,7 @@ def faculty_upload_selected_students_excel():
                     db.commit()
                     updated_count += 1
                     continue
-                    
+                   
                 if not has_tier_cols:
                     ctc_num = 0.0
                     try:
@@ -4269,14 +4296,14 @@ def faculty_upload_selected_students_excel():
                         match = re.search(r'(\d+(\.\d+)?)', str(ctc_val).lower())
                         if match: ctc_num = float(match.group(1))
                     except: pass
-                    
+                   
                     if ctc_num < 7.0: tier = 'Tier 3'
                     elif 7.0 <= ctc_num <= 17.0: tier = 'Tier 2'
                     else: tier = 'Tier 1'
-                    
+                   
                 ctc_str = str(ctc_val)
                 if ctc_str.replace('.', '', 1).isdigit(): ctc_str += " LPA"
-                
+               
                 cursor.execute("SELECT id FROM jobs WHERE job_id = %s", (job_id,))
                 if not cursor.fetchone():
                     cursor.execute("INSERT INTO jobs (job_id, company_name, ctc, tier, role) VALUES (%s, %s, %s, %s, %s)",
@@ -4284,11 +4311,11 @@ def faculty_upload_selected_students_excel():
                 else:
                     cursor.execute("UPDATE jobs SET tier = %s WHERE job_id = %s", (tier, job_id))
                 db.commit()
-                    
+                   
                 cursor.execute("SELECT application_id, status FROM applications WHERE student_id = %s AND job_id = %s", (student_id, job_id))
                 app = cursor.fetchone()
                 was_selected = app and app['status'] == 'Selected'
-                
+               
                 if app:
                     cursor.execute("UPDATE applications SET status = 'Selected' WHERE application_id = %s", (app['application_id'],))
                 else:
@@ -4300,7 +4327,7 @@ def faculty_upload_selected_students_excel():
                     cursor.execute("INSERT INTO applications (application_id, student_id, job_id, status, applied_date) VALUES (%s, %s, %s, %s, %s)",
                                    (next_id, student_id, job_id, 'Selected', today))
                 db.commit()
-                
+               
                 cursor.execute("""
                     SELECT j.tier
                     FROM applications a
@@ -4317,7 +4344,7 @@ def faculty_upload_selected_students_excel():
                         if t_num < highest_tier_num:
                             highest_tier_num = t_num
                     cursor.execute("UPDATE students SET selected_tier = %s WHERE student_id = %s", (highest_tier_num, student_id))
-                
+               
                 if not was_selected:
                     tier_label = tier.replace('Tier ', 'Tier ')
                     notif_msg = f"🏆 Congratulations! You have been <strong>Selected</strong> by <strong>{company_name}</strong> under <strong>{tier_label}</strong> (CTC: {ctc_val} LPA). Your tier eligibility has been updated."
@@ -4325,7 +4352,7 @@ def faculty_upload_selected_students_excel():
                                    (student_id, notif_msg, "/my_applications"))
                 db.commit()
                 updated_count += 1
-                
+               
         return jsonify({"success": True, "message": f"Successfully updated {updated_count} records."})
     except Exception as e:
         db.rollback()
@@ -4347,7 +4374,7 @@ def faculty_download_selected_students_template():
         from flask import send_file
         import openpyxl
         from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
-        
+       
         query = """
             SELECT s.roll_number, s.name, s.course, s.branch,
                    j.job_id, j.company_name, j.ctc, j.tier
@@ -4371,13 +4398,13 @@ def faculty_download_selected_students_template():
             if not (c_match and b_match):
                 continue
             student_groups[r['roll_number']].append(r)
-            
+           
         data_rows = []
         for roll_no, apps in student_groups.items():
             first = apps[0]
             job_ids = [str(a['job_id']) for a in apps]
             ctcs = [str(a['ctc']) for a in apps if a.get('ctc')]
-            
+           
             t1, t2, t3 = '', '', ''
             for a in apps:
                 tier = str(a['tier'] or '')
@@ -4388,7 +4415,7 @@ def faculty_download_selected_students_template():
                     t2 = c_name if not t2 else t2 + ", " + c_name
                 else:
                     t3 = c_name if not t3 else t3 + ", " + c_name
-                    
+                   
             data_rows.append([
                 len(data_rows) + 1,
                 first['roll_number'],
@@ -4517,7 +4544,7 @@ def faculty_applied_students():
        
         if hide_job:
             continue
-            
+           
         j['is_deadline_passed'] = is_passed
         j['deadline_str'] = str(j.get('deadline')) if j.get('deadline') else 'Ongoing'
 
@@ -4550,16 +4577,16 @@ def faculty_archive_recruitment():
     ensure_connection()
     redir = faculty_required()
     if redir: return jsonify({"error": "Unauthorized"}), 401
-    
+   
     data = request.json
     job_id = data.get("job_id")
     action = data.get("action") # 'yes' or 'no'
-    
+   
     if not job_id:
         return jsonify({"success": False, "error": "Missing job ID"})
-        
+       
     archived_val = 1 if action == 'yes' else -1
-    
+   
     try:
         cursor.execute("UPDATE jobs SET recruitment_archived = %s WHERE id = %s", (archived_val, job_id))
         db.commit()
@@ -4579,7 +4606,7 @@ def faculty_job_results():
     except Exception:
         cursor.execute("SELECT * FROM jobs ORDER BY job_id DESC")
     jobs = cursor.fetchall()
-    
+   
     for j in jobs:
         cursor.execute("SELECT COUNT(*) as c FROM applications WHERE job_id=%s", (j["job_id"],))
         j["applicant_count"] = cursor.fetchone()["c"]
@@ -4708,7 +4735,7 @@ def faculty_recruitment_process():
         # Check if recruitment is completed
         has_final_round = False
         final_complete = True
-        
+       
         # Filter out eliminated students to keep the tracker clean
         students_list = []
         for s in students:
@@ -4716,29 +4743,29 @@ def faculty_recruitment_process():
             s_dict = dict(s)
             s_dict["rounds"] = {}
             s_dict["links"]  = {}
-            
+           
             is_eliminated_before_final = False
             for rnd in range(1, jdict["num_rounds"]):
                 if round_map.get(sid, {}).get(rnd) == "Not Selected":
                     is_eliminated_before_final = True
                     break
-                    
+                   
             if not is_eliminated_before_final:
                 has_final_round = True
                 f_res = round_map.get(sid, {}).get(jdict["num_rounds"], "Pending")
                 if f_res == "Pending":
                     final_complete = False
-            
+           
             is_eliminated = False
             for rnd in range(1, jdict["num_rounds"] + 1):
                 s_dict["rounds"][rnd] = round_map.get(sid, {}).get(rnd, "Pending")
                 s_dict["links"][rnd]  = link_map.get(sid,  {}).get(rnd, "")
                 if s_dict["rounds"][rnd] == "Not Selected":
                     is_eliminated = True
-                    
+                   
             if not is_eliminated:
                 students_list.append(s_dict)
-                
+               
         # If final round complete, update finished_at
         if has_final_round and final_complete and not jdict.get("recruitment_finished_at"):
             try:
@@ -4748,14 +4775,14 @@ def faculty_recruitment_process():
                 jdict["recruitment_finished_at"] = datetime.now()
             except Exception:
                 pass
-                
+               
         # Check archive logic
         prompt_archive = False
         archived_val = jdict.get("recruitment_archived", 0)
-        
+       
         if archived_val == 1:
             continue # hide from list
-            
+           
         if archived_val == 0 and jdict.get("recruitment_finished_at"):
             from datetime import datetime, timedelta
             f_time = jdict["recruitment_finished_at"]
@@ -4766,7 +4793,7 @@ def faculty_recruitment_process():
                     except: pass
             if isinstance(f_time, datetime) and datetime.now() > f_time + timedelta(days=3):
                 prompt_archive = True
-                
+               
         jdict["prompt_archive"] = prompt_archive
 
         jdict["students"] = students_list
@@ -4814,7 +4841,7 @@ def set_round_result():
         prev = cursor.fetchone()
         prev_result = prev["result"] if prev else None
         prev_link = prev["drive_link"] if prev else None
-        
+       
         # If nothing changed, we can skip inserting duplicate notifications
         changed = (prev_result != result) or (str(prev_link or "").strip() != str(drive_link or "").strip())
 
@@ -4830,7 +4857,7 @@ def set_round_result():
             job_det = cursor.fetchone()
             company_name = job_det["company_name"] if job_det else f"Job {job_id}"
             role_name = job_det["role"] if job_det else "Role"
-    
+   
             # Create notification for the student
             if result == "Selected":
                 msg = f"🎉 You have been <strong>Qualified for Round {round_number}</strong> of <strong>{company_name} - {role_name}</strong>!"
@@ -4848,7 +4875,7 @@ def set_round_result():
                 """, (student_id, job_id))
             else:
                 msg = f"Your Round {round_number} status for <strong>{company_name} - {role_name}</strong> is being reviewed."
-    
+   
             cursor.execute("INSERT INTO notifications (student_id, message, link) VALUES (%s, %s, %s)",
                            (student_id, msg, "/my_applications"))
 
@@ -4862,7 +4889,7 @@ def set_round_result():
         round_map = {r["round_number"]: r["result"] for r in student_rounds}
 
         all_selected = all(round_map.get(r, "Pending") == "Selected" for r in range(1, num_rounds + 1))
-        
+       
         cursor.execute("SELECT status FROM applications WHERE student_id=%s AND job_id=%s", (student_id, job_id))
         cur_app = cursor.fetchone()
         current_status = cur_app["status"] if cur_app else "Pending"
@@ -5147,7 +5174,7 @@ def upload_recruitment_excel(job_id, round_num):
         job_det = cursor.fetchone()
         cname = job_det["company_name"] if job_det else f"Job {job_id}"
         rname = job_det["role"] if job_det else "Role"
-        
+       
         cursor.execute("SELECT num_rounds FROM recruitment_rounds WHERE job_id=%s", (job_id,))
         rr = cursor.fetchone()
         num_rounds = rr["num_rounds"] if rr else 1
@@ -5181,7 +5208,7 @@ def upload_recruitment_excel(job_id, round_num):
                 prev = cursor.fetchone()
                 prev_result = prev["result"] if prev else None
                 prev_link = prev["drive_link"] if prev else None
-                
+               
                 changed = (prev_result != result) or (str(prev_link or "").strip() != str(dl or "").strip())
 
                 cursor.execute("""
@@ -5190,7 +5217,7 @@ def upload_recruitment_excel(job_id, round_num):
                     ON DUPLICATE KEY UPDATE result = VALUES(result), drive_link = VALUES(drive_link)
                 """, (job_id, student_id, round_num, result, dl))
                 updated += 1
-                
+               
                 if changed:
                     # Update application status & Create Notification for Intermediate Rounds
                     if result == "Selected":
@@ -5207,14 +5234,14 @@ def upload_recruitment_excel(job_id, round_num):
                         """, (student_id, job_id))
                     else:
                         msg = f"Your Round {round_num} status for <strong>{cname} - {rname}</strong> is being reviewed."
-                        
+                       
                     if dl:
                         dl_lower = str(dl).lower()
                         if dl_lower.startswith('http://') or dl_lower.startswith('https://') or dl_lower.startswith('www.'):
                             msg += f" <br><strong>Attachment:</strong> <a href='{dl}' target='_blank'>View File/Drive Link</a>"
                         else:
                             msg += f" <br><strong>Message:</strong> {dl}"
-                        
+                       
                     if round_num != num_rounds:
                         cursor.execute("INSERT INTO notifications (student_id, message, link) VALUES (%s, %s, %s)",
                                        (student_id, msg, "/my_applications"))
@@ -5250,7 +5277,7 @@ def upload_recruitment_excel(job_id, round_num):
                 sres = res_map.get(sid, {})
                 all_sel = all(sres.get(r, "Pending") == "Selected" for r in range(1, num_rounds + 1))
                 any_not = any(sres.get(r, "Pending") == "Not Selected" for r in range(1, num_rounds + 1))
-                
+               
                 final_msg = None
                 if all_sel and current_status not in ('Selected', 'Rounds Cleared', 'Not Selected'):
                     cursor.execute(
@@ -5262,7 +5289,7 @@ def upload_recruitment_excel(job_id, round_num):
                         "UPDATE applications SET status='Not Selected', status_updated_at=NOW() WHERE student_id=%s AND job_id=%s",
                         (sid, job_id))
                     final_msg = f"Your application for <strong>{cname} - {rname}</strong> has been updated: <strong>Not Selected</strong>."
-                
+               
                 if final_msg:
                     cursor.execute("INSERT INTO notifications (student_id, message, link) VALUES (%s, %s, %s)",
                                    (sid, final_msg, "/my_applications"))
@@ -5319,7 +5346,7 @@ def faculty_download_applied_excel(job_id):
         ORDER BY s.student_id ASC
     """, (job_id,))
     applicants = cursor.fetchall()
-    
+   
     import json
     for app_row in applicants:
         if app_row.get('extra_details'):
@@ -5384,9 +5411,9 @@ def faculty_download_applied_excel(job_id):
         "Phone Number",
         "Resume Drive Link"
     ]
-    
+   
     filtered_extra_keys = [k for k in extra_keys if k not in ("aadhar_number", "pan_number")]
-    
+   
     for k in filtered_extra_keys:
         headers.append(k.replace('_', ' ').title())
    
@@ -5471,7 +5498,7 @@ def faculty_download_applied_excel(job_id):
         if resume_val and str(resume_val).startswith("http"):
             c.hyperlink = resume_val
             c.font = Font(name="Calibri", size=11, color="0000FF", underline="single")
-            
+           
         # Extra Details
         for i, key in enumerate(filtered_extra_keys):
             val = app['extra_dict'].get(key, "—")
@@ -5542,7 +5569,7 @@ def faculty_student_details_download():
         FROM students
     """)
     students_data = cursor.fetchall()
-    
+   
     # Process physically challenged column to append percentage if applicable
     for student in students_data:
         if student['Physically challenged if yes how much percentage?'] == 'Yes' and student['PC Percentage']:
@@ -5552,15 +5579,15 @@ def faculty_student_details_download():
     import pandas as pd
     import io
     from flask import send_file
-    
+   
     df = pd.DataFrame(students_data)
-    
+   
     output = io.BytesIO()
     with pd.ExcelWriter(output, engine='openpyxl') as writer:
         df.to_excel(writer, index=False, sheet_name='Student Details')
-    
+   
     output.seek(0)
-    
+   
     active_year = session.get("active_year", "2025-2026")
     return send_file(
         output,
@@ -5784,7 +5811,7 @@ def faculty_upload_master_sheet():
 
         if email == "" or email == "nan":
             continue
-            
+           
         # Try to infer roll number from email if not provided (e.g. 421235@student.nitandhra.ac.in)
         if not roll_no and '@' in email:
             inferred_roll = email.split('@')[0]
@@ -5860,7 +5887,7 @@ def faculty_upload_master_sheet():
         # '10th Score' normalizes to '10th_score'; '12th Score' → '12th_score'
         tenth_score_ms = _safe_float(row.get("10th_score", row.get("10th_%", row.get("tenth_score", None))))
         inter_score_ms = _safe_float(row.get("12th_score", row.get("12th_%", row.get("inter_score", None))))
-        
+       
         # If student gives CGPA for 10th/12th (e.g. 9.8), convert to percentage
         if tenth_score_ms is not None and tenth_score_ms <= 10.0 and tenth_score_ms > 0:
             tenth_score_ms = round(tenth_score_ms * 10.0, 2)
@@ -5869,7 +5896,7 @@ def faculty_upload_master_sheet():
         # 'Phone Number' normalizes to 'phone_number'
         raw_phone = str(row.get("phone_number", row.get("phone_no", row.get("phone", "")))).strip()
         phone_ms = raw_phone if raw_phone and raw_phone != "nan" else None
-        
+       
         tier_1_ms = str(row.get("tier_1", row.get("tier 1", row.get("tier1", row.get("tier-1", ""))))).strip()
         tier_2_ms = str(row.get("tier_2", row.get("tier 2", row.get("tier2", row.get("tier-2", ""))))).strip()
         tier_3_ms = str(row.get("tier_3", row.get("tier 3", row.get("tier3", row.get("tier-3", ""))))).strip()
@@ -5935,7 +5962,7 @@ def faculty_upload_master_sheet():
 
         # 'Personal Email' → normalized to 'personal_email'
         personal_email_ms = _get_str(["personal_email", "email_id_(_g-mail_or_other_)", "personal_email_id", "personal_mail"])
-        
+       
         # Handle date specifically to avoid invalid datetime DB errors
         # 'Date of Birth' → normalized to 'date_of_birth'
         dob_raw = _get_str(["date_of_birth", "dob"])
@@ -6025,7 +6052,7 @@ def faculty_upload_master_sheet():
             inserted += 1
 
         sid = existing_student["student_id"] if existing_student else next_id
-        
+       
         # ── Ensure applications are created or updated for tier selections ──
         for t_label, t_company in [("Tier 1", tier_1_ms), ("Tier 2", tier_2_ms), ("Tier 3", tier_3_ms)]:
             if t_company and str(t_company).strip() and str(t_company).strip().lower() != 'nan':
@@ -6049,16 +6076,16 @@ def faculty_upload_master_sheet():
         format_strings = ','.join(['%s'] * len(uploaded_emails))
         cursor.execute(f"SELECT student_id FROM students WHERE LOWER(email) NOT IN ({format_strings})", tuple(uploaded_emails))
         to_delete = cursor.fetchall()
-        
+       
         if to_delete:
             delete_ids = [s["student_id"] for s in to_delete]
             del_format = ','.join(['%s'] * len(delete_ids))
-            
+           
             cursor.execute(f"DELETE FROM round_results WHERE student_id IN ({del_format})", tuple(delete_ids))
             cursor.execute(f"DELETE FROM applications WHERE student_id IN ({del_format})", tuple(delete_ids))
             cursor.execute(f"DELETE FROM notifications WHERE student_id IN ({del_format})", tuple(delete_ids))
             cursor.execute(f"DELETE FROM students WHERE student_id IN ({del_format})", tuple(delete_ids))
-            
+           
             deleted = len(delete_ids)
 
     db.commit()
@@ -6220,22 +6247,22 @@ def forgot_password():
             from flask import flash
             flash("Please enter an email address.", "error")
             return redirect("/forgot_password")
-        
+       
         # Check students table
         cursor.execute("SELECT * FROM students WHERE email=%s", (email,))
         student = cursor.fetchone()
-        
+       
         # Check faculty table
         cursor.execute("SELECT * FROM faculty WHERE email=%s", (email,))
         faculty = cursor.fetchone()
-        
+       
         if not student and not faculty:
             from flask import flash
             flash("No account found with that email address.", "error")
             return redirect("/forgot_password")
-            
+           
         role = "student" if student else "faculty"
-        
+       
         if role == "student":
             aadhar = request.form.get("aadhar", "").strip()
             pan = request.form.get("pan", "").strip()
@@ -6243,12 +6270,12 @@ def forgot_password():
                 from flask import flash
                 flash("Students must provide their Aadhar and PAN numbers for verification.", "error")
                 return redirect("/forgot_password")
-            
+           
             if str(student.get("aadhar", "")).strip() != aadhar or str(student.get("pan", "")).strip().upper() != pan.upper():
                 from flask import flash
                 flash("Aadhar or PAN number does not match our records.", "error")
                 return redirect("/forgot_password")
-        
+       
         # Generate 6 digit OTP
         import random
         import time
@@ -6257,7 +6284,7 @@ def forgot_password():
         session['reset_role'] = role
         session['reset_otp'] = otp
         session['reset_otp_expires'] = time.time() + 180  # Valid for 3 minutes
-        
+       
         # Send OTP via email using configured SMTP credentials
         email_sent = send_reset_otp(email, otp)
 
@@ -6284,7 +6311,7 @@ def verify_otp():
     if request.method == "POST":
         entered_otp = request.form.get("otp", "").strip()
         role = session.get('reset_role')
-        
+       
         import time
         if time.time() > session.get('reset_otp_expires', 0):
             from flask import flash
@@ -6356,17 +6383,17 @@ def start_reminder_scheduler():
             try:
                 import mysql.connector
                 from email_service import send_email, SMTP_EMAIL, is_configured
-                
+               
                 # Use same credentials as the rest of the app
                 DB_HOST = "localhost"
                 DB_USER = "root"
                 DB_PASS = "Pallavi@2007"
-                
+               
                 conn = mysql.connector.connect(host=DB_HOST, user=DB_USER, password=DB_PASS)
                 c = conn.cursor(dictionary=True)
                 c.execute("SHOW DATABASES LIKE 'placement_portal%'")
                 dbs = c.fetchall()
-                
+               
                 # Fetch faculty emails from the global database
                 faculty_emails = ["tap@nitandhra.ac.in"]
                 try:
@@ -6377,7 +6404,7 @@ def start_reminder_scheduler():
                 except Exception:
                     pass
                 conn.close()
-                
+               
                 for d in dbs:
                     db_name = list(d.values())[0]
                     try:
@@ -6392,7 +6419,7 @@ def start_reminder_scheduler():
                         except Exception:
                             b_conn.close()
                             continue
-                        
+                       
                         if due_jobs and is_configured():
                             for job in due_jobs:
                                 subject = f"[Placement Portal] Follow-up Reminder: {job['company_name']} ({job['role']})"
@@ -6411,7 +6438,7 @@ def start_reminder_scheduler():
                                     res = send_email(email, subject, body)
                                     if res['success']:
                                         success = True
-                                        
+                                       
                                 print(f"[Reminder] {job['company_name']}: {'Sent' if success else 'Failed'}")
                                 if success:
                                     b_cur.execute("UPDATE jobs SET reminder_sent = 1 WHERE id = %s", (job['id'],))
@@ -6421,7 +6448,7 @@ def start_reminder_scheduler():
                         print(f"[Reminder] Error for {db_name}: {e}")
             except Exception as e:
                 print(f"[Reminder] Scheduler error: {e}")
-            
+           
             # Sleep for 1 minute
             time.sleep(60)
 

@@ -1,8 +1,8 @@
 [
   {
     "id": "2025-2026",
-    "name": "Batch B",
-    "desc": "Manage recruitment drives, student details, eligibility criteria, and outcomes for Batch B.",
+    "name": "Batch A",
+    "desc": "Manage recruitment drives, student details, eligibility criteria, and outcomes for Batch A.",
     "db": "placement_portal_2025_2026",
     "icon": "ti-calendar-stats"
   },
