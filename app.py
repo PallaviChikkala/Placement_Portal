@@ -30,7 +30,7 @@ app.permanent_session_lifetime = timedelta(days=30)
 # Configure Flask-Mail for OTPs
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
 app.config['MAIL_PORT'] = 465
-app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME', 'tap@nitandhra.ac.in')
+app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME', 'tap@university.edu')
 app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD', 'your_app_password') # Replace with actual app password
 app.config['MAIL_USE_TLS'] = False
 app.config['MAIL_USE_SSL'] = True
@@ -489,8 +489,8 @@ def _init_database_single():
             cursor.execute("""
                INSERT INTO faculty (faculty_id, name, email, password)
 VALUES
-(1, 'Placement Officer', 'tap@nitandhra.ac.in', 'placementOfficerNITandhra2015'),
-(2, 'Placement Officer', 'tapc@nitandhra.ac.in', 'placementOfficerNITandhra2015');
+(1, 'Placement Officer', 'tap@university.edu', 'placementOfficerUniversity2015'),
+(2, 'Placement Officer', 'tapc@university.edu', 'placementOfficerUniversity2015');
             """)
 
         # ── Internship postings table ─────────────────────────────────────────────
@@ -2653,10 +2653,10 @@ def faculty_test_smtp_email():
         if not to_email:
             to_email = _email_svc.SMTP_EMAIL
 
-    subject  = "✅ NIT AP Portal — SMTP Test Email"
+    subject  = "✅ University Portal — SMTP Test Email"
     html_body = _email_svc._base_template(f"""
         <p class="greeting">Test Email 🎉</p>
-        <p>This is a test email sent from the <strong>NIT AP Placement Portal</strong> to verify that SMTP credentials are working correctly.</p>
+        <p>This is a test email sent from the <strong>University Placement Portal</strong> to verify that SMTP credentials are working correctly.</p>
         <div class="info-box">
           <div class="info-row"><span class="info-label">Sent To</span><span class="info-value">{to_email}</span></div>
           <div class="info-row"><span class="info-label">SMTP Host</span><span class="info-value">{_email_svc.SMTP_HOST}:{_email_svc.SMTP_PORT}</span></div>
@@ -3074,7 +3074,7 @@ def faculty_forgot_password():
         # Send OTP using email_service (uses SMTP_EMAIL/SMTP_PASSWORD from .env)
         html_body = f"""
         <div style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto; padding: 30px; border: 1px solid #eee; border-radius: 10px;">
-            <h2 style="color: #d97706; text-align: center;">NIT AP Placement Portal</h2>
+            <h2 style="color: #d97706; text-align: center;">University Placement Portal</h2>
             <h3 style="text-align:center;">Admin Password Reset</h3>
             <p>Your OTP for password reset is:</p>
             <div style="text-align: center; margin: 20px 0;">
@@ -3084,7 +3084,7 @@ def faculty_forgot_password():
             <p style="color: #666; font-size: 13px;">If you did not request this, please ignore this email.</p>
         </div>
         """
-        result = _email_svc.send_email(email, "Admin Password Reset OTP — NIT AP Placement Portal", html_body)
+        result = _email_svc.send_email(email, "Admin Password Reset OTP — University Placement Portal", html_body)
         if result.get('success'):
             flash("OTP sent to your email. Please check your inbox.", "success")
             return redirect("/faculty/verify_otp")
@@ -5812,7 +5812,7 @@ def faculty_upload_master_sheet():
         if email == "" or email == "nan":
             continue
            
-        # Try to infer roll number from email if not provided (e.g. 421235@student.nitandhra.ac.in)
+        # Try to infer roll number from email if not provided (e.g. 421235@student.university.edu)
         if not roll_no and '@' in email:
             inferred_roll = email.split('@')[0]
             if inferred_roll.isdigit():
@@ -6218,7 +6218,7 @@ def send_reset_otp(to_email, otp):
           <p>This OTP is valid for <strong>60 seconds</strong>. Do not share it with anyone.</p>
           <p>If you did not request a password reset, please ignore this email.</p>
           <br>
-          <p>Best regards,<br>NIT AP Placement Portal Team</p>
+          <p>Best regards,<br>University Placement Portal Team</p>
         </div>
       </body>
     </html>
@@ -6226,7 +6226,7 @@ def send_reset_otp(to_email, otp):
 
     # Use the shared email_service with credentials from .env
     if _EMAIL_SVC_LOADED and _email_svc.is_configured():
-        subject = "Password Reset OTP — NIT AP Placement Portal"
+        subject = "Password Reset OTP — University Placement Portal"
         result = _email_svc.send_email(to_email, subject, html)
         if result['success']:
             print(f"[OTP] Reset OTP sent successfully to {to_email}")
@@ -6395,7 +6395,7 @@ def start_reminder_scheduler():
                 dbs = c.fetchall()
                
                 # Fetch faculty emails from the global database
-                faculty_emails = ["tap@nitandhra.ac.in"]
+                faculty_emails = ["tap@university.edu"]
                 try:
                     c.execute("SELECT email FROM placement_portal.faculty WHERE email IS NOT NULL AND email != ''")
                     emails_db = c.fetchall()
@@ -6425,7 +6425,7 @@ def start_reminder_scheduler():
                                 subject = f"[Placement Portal] Follow-up Reminder: {job['company_name']} ({job['role']})"
                                 body = f"""
 <h3>&#128276; Follow-up Reminder</h3>
-<p>This is a scheduled reminder from the NIT AP Placement Portal.</p>
+<p>This is a scheduled reminder from the University Placement Portal.</p>
 <table style='border-collapse:collapse;width:100%;font-size:14px;'>
   <tr><td style='padding:8px;background:#fff8e1;font-weight:700;color:#92400e;'>Company</td><td style='padding:8px;'>{job['company_name']}</td></tr>
   <tr><td style='padding:8px;background:#fff8e1;font-weight:700;color:#92400e;'>Role</td><td style='padding:8px;'>{job['role']}</td></tr>

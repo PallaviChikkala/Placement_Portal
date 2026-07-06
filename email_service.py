@@ -29,8 +29,8 @@ SMTP_HOST     = os.environ.get("SMTP_HOST", "smtp.gmail.com")
 SMTP_PORT     = int(os.environ.get("SMTP_PORT", "587"))
 SMTP_EMAIL    = os.environ.get("SMTP_EMAIL", "")
 SMTP_PASSWORD = os.environ.get("SMTP_PASSWORD", "")
-PORTAL_URL    = os.environ.get("PORTAL_URL", "https://nitandhra.ac.in/placement")
-PORTAL_NAME   = os.environ.get("PORTAL_NAME", "NIT AP Placement Portal")
+PORTAL_URL    = os.environ.get("PORTAL_URL", "https://university.edu/placement")
+PORTAL_NAME   = os.environ.get("PORTAL_NAME", "University Placement Portal")
 
 # Rate limiting: seconds between emails in a bulk send
 RATE_LIMIT_DELAY = 0.15   # 150ms between sends
@@ -220,15 +220,15 @@ def _base_template(content_html: str, preview_text: str = "") -> str:
 <div class="wrapper">
   <div class="header">
     <h1>🎓 {PORTAL_NAME}</h1>
-    <p>National Institute of Technology Andhra Pradesh · Training &amp; Placement Cell</p>
+    <p>University Name · Training &amp; Placement Cell</p>
   </div>
   <div class="body">
     {content_html}
   </div>
   <div class="footer">
-    <p>This email was sent by the NIT AP Placement Cell.<br>
+    <p>This email was sent by the University Placement Cell.<br>
     Please do not reply to this email directly.<br>
-    &copy; {year} NIT Andhra Pradesh. All rights reserved.</p>
+    &copy; {year} University Name. All rights reserved.</p>
   </div>
 </div>
 </body>
@@ -266,7 +266,7 @@ def build_new_job_email(recipient: dict, company: str, role: str, ctc: str,
     <a href="{PORTAL_URL}/eligible_companies" class="cta-btn">🚀 View &amp; Apply Now</a>
 
     <hr class="divider">
-    <p style="font-size:13px;color:#6b7280;">You are receiving this email because you are registered on the NIT AP Placement Portal and meet the eligibility criteria for this opportunity. If you believe this is an error, please contact the Placement Cell.</p>
+    <p style="font-size:13px;color:#6b7280;">You are receiving this email because you are registered on the University Placement Portal and meet the eligibility criteria for this opportunity. If you believe this is an error, please contact the Placement Cell.</p>
     """
     return _base_template(content, f"New Job: {company} – {role}")
 
@@ -371,7 +371,7 @@ def build_announcement_email(recipient: dict, title: str, message: str) -> str:
     name = recipient.get('name', 'Student')
     content = f"""
     <p class="greeting">Hello, {name}! 📣</p>
-    <p>The <strong>NIT AP Placement Cell</strong> has an important announcement for you:</p>
+    <p>The <strong>University Placement Cell</strong> has an important announcement for you:</p>
     
     <div class="info-box">
       <p style="margin:0 0 8px;font-size:17px;font-weight:800;color:#78350f;">{title}</p>

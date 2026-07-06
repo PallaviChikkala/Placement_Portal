@@ -67,8 +67,8 @@ WHERE faculty_id = 1;
 
 INSERT INTO faculty (faculty_id, name, email, password)
 VALUES
-(1, 'Placement Officer', 'tap@nitandhra.ac.in', 'placementOfficerNITandhra2015'),
-(2, 'Placement Officer', 'tapc@nitandhra.ac.in', 'placementOfficerNITandhra2015');
+(1, 'Placement Officer', 'tap@university.edu', 'placementOfficerUniversity2015'),
+(2, 'Placement Officer', 'tapc@university.edu', 'placementOfficerUniversity2015');
 
 SELECT * FROM faculty;
 
