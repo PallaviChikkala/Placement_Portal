@@ -1,98 +1,81 @@
-# 🎓 Placement Portal
+# 🎓 University Placement Portal
 
-A web-based Placement Portal designed to streamline the campus recruitment process by connecting students and faculty through a centralized platform. The system enables students to explore job opportunities, apply for placements, and analyze their resumes, while faculty can efficiently manage job postings and student applications.
-
----
-
-## 🚀 Features
-
-### 👨‍🎓 Student Module
-
-* Student Registration and Login
-* Student Dashboard
-* View Available Job Opportunities
-* View Detailed Job Information
-* Apply for Jobs
-* Eligibility Verification
-* Track Application Status
-* Resume Analyzer
-
-### 👨‍🏫 Faculty Module
-
-* Faculty Login
-* Faculty Dashboard
-* Post New Job Opportunities
-* Edit Existing Job Details
-* Delete Job Postings
-* View Student Applications
-* Manage Placement Drives
-
----
-
-## 🛠️ Technologies Used
-
-### Frontend
-
-* HTML5
-* CSS3
-* Bootstrap
-* JavaScript
-
-### Backend
-
-* Python
-* Flask
-
-### Database
-
-* MySQL
-
----
-
-## 🗄️ Database Tables
-
-* Students
-* Faculty
-* Jobs
-* Applications
+A modern, web-based Placement Portal designed to streamline the campus recruitment process. The system connects students and faculty through a centralized platform, automating eligibility checks, application tracking, and placement drive management.
 
 ---
 
 ## ✨ Key Features
 
-* Secure Authentication System
-* Job Eligibility Verification
-* Tier-Based Placement Restrictions
-* Resume Analysis and Evaluation
-* Application Management System
-* Faculty Job Management Portal
+### 👨‍🎓 Student Module
+- **Dashboard**: Centralized view of placement status and updates.
+- **Job Opportunities**: Browse and filter available jobs.
+- **One-Click Apply**: Apply for jobs seamlessly.
+- **Eligibility Verification**: Automated eligibility checks based on academic records.
+- **Application Tracking**: Track the status of ongoing and past applications.
+- **Resume Analyzer**: Built-in tool for analyzing and improving resumes.
+
+### 👨‍🏫 Faculty/Admin Module
+- **Admin Dashboard**: Comprehensive overview of placement statistics.
+- **Manage Jobs**: Post, edit, and delete job opportunities.
+- **Drive Management**: Configure eligibility criteria (CGPA, backlogs, branch, etc.) for recruitment drives.
+- **Student Applications**: Review and manage student applications.
+- **Automated Notifications**: Scheduled reminders and email notifications to students.
 
 ---
 
-## 🎯 Project Objectives
+## 🛠️ Technologies Used
 
-* Simplify the placement process for students and faculty.
-* Automate eligibility checking and application management.
-* Provide a centralized platform for job postings and applications.
-* Enhance student placement readiness through resume analysis.
+- **Frontend**: HTML5, CSS3, JavaScript, Bootstrap
+- **Backend**: Python, Flask
+- **Database**: MySQL
+- **Email Service**: SMTP Integration
 
 ---
 
-## 👥 Contributors
+## 🚀 Installation & Setup
 
-* **Pallavi Chikkala**
-* **Hasini**
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/PallaviChikkala/Placement_Portal.git
+   cd Placement_Portal
+   ```
+
+2. **Set up a virtual environment (optional but recommended):**
+   ```bash
+   python -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   ```
+
+3. **Install dependencies:**
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+4. **Environment Variables:**
+   Rename `.env.example` to `.env` and update it with your actual credentials:
+   ```env
+   SMTP_EMAIL=your_email@example.com
+   SMTP_PASSWORD=your_app_password
+   SMTP_HOST=smtp.gmail.com
+   SMTP_PORT=587
+   PORTAL_URL=http://127.0.0.1:5000
+   PORTAL_NAME="University Placement Portal"
+   ```
+
+5. **Run the application:**
+   ```bash
+   python app.py
+   ```
+   The portal should now be running at `http://127.0.0.1:5000`.
 
 ---
 
 ## 🔮 Future Enhancements
-
-* Email Notifications
-* Interview Scheduling System
-* Placement Statistics Dashboard
-* AI-Based Job Recommendations
-* Advanced ATS Resume Scoring
+- Advanced Interview Scheduling System
+- Placement Statistics & Analytics Dashboard
+- AI-Based Job Recommendations for Students
+- Advanced ATS Resume Scoring
 
 ---
 
-⭐ Developed as an academic project to demonstrate Full Stack Web Development using Flask and MySQL.
+*Developed as an academic project to demonstrate Full Stack Web Development using Flask and MySQL by Pallavi Chikkala and Hasini.*
