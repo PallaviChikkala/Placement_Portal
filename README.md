@@ -1,4 +1,4 @@
-# 🎓 University Placement Portal
+# 🎓 Placement Portal
 
 A modern, web-based Placement Portal designed to streamline the campus recruitment process. The system connects students and faculty through a centralized platform, automating eligibility checks, application tracking, and placement drive management.
 
