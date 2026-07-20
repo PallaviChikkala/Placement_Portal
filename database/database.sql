@@ -90,7 +90,8 @@ CREATE TABLE jobs(
     max_backlogs INT DEFAULT 0,
     required_skills TEXT,
     job_description TEXT,
-    deadline DATE
+    deadline DATE,
+    pwd_only TINYINT(1) DEFAULT 0
     );
 
 SELECT * FROM jobs;

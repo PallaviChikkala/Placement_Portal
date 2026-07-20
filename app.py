@@ -359,7 +359,8 @@ def _init_database_single():
                 deadline        DATETIME DEFAULT NULL,
                 reminder_date   DATETIME DEFAULT NULL,
                 reminder_note   TEXT DEFAULT NULL,
-                reminder_sent   TINYINT(1) DEFAULT 0
+                reminder_sent   TINYINT(1) DEFAULT 0,
+                pwd_only        TINYINT(1) DEFAULT 0
             )
         """)
 
@@ -381,7 +382,8 @@ def _init_database_single():
             "ALTER TABLE jobs ADD COLUMN reminder_sent TINYINT(1) DEFAULT 0",
             "ALTER TABLE jobs ADD COLUMN deadline_dismissed TINYINT(1) DEFAULT 0",
             "ALTER TABLE jobs ADD COLUMN recruitment_finished_at DATETIME DEFAULT NULL",
-            "ALTER TABLE jobs ADD COLUMN recruitment_archived TINYINT(1) DEFAULT 0"
+            "ALTER TABLE jobs ADD COLUMN recruitment_archived TINYINT(1) DEFAULT 0",
+            "ALTER TABLE jobs ADD COLUMN pwd_only TINYINT(1) DEFAULT 0"
         ]:
             try:
                 cursor.execute(col_sql)
@@ -3823,13 +3825,13 @@ def faculty_job_edit():
         cursor.execute(f"""
             UPDATE jobs SET company_name=%s, role=%s, ctc=%s, location=%s, bond=%s,
                 cgpa_cutoff=%s, active_backlogs=%s, backlog_history=%s, branches=%s,
-                tier=%s, description=%s, req_aadhar=%s, req_pan=%s, req_other=%s, deadline=%s
+                tier=%s, description=%s, req_aadhar=%s, req_pan=%s, req_other=%s, pwd_only=%s, deadline=%s
                 {pdf_update_sql}
                 {custom_set_sql}
             WHERE job_id = %s
         """, [company, role, ctc, location, bond,
                cgpa, act_bl, bl_hist, branches, tier,
-               desc, req_aadhar, req_pan, req_other, deadline] + pdf_args + custom_values + [db_job_id])
+               desc, req_aadhar, req_pan, req_other, pwd_only, deadline] + pdf_args + custom_values + [db_job_id])
        
         db.commit()
 
