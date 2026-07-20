@@ -510,5 +510,17 @@ window.clearEmailLogs = function() {
   }
 };
 </script>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    document.querySelectorAll('img').forEach(img => {
+        img.onerror = function() {
+            this.onerror = null; // Prevent infinite loop if default image is also missing
+            this.style.display = 'none';
+        };
+    });
+});
+</script>
 </body>
+
 </html>

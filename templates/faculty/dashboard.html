@@ -653,7 +653,19 @@ if (themeToggle) {
 })();
 </script>
 
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    document.querySelectorAll('img').forEach(img => {
+        img.onerror = function() {
+            this.onerror = null; // Prevent infinite loop if default image is also missing
+            this.style.display = 'none';
+        };
+    });
+});
+</script>
 </body>
+
 <script src="/static/js/tour.js"></script>
 <script>
   // Reset admin tour so it picks up new steps on next load

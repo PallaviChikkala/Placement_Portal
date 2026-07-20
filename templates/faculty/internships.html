@@ -400,5 +400,17 @@ if (themeToggle) {
 }
 </script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    document.querySelectorAll('img').forEach(img => {
+        img.onerror = function() {
+            this.onerror = null; // Prevent infinite loop if default image is also missing
+            this.style.display = 'none';
+        };
+    });
+});
+</script>
 </body>
+
 </html>
